@@ -1,14 +1,14 @@
 \section{Introduction}
 \label{sec:intro}
 
-As global Internet use has continued to grow in both traffic and variety, system designers have repeatedly had to reach for backends capable of handling ever-growing load.
+As global Internet use has continued to grow in both quantity and variety of traffic, system designers have repeatedly had to reach for backends capable of handling ever-growing load.
 Services that outgrew self-hosted servers were moved to datacenter racks, then eventually to virtualized cloud hosting environments.
 However, this model proved ill-suited to two important and related use cases:
 First, in the case of services that received only short, infrequent triggers, it still required users to pay continuously to keep an often-idle instance online and ready.
-Second, when faced with the prospect of highly-variable load, users had to pay to provision for the expected peak load, at a cost potentially orders of magnitude higher than that of the ordinarily necessary capacity [CITATION NEEDED].
+Second, faced with the prospect of highly-variable load, users had to pay to provision for the expected peak load, at a cost potentially orders of magnitude higher than that of the ordinarily necessary capacity [CITATION NEEDED].
 
-It was these shortfallings that helped encourage cloud providers to introduce a new model known as serverless computing, in which the customer brings their code without having to configure the environment in which it runs.
-Recently, the largest players in the cloud space have introduced a form of this offering known as function as a service (FaaS), marketing their implementations as AWS Lambda, Google Cloud Functions, Azure Functions, and Apache OpenWhisk.
+It was these shortcomings that helped encourage cloud providers to introduce a new model known as serverless computing, in which the customer brings their code without having to configure its environment.
+Recently, the largest players in the cloud space have introduced a form of this offering called function as a service (FaaS), marketing their implementations as AWS Lambda, Google Cloud Functions, Azure Functions, and Apache OpenWhisk.
 The user code targeting these platforms has three properties: (1) it is \textit{triggered} by some event (e.g., a storage event or an HTTP request to the provider's API), (2) it has a \textit{capped runtime quota} and will be killed if attempts to run for longer, and (3) it runs within a container where it \textit{may execute arbitrary code} subject to certain restrictions imposed to ensure isolation.
 Importantly, it's the triggering event that causes a microservice to be started, and customers are only charged when it's running; furthermore, the platform is capable of automatically spawning many instances of the microservice to handle load spikes transparently.
 Typical invocation latencies can be in the 100s of milliseconds for cold functions [citation needed].
