@@ -5,7 +5,9 @@ As global Internet use has continued to grow in both quantity and variety of tra
 Services that outgrew self-hosted servers were moved to datacenter racks, then eventually to virtualized cloud hosting environments.
 However, this model proved ill-suited to two important and related use cases:
 First, in the case of services that received only short, infrequent triggers, it still required users to pay continuously to keep an often-idle instance online and ready.
+\dga{Pay for only what you use at very fine granularity}
 Second, faced with the prospect of highly-variable load, users had to pay to provision for the expected peak load, at a cost potentially orders of magnitude higher than that of the ordinarily necessary capacity [CITATION NEEDED].
+\dga{Scale up rapidly}
 
 It was these shortcomings that helped encourage cloud providers to introduce a new model known as serverless computing, in which the customer brings their code without having to configure its environment.
 Recently, the largest players in the cloud space have introduced a form of this offering called function as a service (FaaS), marketing their implementations as AWS Lambda, Google Cloud Functions, Azure Functions, and Apache OpenWhisk.
