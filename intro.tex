@@ -24,7 +24,22 @@ We believe that in order to fully capitalize on these datacenter latencies, micr
 Furthermore, setting such an aggressive goal will ensure that future applications enjoy good performance, and we suspect that such incredible invocation speed will enable new use cases of which we can't yet conceive.
 In the words of Lampson, it's time to "make it fast rather than general or powerful." [CITE Hints for Computer System Design]
 
-Recent years have seen a renewed interest in statically enforcing isolation and memory safety via a type-safe compiler.
-One such project, Taking the V out of NFV [cite], takes a strong stand with its willingness to run users' Rust code in-process within its network functions runtime.
-We propose a design that combines user Rust functions into shared executor processes to achieve average invocation latencies in the 10s of $\mu$s.
-Furthermore, we target high enough throughput to permit greatly increased multi-tenancy, with up to 100,000s of users executing short-lived microservices on each machine.
+Setting a latency goal in the 10s of $\mu$s forces us to break from the design of traditional FaaS systems in an important way:\ spawning traditional VMs or even processes is now too slow [NEED BENCHMARKS IN A SUBSEQUENT SECTION].
+To address this problem, we propose combining multiple user-submitted jobs into a single process that is pinned to a hardware CPU core.
+In order for this approach to be practical, however, we must recover two properties we have given up:\ \textbf{isolation} and \textbf{fine-grained resource limits}.
+
+In fact, recent years have seen a renewed interest in statically enforcing isolation and memory safety via a type-safe compiler.
+One such project, \textit{Taking the V out of NFV} [CITE], shares our willingness to run users' code in-process within its network functions runtime.
+We restore the isolation property by adopting their approach of requiring users to submit their jobs in the form of memory-safe programs written in the Rust programming language.
+
+Given our performance goals, the most important resource limit to enforce is CPU time.
+We argue that our system requires preemptive scheduling; otherwise, a single misbehaving user job can take control of its core.
+In such a case, it can drive up the tail latency experienced by other jobs and even completely starve the other tasks that share its core.
+This concern reinforces the decision to use Rust rather than a language such as Go or Erlang:\ although both languages have more evolved support for green threading, their models are nonpreemptive [CITATION NEEDED].
+While there has been past work on preempting user threads, much of it has focused on design changes to the kernel that never became commonplace [CITE e.g. Scheduler Activations].
+Though we could have implemented such kernel/user cooperation for this project, we worried that kernel changes would make our approach unattractive for real deployment, a fate that has befallen other systems with similar dependencies [CITE AFS?].
+Fortunately, we find that modern CPUs' high precision event timers (HPETs) are sufficiently precise to allow high-frequency preemption in the 100s of $\mu$s \solb{refine this} without modifying the kernel; we present preliminary results demonstrating this in section TODO.
+
+\solb{Do we want to discuss user runtime \textit{limits} here?}
+
+In summary, in order to achieve average microservice invocation latencies in the 10s of $\mu$s, we propose a design that combines language-provided memory safety with fine-grained preemption.
