@@ -10,15 +10,15 @@ However, this model failed to deliver two important and related benefits for use
 \end{enumerate}
 
 It was these shortcomings that helped encourage cloud providers to introduce a new model known as serverless computing, in which the customer provides \textit{only} their code, without having to configure its environment.
-Recently, the largest players in the cloud space have introduced a form of this offering called function as a service (FaaS), marketing their implementations as AWS Lambda, Google Cloud Functions, Azure Functions, and Apache OpenWhisk.
+Recently, the largest players in the cloud space have introduced a form of this offering called function as a service (FaaS), marketing their implementations as AWS Lambda, Google Cloud Functions, Azure Functions, and Apache OpenWhisk [CITATION NEEDED].
 The user code targeting these platforms has three properties: (1) it is \textbf{triggered by some event} (e.g., a storage event or an HTTP request to the provider's API), (2) it has a \textbf{capped runtime quota} and will be killed if attempts to run for longer, and (3) it runs within a container where it \textbf{may execute arbitrary code} subject to certain restrictions imposed to ensure isolation.
 Importantly, it's the triggering event that causes a microservice to be started, and customers are only charged when it's running; furthermore, the platform is capable of automatically spawning many instances of the microservice to handle load spikes transparently.
-Typical invocation latencies can be in the 100s of milliseconds for cold functions [citation needed].
+Typical invocation latencies can be in the 100s of milliseconds for cold functions [CITATION NEEDED].
 At the time of writing, AWS Lambda and Azure Functions currently caps instance execution time at 5 minutes, whereas Google Cloud Functions allows code to run for 9.
 
 Cloud providers also tout another advantage of microservices: although they may not run for long, they do so very near to the datacenter's other services, increasing the amount of useful work that can be accomplished in that time.
 Throughout the rise of this new cloud offering, datacenter network speeds have been steadily improving.
-It now takes an average of only 10--20 $\mu$s round trip to send an RPC between two Azure machines on the same rack (?) [citation needed].
+It now takes an average of only 10--20 $\mu$s round trip to send an RPC between two Azure machines on the same rack (?) [CITATION NEEDED].
 We believe that in order to fully capitalize on these datacenter latencies, microservice invocation latencies must be brought down to meet them; for instance, only in this way can user experiences with such technologies as cloud-managed IoT devices be made truly seamless.
 
 Recent years have seen a renewed interest in statically enforcing isolation and memory safety via a type-safe compiler.
