@@ -9,9 +9,9 @@ However, this model failed to deliver two important and related benefits for use
 \item \textbf{Scale up rapidly on demand.} Faced with the prospect of highly-variable load, VM users had to pay to provision for the expected peak load, at a cost potentially orders of magnitude higher than that of the ordinarily necessary capacity [CITATION NEEDED].
 \end{enumerate}
 
-It was these shortcomings that helped encourage cloud providers to introduce a new model known as serverless computing, in which the customer brings their code without having to configure its environment.
+It was these shortcomings that helped encourage cloud providers to introduce a new model known as serverless computing, in which the customer provides \textit{only} their code, without having to configure its environment.
 Recently, the largest players in the cloud space have introduced a form of this offering called function as a service (FaaS), marketing their implementations as AWS Lambda, Google Cloud Functions, Azure Functions, and Apache OpenWhisk.
-The user code targeting these platforms has three properties: (1) it is \textit{triggered} by some event (e.g., a storage event or an HTTP request to the provider's API), (2) it has a \textit{capped runtime quota} and will be killed if attempts to run for longer, and (3) it runs within a container where it \textit{may execute arbitrary code} subject to certain restrictions imposed to ensure isolation.
+The user code targeting these platforms has three properties: (1) it is \textbf{triggered by some event} (e.g., a storage event or an HTTP request to the provider's API), (2) it has a \textbf{capped runtime quota} and will be killed if attempts to run for longer, and (3) it runs within a container where it \textbf{may execute arbitrary code} subject to certain restrictions imposed to ensure isolation.
 Importantly, it's the triggering event that causes a microservice to be started, and customers are only charged when it's running; furthermore, the platform is capable of automatically spawning many instances of the microservice to handle load spikes transparently.
 Typical invocation latencies can be in the 100s of milliseconds for cold functions [citation needed].
 At the time of writing, AWS Lambda and Azure Functions currently caps instance execution time at 5 minutes, whereas Google Cloud Functions allows code to run for 9.
