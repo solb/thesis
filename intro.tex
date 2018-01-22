@@ -20,6 +20,8 @@ Cloud providers also tout another advantage of microservices: although they may 
 Throughout the rise of this new cloud offering, datacenter network speeds have been steadily improving.
 It now takes an average of only 10--20 $\mu$s round trip to send an RPC between two Azure machines on the same rack (?) [CITATION NEEDED].
 We believe that in order to fully capitalize on these datacenter latencies, microservice invocation latencies must be brought down to meet them; for instance, only in this way can user experiences with such technologies as cloud-managed IoT devices be made truly seamless.
+Furthermore, setting such an aggressive goal will ensure that future applications enjoy good performance, and we suspect that such incredible invocation speed will enable new use cases of which we can't yet conceive.
+In the words of Lampson, it's time to "make it fast rather than general or powerful." [CITE Hints for Computer System Design]
 
 Recent years have seen a renewed interest in statically enforcing isolation and memory safety via a type-safe compiler.
 One such project, Taking the V out of NFV [cite], takes a strong stand with its willingness to run users' Rust code in-process within its network functions runtime.
