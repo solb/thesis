@@ -1,7 +1,7 @@
 \section{Introduction}
 \label{sec:intro}
 
-As global Internet use has continued to grow in both quantity and variety of traffic, system designers have repeatedly had to reach for backends capable of handling ever-growing load.
+As global Internet traffic has continued to grow in both quantity and variety, system designers have repeatedly had to reach for backends capable of handling ever-growing load.
 Services that outgrew self-hosted servers were moved to datacenter racks, then eventually to virtualized cloud hosting environments.
 However, this model failed to deliver two important and related benefits for users:
 \begin{enumerate}
@@ -18,7 +18,7 @@ At the time of writing, AWS Lambda and Azure Functions currently caps instance e
 
 Cloud providers also tout another advantage of microservices: although they may not run for long, they do so very near to the datacenter's other services, increasing the amount of useful work that can be accomplished in that time.
 Throughout the rise of this new cloud offering, datacenter network speeds have been steadily improving.
-It now takes only 10--20 $\mu$s round trip on average to send an RPC between two Azure machines on the same rack (?) [citation needed].
+It now takes an average of only 10--20 $\mu$s round trip to send an RPC between two Azure machines on the same rack (?) [citation needed].
 We believe that in order to fully capitalize on these datacenter latencies, microservice invocation latencies must be brought down to meet them; for instance, only in this way can user experiences with such technologies as cloud-managed IoT devices be made truly seamless.
 
 Recent years have seen a renewed interest in statically enforcing isolation and memory safety via a type-safe compiler.
