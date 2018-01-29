@@ -1,0 +1,19 @@
+Modern cloud computing environments strive to 
+provide users with two benefits:  fine-grained
+scheduling and accounting, and seamless scalability.
+The most recent face to this trend is the "serverless"
+model, in which individual functions, or microservices,
+are executed on-demand.  While current implementations
+of this model are becoming popular, they still
+operate at a relatively coarse grain, occuping
+resources for minutes at a time and requiring hundreds
+of milliseconds for a cold launch.
+In this paper, we describe a novel design for 
+providing "functions as a service" that attempts
+to be truly \emph{micro}:  cold launch times in microseconds,
+enabling even finer-grained resource accounting, and
+supporting latency-critical macro-services.  To do
+so, we eschew much of the traditional microservice
+infrastructure, instead using language-based isolation
+and providing microsecond-granularity preemptive scheduling using 
+the high-precision timers (HPET) in modern microprocessors.
