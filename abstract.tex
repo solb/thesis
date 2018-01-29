@@ -1,5 +1,9 @@
 \begin{abstract}
     
-This paper is very abstract
+Reflecting on recent developments in the cloud computing space that led to the deployment of serverless computing platforms, we observe an ongoing effort to provide users with two fundamental benefits:\ fine-grained scheduling and extreme scalability.
+Although the serverless model and its notion of user-supplied packaged microservices have made inroads in these areas, we believe there is still much work to be done.
+At a time when datacenter networks are achieving round-trip communication in the tens of microseconds, it remains difficult to build and deploy large-scale services with predictable and satisfactory latency.
+In an effort to reduce invocation latencies to better leverage these network capabilities, we propose a novel FaaS (function as a service) design predicated on shorter-lived, truly micro, microservices.
+We eschew much of the traditional serverless structure, leveraging shared worker processes; these enjoy isolation in the form of static type stafety and fine-grained preemptive scheduling enabled by modern high-precision timers.
 
 \end{abstract}
