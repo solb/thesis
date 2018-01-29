@@ -19,7 +19,7 @@ At the time of writing, AWS Lambda and Azure Functions currently caps instance e
 Cloud providers also tout another advantage of microservices:\ although they may not run for long, they do so very near to the datacenter's other services, increasing the amount of useful work that can be accomplished in that time.
 Throughout the rise of this new cloud offering, datacenter network speeds have been steadily improving.
 It now takes an average of only 10--20 $\mu$s round trip to send an RPC between two Azure machines on the same rack (?) [CITATION NEEDED].
-We believe that in order to fully capitalize on these datacenter latencies, microservice invocation latencies must be brought down to meet them; for instance, only in this way can user experiences with such technologies as cloud-managed IoT devices be made truly seamless.
+We believe that in order to fully capitalize on these datacenter latencies, microservice invocation latencies must be brought down to meet them; for instance, only in this way can user experiences with such technologies as cloud-managed IoT devices be made truly seamless [ExCamera (Fouladi17) saw Lambda latencies in the seconds from their endpoint].
 \mk{isn't satisfied with this claim}
 Furthermore, setting such an aggressive goal will ensure that future applications enjoy good performance, and we suspect that such incredible invocation speed will enable new use cases of which we can't yet conceive.
 In the words of Lampson, it's time to "make it fast rather than general or powerful." [CITE Hints for Computer System Design]
