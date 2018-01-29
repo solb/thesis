@@ -1,9 +1,23 @@
 \begin{abstract}
     
-Reflecting on recent developments in the cloud computing space that led to the deployment of serverless computing platforms, we observe an ongoing effort to provide users with two fundamental benefits:\ fine-grained scheduling and extreme scalability.
-Although the serverless model and its notion of user-supplied packaged microservices have made inroads in these areas, we believe there is still much work to be done.
-At a time when datacenter networks are achieving round-trip communication in the tens of microseconds, it remains difficult to build and deploy large-scale services with predictable and satisfactory latency.
-In an effort to reduce invocation latencies to better leverage these network capabilities, we propose a novel FaaS (function as a service) design predicated on shorter-lived, truly micro, microservices.
-We eschew much of the traditional serverless structure, leveraging shared worker processes; these enjoy isolation in the form of static type stafety and fine-grained preemptive scheduling enabled by modern high-precision timers.
+Modern cloud computing environments strive to
+provide users with two benefits:\ fine-grained
+scheduling and accounting, and seamless scalability.
+The most recent face to this trend is the ``serverless''
+model, in which individual functions, or microservices,
+are executed on demand.  Although current implementations
+of this model are becoming popular, they still
+operate at a relatively coarse granularity, occupying
+resources for minutes at a time and requiring hundreds
+of milliseconds for a cold launch.
+In this paper, we describe a novel design for
+providing ``functions as a service'' (FaaS) that attempts
+to be truly \emph{micro}:\ cold launch times in microseconds,
+enabling even finer-grained resource accounting, and
+supporting latency-critical macro-services.  To do
+so, we propose eschewing much of the traditional serverless
+infrastructure in favor of language-based isolation that
+can provide microsecond-granularity launch latency and
+preemptive scheduling using the high-precision timers (HPETs).
 
 \end{abstract}
