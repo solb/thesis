@@ -1,21 +1,33 @@
 \section{Motivation}
 \label{sec:motive}
 
-We first seek to compare the local invocation latency of some possible microservice deployment and isolation mechanisms.
-We represent the traditional method of spawning a container using a simple \texttt{fork()}/\texttt{exec} of a Unix child process, which we consider to perform no worse than starting a container.
-We propose what we expect to be two faster alternatives:\ (a) keeping a large number of user microservices resident as processes blocked on I/O, and (b) collecting numerous microservices into a single resident process that polls on a control channel when not occupied.
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/IMG_20180125_135549}
+\caption{System designs whose invocation latencies we compared}
+\label{fig:invocationdesigns}
+\end{figure}
+
+We begin our study by comparing the local invocation latencies of a few different possible microservice models.
+Traditional serverless platforms spawn a container for each microservice [CITATION NEEDED. OpenLambda?].
+To get an approximate lower bound on this latency, we model such systems by executing a process using \texttt{fork}()-\texttt{exec}() each time a request needs to be processed (Figure \ref{fig:invocationdesigns}a).
+Having modeled the latency of invoking cold traditional microservices, we consider the cold case, establishing a lower bound by assuming that the processes of all recently executed microservices are kept resident.
+Because there are so many processes loaded in this model, they cannot all be running when not in use; as such, we need to use an operating system provided IPC mechanism to wake up the appropriate microservice.
+Unix's primary IPC mechanisms exhibit comparable latencies [CITATION NEEDED], so we choose to send UDP datagrams over loopback.
+Microservices that aren't currently working spend their time unscheduled, blocked on a \texttt{recv()} system call (Figure \ref{fig:invocationdesigns}b).
+
+We also consider the following design that contrasts with contemporary serverless designs:
+Collect groups of microservices into shared \textbf{worker processes} that are constantly running.
+If we schedule one such process per physical CPU, they can spend any (rare) time that isn't consumed by user work polling for the next job to arrive (Figure \ref{fig:invocationdesigns}c).
+In this way, we expect to be able to achieve significantly lower invocation latencies.
+We propose worker processes that use the system's dynamic linker to load user jobs packaged as shared object files.
+As before, we can model the behavior of a hot system by keeping the libraries loaded between invocations (Figure \ref{fig:invocationdesigns}d).
+
 Figure \ref{fig:motive} shows the invocation latences of these configurations for various numbers of ``distinct'' microservices (complete copies of the executable or shared library file) on a socket with 14 cores dedicated to the microservices.
 
 \begin{figure}
-\includegraphics[width=\columnwidth]{figs/2017-18-29-motivation_numfuns-median}
-\caption{TODO Okay; there are problems. The fork()/exec() line is too high. On to Figure \ref{fig:motivezoom}...}
+\includegraphics[width=\columnwidth]{figs/2017-01-31-motivation_numfuns-latency_log}
+\caption{Median one-way invocation latencies of the four approaches}
 \label{fig:motive}
 \end{figure}
 
-\begin{figure}
-\includegraphics[width=\columnwidth]{figs/2017-18-29-motivation_numfuns-median_no_forkexec}
-\caption{TODO We're not doing well against the consolidated processes. Try with \textit{more} libraries resident? How about with longer microservices?}
-\label{fig:motivezoom}
-\end{figure}
-
-\solb{I was going to run this for various core counts as well, but that's on hold for now. Do we think it'd be useful assuming the rest of these results end up working out?}
+\solb{I'm planning to run this for various core counts as well, and to look at the memory usage.}
