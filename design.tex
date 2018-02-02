@@ -1,2 +1,24 @@
 \section{Design}
 \label{sec:design}
+
+Some of this stuff can come (with canges) from the portions of the intro that people criticized for getting too deep into design decisions.
+
+\begin{itemize}
+\item As just demonstrated, can improve cold start latencies by two orders of magnitude and warm start by one by coalescing microservices together into worker processes
+\item Use type safety as our first isolation line of defense
+\begin{itemize}
+\item Can combine with established techniques: separate users, \texttt{seccomp()}, ...
+\end{itemize}
+\item But also need to prevent them from hogging the CPU
+\begin{itemize}
+\item Can only be guaranteed with preemption of some sort.
+\begin{itemize}
+\item Were surprised to find that we could reliably get \texttt{SIGALRM}s as frequently as every 3--4 us (GRAPH)
+\end{itemize}
+\item Why Rust? (Lift argument from Introduction, but add in mention of GC)
+\item All experiments run on machine w/... hardware specs, Linux and Rust versions
+\end{itemize}
+
+\solb{Want another system design here (elaborated version of last part of \ref{fig:invocationdesigns})?}
+
+\end{itemize}
