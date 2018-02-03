@@ -21,9 +21,10 @@ spikes.
 These shortcoming led cloud providers to introduce a new model, known as
 serverless computing, in which the customer provides \textit{only} their code,
 without having to configure its environment.   Such ``Function as a Service''
-(FaaS) platforms are now available as AWS Lambda, Google Cloud Functions, Azure
-Functions, and Apache OpenWhisk.  These platforms provide a model in which:
-(1)  User code is invoked upon some \textbf{event} occurring (e.g., an HTTP
+(FaaS) platforms are now available as AWS Lambda~\cite{www-amazon-lambda}, Google
+Cloud Functions~\cite{www-google-cf}, Azure Functions~\cite{www-microsoft-af}, and
+Apache OpenWhisk~\cite{www-apache-openwhisk}.  These platforms provide a model in
+which: (1)  User code is invoked upon some \textbf{event} occurring (e.g., an HTTP
 request to some API), runs to completion, and nominally stops running (and being
 billed) after it completes; and (2)  There is no state preserved between
 separate invocations of the user code.  Property (2) enables easy auto-scaling
