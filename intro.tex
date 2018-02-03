@@ -13,18 +13,18 @@ However, this model only partially delivered two related benefits:
 The VM approach suffered from relatively coarse granularity, creating entire
 machines at a time, and with minutes to months of minimum billing
 time\footnote{Amazon recently followed Google's lead in moving down from
-  hour-granuarlity, but both services remain more expensive for always-on VMs
+  hour-granularity, but both services remain more expensive for always-on VMs
   than providers who rent in month-long increments.}.  Relatively long startup
 times required system designers to keep some spare capacity online to handle load
 spikes.
 
-These shortcoming led cloud providers to introduce a new model, known as
+These shortcomings led cloud providers to introduce a new model, known as
 serverless computing, in which the customer provides \textit{only} their code,
 without having to configure its environment.   Such ``Function as a Service''
 (FaaS) platforms are now available as AWS Lambda~\cite{www-amazon-lambda}, Google
 Cloud Functions~\cite{www-google-cf}, Azure Functions~\cite{www-microsoft-af}, and
 Apache OpenWhisk~\cite{www-apache-openwhisk}.  These platforms provide a model in
-which: (1)  User code is invoked upon some \textbf{event} occurring (e.g., an HTTP
+which: (1)  User code is invoked whenever some \textbf{event} occurs (e.g., an HTTP
 request to some API), runs to completion, and nominally stops running (and being
 billed) after it completes; and (2)  There is no state preserved between
 separate invocations of the user code.  Property (2) enables easy auto-scaling
@@ -32,9 +32,9 @@ of the function as load changes.
 
 Because these services execute within a cloud provider's existing
 infrastructure, they reap the benefits of low-latency access to other cloud
-services.  In fact, acting as an access-control proxy is a common use of a
-microservice:\ receive an API request from a user, validate it, and then access
-a back-end storage service, such as S3, using the service's credentials.
+services.  In fact, acting as an access-control proxy is a recurring microservice
+pattern:\ receive an API request from a user, validate it, then access
+a backend storage service (e.g., S3) using the service's credentials.
 
 In this paper, we explore a design intended to reduce the tension between two of
 the desiderata for cloud functions:\ low latency invocation and low cost.  In
