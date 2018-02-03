@@ -30,6 +30,9 @@ billed) after it completes; and (2)  There is no state preserved between
 separate invocations of the user code.  Property (2) enables easy auto-scaling
 of the function as load changes.
 
+\solb{We used to address the 5- to 9-minute capped runtime quota here; add it back in
+if we end up referring back to it.}
+
 Because these services execute within a cloud provider's existing
 infrastructure, they reap the benefits of low-latency access to other cloud
 services.  In fact, acting as an access-control proxy is a recurring microservice
@@ -47,13 +50,17 @@ costs.  Finally, of course, existing services already have latencies in the
 millisecond range, as their requests traverse conventional OS stacks, go through
 containers, etc.
 
-\solb{Get the tail at scale/fan-out argument in here.}
+\solb{Get the tail at scale/fan-out argument in here, following it with Anuj's ``we
+want low latency'' -> ``modern datacenter networks make it possible'' flow.
+Punctuate with his Azure latency citation.}
 
 We hypothesize---admittedly without much proof for this chicken-and-egg
 scenario---that substantially reducing both the latency and cost of running
 infrequently-used services will enable new classes and scales of applications
 for cloud functions, and in the remainder of this paper, present a design that
 achieves this.
+
+\solb{We used to cite Lampson here; let's do that again.}
 
 \subsection{Not yet rewritten}
 
