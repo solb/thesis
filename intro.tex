@@ -50,17 +50,28 @@ costs.  Finally, of course, existing services already have latencies in the
 millisecond range, as their requests traverse conventional OS stacks, go through
 containers, etc.
 
-\solb{Get the tail at scale/fan-out argument in here, following it with Anuj's ``we
-want low latency'' -> ``modern datacenter networks make it possible'' flow.
-Punctuate with his Azure latency citation.}
+Many modern distributed systems (e.g., those that handle search indexing or
+assembling multi-component views for high-traffic website front pages) involve
+extremely high-fanout communication, sometimes performing tens or thousands of
+lookups to handle each user request.  Because their user-visible response time often
+depends on the tail latency of the slowest chain of dependent
+responses~\cite{Dean:cacm2013}, much recent work has sought extreme reductions in
+such systems' response
+times~\cite{Jalaparti:sigcomm2013,Xu:nsdi2013,Li:socc2014,Jeon:asplos2016}.
 
-We hypothesize---admittedly without much proof for this chicken-and-egg
+The newest datacenters exhibit unprecedented low network latencies; for instance, it
+now takes $<20\mu{}s$ to perform an RPC between two machines in Microsoft's Azure
+cloud~\cite{www-firestone-azure-latency}.  We believe that fully leveraging
+ever-decreasing network performance will require reducing microservices' invocation
+latencies to the point where the network is once again the bottleneck.  As Lampson
+put it, it's time to make serverless ``fast rather than general or
+powerful~\cite{Lampson1983}.''
+
+We also hypothesize---admittedly without much proof for this chicken-and-egg
 scenario---that substantially reducing both the latency and cost of running
 infrequently-used services will enable new classes and scales of applications
 for cloud functions, and in the remainder of this paper, present a design that
 achieves this.
-
-\solb{We used to cite Lampson here; let's do that again.}
 
 \subsection{Not yet rewritten}
 
