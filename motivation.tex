@@ -1,6 +1,20 @@
 \section{Motivation}
 \label{sec:motive}
 
+\begin{table}
+\begin{center}
+\small
+\begin{tabular}{lll}
+\textbf{Isolation method} & \textbf{Latency} & \textbf{Throughput} \\
+\midrule
+Process-based & 5 & 200000 \\
+Language-based & .5 & 2000000 \\
+\end{tabular}
+\caption{Performance of isolation methods}
+\label{tab:isolation_methods}
+\end{center}
+\end{table}
+
 Our decision to use language-based isolation is based on two experimental
 results that we discuss below. First, process-level isolation is too slow for
 microsecond-scale remote functions. Second, high-precision timers on commodity
@@ -10,14 +24,27 @@ Linux 4.13.0.
 
 \subsection{Process-level isolation is too slow}
 We run the following experiment to evaluate the overhead of different isolation
-techniques. We use 15 \emph{worker} CPU cores to run microservices. The 16th core
-is used by a \emph{host} process that initiates microservice execution on the
-worker cores using one of four methods.
+techniques. We use 15 \emph{worker} CPU cores to run microservices. A \emph{host}
+process that initiates microservice execution on the worker cores runs on the
+16th core. The host schedules up to 15 microservices at a time (i.e., one
+per worker core), choosing from a pool of 5000 microservices. It uses one of two
+methods to run microservices:
 
 \begin{enumerate}
-\item \textbf{Fork-exec:} The host process forks a new microservice process.
+\item \textbf{Process-based isolation:} Each microservice is a separate process.
+At any time, most microservice processes are sleeping while blocked on an IPC
+call. The host runs a microservice by waking up its process using IPC. We use
+UDP packets for IPC; other IPC methods perform similarly~XXXcite.
+\item \textbf{Language-based isolation:} Each worker core runs a single-threaded
+\emph{worker process} that is used to run different microservices, one at a time.
+The host schedules microservices on worker processes by sending them requests on
+a shared memory queue. Worker processes poll this queue to receive new requests.
 \end{enumerate}
 
+Table~\ref{tab:isolation_methods} shows the latency and throughput achieved
+by the two methods. For latency, we measure the time between when the host
+process dispateches a microservice, to when the the service begins useful
+work on a worker core.
 
 Our first question was what isolation and execution mechanisms could support
 our aggressive goal of 10$\mu{}s$ remote function invocation latency, while
