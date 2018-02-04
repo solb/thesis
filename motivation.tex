@@ -1,4 +1,4 @@
-\section{Motivation}
+\section{Motivation and related work}
 \label{sec:motive}
 
 Setting an invocation latency goal in the 10s of $\mu{}s$ based on the network
@@ -42,4 +42,19 @@ forwards them to 14 physical cores dedicated to running the microservices; the
 remaining core was reserved for use by a thread that would communicate with the wider
 serverless cluster management system.
 
-\solb{I'm planning to run this for various core counts as well, and to look at the memory usage.}
+We would be remiss to suggest consolidating multiple users' jobs into a single
+process without addressing the security implications of doing so.  Clearly, we must
+somehow replace the isolation we are sacrificing with this design choice; meanwhile,
+we must remember that we made the choice to meet extreme performance objectives, and
+avoid adding protections that incur significant runtime cost.
+
+Fortunately, we can learn from two recently-published systems whose own extreme
+performance requirements drove them to perform similar coalescing of traditionally
+independent components:  NetBricks~\cite{Panda2016} is a network functions runtime
+for providing enhanced network capabilities; it is unique among this class of
+systems for running the submitted functions in-process rather than in VMs.
+Tock~\cite{Levy2017} is an embedded operating system that provides (in addition to a
+more traditional process model) a type of lightweight application known as a capsule
+that is embedded within the kernel and communicates with it using simple function
+calls.  As their primary line of defense against untrusted code, both systems make
+use of Rust~\cite{www-rustlang}, a new type-safe systems programming language.
