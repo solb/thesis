@@ -9,6 +9,10 @@ Because of the popularity of container-based approaches (which use processes
 plus some additional system call restrictions), we first measured the time
 to locally invoke a simple process via Unix IPC.  This result provides
 a lower bound on the invocation latency for a remote process over the network.
+\solb{This is a stronger claim than I was trying to make:\ I merely claimed it was a
+lower bound on the local invocation latency.  Throughout this section I've been
+assuming we're solely talking about local numbers, albeit motivated by the 20us
+network number that we're trying to stay *comfortably* below.}
 The results are shown in Figure~\ref{fig:motive}.
 
 The top (very slow) blue line shows the time to fork/exec a process upon receipt
