@@ -53,27 +53,28 @@ millisecond range, as their requests traverse conventional OS stacks, go through
 containers, etc.
 
 Many modern distributed systems (e.g., those that handle search indexing or
-assembling multi-component views for high-traffic website front pages) involve
-extremely high-fanout communication, sometimes performing tens or thousands of
+assembling multi-component views for website front pages) involve
+high-fanout communication, sometimes performing tens or thousands of
 lookups to handle each user request.  Because their user-visible response time often
 depends on the tail latency of the slowest chain of dependent
-responses~\cite{Dean:cacm2013}, much recent work has sought extreme reductions in
+responses~\cite{Dean:cacm2013}, much recent work seeks to reduce
 such systems' response
 times~\cite{Jalaparti:sigcomm2013,Xu:nsdi2013,Li:socc2014,Jeon:asplos2016}.
 
-The newest datacenters exhibit unprecedented low network latencies; for instance, it
+This goal is supported by the impressively low network latencies available in
+modern datacenters.  For example, it
 now takes $<20\mu{}s$ to perform an RPC between two machines in Microsoft's Azure
-cloud~\cite{www-firestone-azure-latency}.  We believe that fully leveraging
-ever-decreasing network performance will require reducing microservices' invocation
-latencies to the point where the network is once again the bottleneck.  As Lampson
-put it, it's time to make serverless ``fast rather than general or
-powerful~\cite{Lampson1983}.''
+cloud~\cite{www-firestone-azure-latency}.  We believe, however, that fully leveraging
+this improving network performance will require reducing microservices' invocation
+latencies to the point where the network is once again the bottleneck.
 
-We also hypothesize---admittedly without much proof for this chicken-and-egg
+We further hypothesize---admittedly without much proof for this chicken-and-egg
 scenario---that substantially reducing both the latency and cost of running
 infrequently-used services will enable new classes and scales of applications
 for cloud functions, and in the remainder of this paper, present a design that
-achieves this.
+achieves this.  As Lampson noted, there's power in making systems 
+``fast rather than general or powerful''~\cite{Lampson1983}, because fast
+building blocks can be used more widely.
 
 \subsection{Not yet rewritten}
 
