@@ -1,7 +1,24 @@
-\section{Motivation and related work}
+\section{Motivation}
 \label{sec:motive}
 
-\textbf{Motivating result 1:  Process-Level Isolation Can't Cut It.}
+Our decision to use language-based isolation is based on two experimental
+results that we discuss below. First, process-level isolation is too slow for
+microsecond-scale remote functions. Second, high-precision timers on commodity
+CPUs allow premption at microsecond-scale. The experiments in this paper were
+conducted on an Intel Xeon E5-2683-v4 CPU (16 cores, 2.1~GHz), running
+Linux 4.13.0.
+
+\subsection{Process-level isolation is too slow}
+We run the following experiment to evaluate the overhead of different isolation
+techniques. We use 15 \emph{worker} CPU cores to run microservices. The 16th core
+is used by a \emph{host} process that initiates microservice execution on the
+worker cores using one of four methods.
+
+\begin{enumerate}
+\item \textbf{Fork-exec:} The host process forks a new microservice process.
+\end{enumerate}
+
+
 Our first question was what isolation and execution mechanisms could support
 our aggressive goal of 10$\mu{}s$ remote function invocation latency, while
 having more microservices running than there are cores on a server.
@@ -49,15 +66,7 @@ $\mu{}s$.
 \label{fig:motive}
 \end{figure}
 
-We conducted this benchmark and all other experiments on one 16-core socket of a
-Linux 4.13.0 server equipped with 2.1-GHz Xeon E5-2683 Broadwell processors.  One
-physical core was dedicated to a host-wide \textbf{dispatch process} that spools
-requests and forwards them to 14 physical cores allocated to the microservices; the
-remaining core was reserved for use by a thread that would communicate with the wider
-serverless cluster management system.
-
-% <snip>
-
+\subsection{Intra-process preemption is fast}
 The reader may be suspicious at the suggestion that we need to implement preemption,
 given that operating systems have provided this functionality as a core service for
 close to half a century.  However, we emphasize that our goals differ significantly
