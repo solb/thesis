@@ -1,33 +1,44 @@
 \section{Motivation and related work}
 \label{sec:motive}
 
-Setting an invocation latency goal in the 10s of $\mu{}s$ based on the network
-requires \textit{even lower} local invocation latencies on the compute node.  To
-determine whether the design of traditional containerized FaaS systems is compatible
-with this goal, we establish a lower bound on the latency achievable using
-containers:\ we remove the containers altogether and model each microservice as a
-separate process.  In this model, a cold start translates to a
-\texttt{fork()/exec()}.  The large number of microservice processes means that our
-warm start story cannot involve their remaining scheduled.  As such, we cause
-inactive tasks to block and later wake them up with a Unix IPC mechanism; the
-latencies of the available mechanisms being similar [\solb{CITE}], we opt for loopback UDP.
-These two variants are shown in Figure~\ref{fig:motive} as the blue and green lines,
-respectively.  Unfortunately, even the average warm start latency is high enough to
-soon become a bottleneck on datacenter networks; worse, the 99.9\% tail latency
-exceeds 10 $\mu{}s$, already slower than a network RPC.
+\textbf{Motivating result 1:  Process-Level Isolation Can't Cut It.}
+Our first question was what isolation and execution mechanisms could support
+our aggressive goal of 10$\mu{}s$ remote function invocation latency, while
+having more microservices running than there are cores on a server.
+Because of the popularity of container-based approaches (which use processes
+plus some additional system call restrictions), we first measured the time
+to locally invoke a simple process via Unix IPC.  This result provides
+a lower bound on the invocation latency for a remote process over the network.
+The results are shown in Figure~\ref{fig:motive}.
 
-From this we decide to eschew the separate processes for each microservice.  Instead,
-we propose collecting groups of microservices into shared \textbf{worker processes},
+The top (very slow) blue line shows the time to fork/exec a process upon receipt
+of a new function invocation.  At over 1ms, this solution clearly does not
+suffice.  Next is the time required to dynamically load a library into a shared
+worker process.  This time is better, but is still an order of magnitude over
+our target.  The green line shows the time it takes to send a UDP packet
+\emph{locally} to an already-forked (but blocked) process.  The bottom
+line shows the latency of invoking a true function call as a preloaded dynamic
+library in a shared worker process.  From this, we observe that the
+``per-process'' model, wherein a cold start corresponds to forking a new
+process, and a warm start to unblocking it via I/O, has latencies that are
+generally outside of our target range.
+
+Because of this high latency, ew eschew the process-per-microservice model.
+We instead propose
+collecting groups of microservices into shared \textbf{worker processes},
 each responsible for performing all the work assigned to a given CPU core.  We can
-assume that these will always be running, so the cold start case now only requires us
-to load user code into an existing process.  We do this by packaging user
+ensure that these will always be running, so the cold start case now only requires
+loading user code into an existing process (a few tens of microseconds instead
+of milliseconds).  We do this by packaging user
 microservices as shared object files and using the dynamic linker/loader's
 \texttt{dlopen()} interface.  Because each worker owns its cores, they can spend any
 (rare) time between user tasks polling for the next job to arrive, so a warm start
 simply involves flipping a ready bit in memory shared between the two processes.
 Both cases appear in Figure~\ref{fig:motive} as the orange and red lines,
 respectively.  This time, the warm start is significantly faster than our objective
-at just a few hundred \textit{nanoseconds}, with the 99.9\% tail below 2 $\mu{}s$.
+at just a few hundred \textit{nanoseconds}, with the 99.9\% tail below 2
+$\mu{}s$.
+\textbf{dga:  It shis really nanoseconds?  The figure says microseconds.}
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/2018-02-02-motivation_numfuns-latency-reordered}
@@ -42,12 +53,9 @@ requests and forwards them to 14 physical cores allocated to the microservices; 
 remaining core was reserved for use by a thread that would communicate with the wider
 serverless cluster management system.
 
-We would be remiss to suggest consolidating multiple users' jobs into a single
-process without addressing the security implications of doing so.  Clearly, we must
-somehow replace the isolation we are sacrificing with this design choice; meanwhile,
-we must remember that we made the choice to meet extreme performance objectives, and
-avoid adding protections that incur significant runtime cost.
-
+Of course, consolidating multiple users' jobs into a single process requires
+addressing the accompanying security challenges, and doing so in a way that
+does not compromise our ambitious performance goals.
 Fortunately, we can learn from two recently-published systems whose own demanding
 performance requirements drove them to perform similar coalescing of traditionally
 independent components:  NetBricks~\cite{Panda2016} is a network functions runtime
