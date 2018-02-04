@@ -56,44 +56,7 @@ requests and forwards them to 14 physical cores allocated to the microservices; 
 remaining core was reserved for use by a thread that would communicate with the wider
 serverless cluster management system.
 
-Of course, consolidating multiple users' jobs into a single process requires
-addressing the accompanying security challenges, and doing so in a way that
-does not compromise our ambitious performance goals.
-Fortunately, we can learn from two recently-published systems whose own demanding
-performance requirements drove them to perform similar coalescing of traditionally
-independent components:  NetBricks~\cite{Panda2016} is a network functions runtime
-for providing programmable network capabilities; it is unique among this class of
-systems for running the submitted functions in-process rather than in VMs.
-Tock~\cite{Levy2017} is an embedded operating system that provides (in addition to a
-more traditional process model) a type of lightweight application known as a capsule
-that is embedded within the kernel and communicates with it using simple function
-calls.  As their primary line of defense against untrusted code, both systems
-leverage Rust~\cite{www-rustlang}, a new type-safe systems programming language.
-
-Rust is a strongly-typed, compiled language that reprises C's abstention from a
-heavyweight runtime.  Unlike many other modern systems languages, Rust is an
-attractive choice when both performance and predictability are critical due to its
-lack of a garbage collector.  Still, it manages to provide strong memory safety
-guarantees by focusing on ``zero-cost abstractions'' (i.e., those that can be
-compiled down to code whose safety is assured without runtime checks).  In
-particular, safe Rust code is guaranteed to be free of null or dangling pointer
-dereferences, invalid variable values (e.g., casts are checked and unions are
-tagged), reads from uninitialized memory, mutations of non-\texttt{mut} data (roughly
-the equivalent of C's \texttt{const}), and data races, among other
-misbehaviors~\cite{www-rustlang-ub}.
-
-We require each microservice to be written in Rust, which gives us many aspects of
-the isolation we need:  It's difficult for microservices to crash the worker process,
-since most segmentation faults are prevented, and runtime errors such as integer
-overflow generate Rust panics that we can catch.  Microservices can't get references
-to data that doesn't belong to them thanks to the variable and pointer initialization
-rules.  However, given our performance goals, there is a significant aspect of the
-required isolation that Rust doesn't provide:\ there is nothing to stop users from
-monopolizing the CPU.  While it is true that other modern systems languages such as
-Go~\cite{www-golang} and Erlang~\cite{www-erlang} include so-called ``green
-threading'' (support for sharing a kernel thread among multiple tasks), this
-multitasking is implemented cooperatively, so a task in a tight loop will never
-yield.  To prevent this kind of behavior, our system needs to be preemptive.
+% <snip>
 
 The reader may be suspicious at the suggestion that we need to implement preemption,
 given that operating systems have provided this functionality as a core service for

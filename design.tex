@@ -1,6 +1,9 @@
 \section{Design}
 \label{sec:design}
 
+\solb{I was thinking of basing the conclusion off this; maybe it should just
+\textit{be} there?}
+
 In order to permit applications to \textit{fully leverage the 10s of $\mu{}s$
 latencies available from the latest datacenter networks}, we propose a novel design
 for serverless platforms that runs user-submitted microservices within shared
@@ -9,6 +12,9 @@ processes.  This structure is possible thanks to our combined use of
 preemption}.  To the best of our knowledge, we are the first system to combine these
 two building blocks to create a system that is able to deliver single-digit
 invocation latency for lightweight, short-lived tasks.
+
+\solb{Is it weird to have the following paragraph after we discuss isolation and
+preemption?  I can't think of where else it would go.}
 
 Our system comprises (1) a central dispatch process that manages the compute node,
 receiving requests and assigning them to (2) a number of worker processes (one per
@@ -20,34 +26,7 @@ CPU:\ in the associated handler, it checks how for long the current job has been
 running and ends any that has gone over budget.  The rest of this section covers the
 trust model and the preemption scheme.
 
-\paragraph{Trust model}
-Users submit their microservices in the form of Rust source code, allowing the
-serverless operator to pass the \texttt{-Funsafe-code} flag while compiling to reject
-any \texttt{unsafe} code.  This process doesn't need to be performed on the compute
-nodes so long as the deployment server tasked with compilation runs the same version
-of the Rust compiler\footnote{This restriction exists because, as of the latest
-release (1.23.0) of the compiler, Rust doesn't have a stable ABI.}.  The operator
-needs to trust the compiler, standard library, and any libraries against which it
-will permit the microservice to link, but importantly need not worry about the
-microservice itself.  We believe that most users would find it acceptable to be
-presented with a list of permissible dependencies.  Any libraries that make no use of
-\texttt{unsafe} code can be whitelisted without review, and to approximate how big
-such a list would be given the current Rust ecosystem, we turn to a 2017
-study~\cite{www-cratesio-unsafe} by the Tock authors that found just under half of
-the Rust package manager's top 1000 most-downloaded libraries to be free of
-\texttt{unsafe} code.  They caution that many of those packages have unsafe
-dependencies, but we suspect that reviewing a relatively small number of popular
-libraries would open up the majority of the most popular packages.
-
-After a microservice is compiled to a shared object file, it should be distributed to
-each compute node on which it might run.  Then, in order to ensure that invokers will
-experience the warm-start latencies discussed in Section~\ref{sec:motive}, those
-nodes' dispatchers should instruct one or more of their workers to preload the
-dynamic library.  In the event that the provider experiences too many active
-microservices for its available resources, it can unload some libraries; on their
-next invocation, they will experience invocation latency greater than the network
-latency, but comparable to the \textit{warm-start} latencies of today's serverless
-systems.
+% <snip>
 
 \paragraph{Preemption scheme}
 The system must be able to detect and recover from microservices that, whether

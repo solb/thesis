@@ -1,0 +1,75 @@
+\section{Isolation}
+\label{sec:isolation}
+
+\solb{Dave's topic: ``Language-based isolation with defense in depth''}
+\solb{NB: All seccomp() stuff is currently in Future work.  Not that it can't be
+moved...}
+
+Of course, consolidating multiple users' jobs into a single process requires
+addressing the accompanying security challenges, and doing so in a way that
+does not compromise our ambitious performance goals.
+Fortunately, we can learn from two recently-published systems whose own demanding
+performance requirements drove them to perform similar coalescing of traditionally
+independent components:  NetBricks~\cite{Panda2016} is a network functions runtime
+for providing programmable network capabilities; it is unique among this class of
+systems for running the submitted functions in-process rather than in VMs.
+Tock~\cite{Levy2017} is an embedded operating system that provides (in addition to a
+more traditional process model) a type of lightweight application known as a capsule
+that is embedded within the kernel and communicates with it using simple function
+calls.  As their primary line of defense against untrusted code, both systems
+leverage Rust~\cite{www-rustlang}, a new type-safe systems programming language.
+
+Rust is a strongly-typed, compiled language that reprises C's abstention from a
+heavyweight runtime.  Unlike many other modern systems languages, Rust is an
+attractive choice when both performance and predictability are critical due to its
+lack of a garbage collector.  Still, it manages to provide strong memory safety
+guarantees by focusing on ``zero-cost abstractions'' (i.e., those that can be
+compiled down to code whose safety is assured without runtime checks).  In
+particular, safe Rust code is guaranteed to be free of null or dangling pointer
+dereferences, invalid variable values (e.g., casts are checked and unions are
+tagged), reads from uninitialized memory, mutations of non-\texttt{mut} data (roughly
+the equivalent of C's \texttt{const}), and data races, among other
+misbehaviors~\cite{www-rustlang-ub}.
+
+We require each microservice to be written in Rust, which gives us many aspects of
+the isolation we need:  It's difficult for microservices to crash the worker process,
+since most segmentation faults are prevented, and runtime errors such as integer
+overflow generate Rust panics that we can catch.  Microservices can't get references
+to data that doesn't belong to them thanks to the variable and pointer initialization
+rules.  However, given our performance goals, there is a significant aspect of the
+required isolation that Rust doesn't provide:\ there is nothing to stop users from
+monopolizing the CPU.  While it is true that other modern systems languages such as
+Go~\cite{www-golang} and Erlang~\cite{www-erlang} include so-called ``green
+threading'' (support for sharing a kernel thread among multiple tasks), this
+multitasking is implemented cooperatively, so a task in a tight loop will never
+yield.  To prevent this kind of behavior, our system needs to be preemptive.
+
+\solb{Latter part of that paragraph -> end of this section}
+
+Users submit their microservices in the form of Rust source code, allowing the
+serverless operator to pass the \texttt{-Funsafe-code} flag while compiling to reject
+any \texttt{unsafe} code.  This process doesn't need to be performed on the compute
+nodes so long as the deployment server tasked with compilation runs the same version
+of the Rust compiler\footnote{This restriction exists because, as of the latest
+release (1.23.0) of the compiler, Rust doesn't have a stable ABI.}.  The operator
+needs to trust the compiler, standard library, and any libraries against which it
+will permit the microservice to link, but importantly need not worry about the
+microservice itself.  We believe that most users would find it acceptable to be
+presented with a list of permissible dependencies.  Any libraries that make no use of
+\texttt{unsafe} code can be whitelisted without review, and to approximate how big
+such a list would be given the current Rust ecosystem, we turn to a 2017
+study~\cite{www-cratesio-unsafe} by the Tock authors that found just under half of
+the Rust package manager's top 1000 most-downloaded libraries to be free of
+\texttt{unsafe} code.  They caution that many of those packages have unsafe
+dependencies, but we suspect that reviewing a relatively small number of popular
+libraries would open up the majority of the most popular packages.
+
+After a microservice is compiled to a shared object file, it should be distributed to
+each compute node on which it might run.  Then, in order to ensure that invokers will
+experience the warm-start latencies discussed in Section~\ref{sec:motive}, those
+nodes' dispatchers should instruct one or more of their workers to preload the
+dynamic library.  In the event that the provider experiences too many active
+microservices for its available resources, it can unload some libraries; on their
+next invocation, they will experience invocation latency greater than the network
+latency, but comparable to the \textit{warm-start} latencies of today's serverless
+systems.
