@@ -101,5 +101,6 @@ would be impossible to reliably preempt at finer granularity than a millisecond,
 performed a benchmark to assess the limits of the POSIX \texttt{setitimer()}
 mechanism for repeatedly delivering \texttt{SIGALRM} signals separated by a custom
 time interval.  We were surprised to find that, thanks to the HPETs (high precision
-event timers) on modern CPUs, the signals were reliably delivered when we requested
-intervals as small as 3 $\mu{}s$, even with timers set on all 14 worker cores.
+event timers) on modern CPUs, the signals were reliably delivered on time when we
+requested intervals as small as 3 $\mu{}s$, even with timers set on all 14 worker
+cores.
