@@ -37,7 +37,7 @@ at just a few hundred \textit{nanoseconds}, with the 99.9\% tail below 2 $\mu{}s
 
 We conducted this benchmark and all other experiments on one 16-core socket of a
 Linux 4.13.0 server equipped with 2.1-GHz Xeon E5-2683 Broadwell processors.  One
-physical core was dedicated to a host-wide \textit{dispatch process} that spools
+physical core was dedicated to a host-wide \textbf{dispatch process} that spools
 requests and forwards them to 14 physical cores allocated to the microservices; the
 remaining core was reserved for use by a thread that would communicate with the wider
 serverless cluster management system.
