@@ -58,7 +58,9 @@ after the user code.
 As proposed in Section~\ref{sec:motive}, regaining control of the CPU happens when a
 \texttt{SIGALRM} from the kernel transfers control to the worker process's signal
 handler.  The handler then checks how long the current microservice has been running
-and decides whether it should be killed.  The remaining questions are:  ``For how
+and decides whether it should be killed.  (The handler is registered using the
+\texttt{SA\_RESTART} flag to \texttt{sigaction()} so that any interrupted blocking
+syscalls are transparently restarted.)  The remaining questions are:  ``For how
 long should each microservice be allowed to run?'' and ``How often should the handler
 execute (the \textbf{quantum})?''
 
