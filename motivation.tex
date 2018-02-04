@@ -16,7 +16,7 @@ network number that we're trying to stay *comfortably* below.}
 The results are shown in Figure~\ref{fig:motive}.
 
 The top (very slow) blue line shows the time to fork/exec a process upon receipt
-of a new function invocation.  At over 1ms, this solution clearly does not
+of a new function invocation.  At over 1 ms, this solution clearly does not
 suffice.  Next is the time required to dynamically load a library into a shared
 worker process.  This time is better, but is still an order of magnitude over
 our target.  The green line shows the time it takes to send a UDP packet
@@ -27,7 +27,7 @@ library in a shared worker process.  From this, we observe that the
 process, and a warm start to unblocking it via I/O, has latencies that are
 generally outside of our target range.
 
-Because of this high latency, ew eschew the process-per-microservice model.
+Because of this high latency, we eschew the process-per-microservice model.
 We instead propose
 collecting groups of microservices into shared \textbf{worker processes},
 each responsible for performing all the work assigned to a given CPU core.  We can
