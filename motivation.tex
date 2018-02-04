@@ -56,5 +56,47 @@ systems for running the submitted functions in-process rather than in VMs.
 Tock~\cite{Levy2017} is an embedded operating system that provides (in addition to a
 more traditional process model) a type of lightweight application known as a capsule
 that is embedded within the kernel and communicates with it using simple function
-calls.  As their primary line of defense against untrusted code, both systems make
-use of Rust~\cite{www-rustlang}, a new type-safe systems programming language.
+calls.  As their primary line of defense against untrusted code, both systems
+leverage Rust~\cite{www-rustlang}, a new type-safe systems programming language.
+
+Rust is a strongly typed, compiled language that reprises C's abstention from a
+heavyweight runtime.  Unlike many other modern systems languages, Rust is an
+attractive choice when both performance and predictability are critical due to its
+lack of a garbage collector.  Still, it manages to provide strong memory safety
+guarantees by focusing on ``zero-cost abstractions'' (i.e., compile-time checks).  In
+particular, safe Rust code is guaranteed to be free of null or dangling pointer
+dereferences, invalid variable values (e.g., casts are checked and unions are
+tagged), reads from uninitialized memory, mutations of non-\texttt{mut} data (roughly
+the equivalent of C's \texttt{const}), and data races, among other
+misbehaviors~\cite{www-rustlang-ub}.
+
+We require each microservice to be written in Rust, which gives us many aspects of
+the isolation we need:  It's difficult for microservices to crash the worker process,
+since most segmentation faults are prevented, and runtime errors such as integer
+overflow generate Rust panics that we can catch.  They can't get references to data
+that doesn't belong to them because of the data and pointer initialization rules.
+However, given our performance goals, there is a significant aspect of isolation that
+Rust doesn't provide:\ there is nothing to stop users from monopolizing the CPU.
+While it is true that other modern systems languages such as Go~\cite{www-golang} and
+Erlang~\cite{www-erlang} include so-called ``green threading'' (support for sharing a
+kernel thread among multiple tasks), this multitasking is implemented cooperatively,
+so a task in a tight loop will never yield.  To prevent this kind of behavior, our
+system needs to be preemptive.
+
+The reader may be suspicious at the suggestion that we need to implement preemption,
+given that operating systems have provided this functionality as a core service for
+close to half a century.  However, we emphasize that our goals differ significantly
+from those of an operating system:  An OS kernel avoids frequent preemption due to
+the significant cost of rescheduling preempted work.  In contrast, the microservices
+in our model are unapologetically lightweight and short-lived, and our system can
+just kill any that time out.  Enforcing hard time limits is already an established
+attribute of serverless systems, with the three large providers already limiting
+microservices to minutes of runtime; we merely propose significantly reducing this
+time budget.
+
+Of course, the question remains of how to achieve preemption.  We initially doubted
+the existence of any efficient mechanism for truly fine-grained preemption; however,
+upon benchmarking the capabilities of the POSIX \texttt{setitimer()} interface, we
+were surprised to find that modern CPUs' HPETs (high precision event timers) permit
+reliably signaling a process as often as every few microseconds, and this approach
+scales to operating on all cores simultaneously.
