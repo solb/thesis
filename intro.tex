@@ -2,19 +2,21 @@
 \label{sec:intro}
 
 As the scope and scale of Internet services continues to grow, system designers
-have sought platforms that ease their scaling and deployment burden.
-Services that outgrew self-hosted servers moved to datacenter racks, then eventually to virtualized cloud hosting environments.
+have sought platforms that simplify scaling and deployment.
+Services that outgrew self-hosted servers moved to datacenter racks, then
+eventually to virtualized cloud hosting environments.
 However, this model only partially delivered two related benefits:
 \begin{enumerate}
-\item \textbf{Pay for only what you use at very fine granularity.}
-\item \textbf{Scale up rapidly on demand.}
+\item Pay for only what you use at very fine granularity.
+\item Scale up rapidly on demand.
 \end{enumerate}
 
 The VM approach suffered from relatively coarse granularity, creating entire
 machines at a time, and with minutes to months of minimum billing
 time\footnote{Amazon recently followed Google's lead in moving down from
   hour-granularity, but both services remain more expensive for always-on VMs
-  than providers who rent in month-long increments.}.  Relatively long startup
+  than providers who rent in month-long increments.}. \ak{I don't think we
+need this footnote.} Relatively long startup
 times required system designers to keep some spare capacity online to handle load
 spikes.
 
@@ -75,7 +77,8 @@ achieves this.
 
 \subsection{Not yet rewritten}
 
-At the time of writing, AWS Lambda and Azure Functions currently caps instance execution time at 5 minutes, whereas Google Cloud Functions allows code to run for 9.
+At the time of writing, AWS Lambda, Azure Functions, and Google Cloud Functions
+cap instance execution time to 5--10 minutes.
 
 Cloud providers also tout another advantage of microservices:\ although they may not run for long, they do so very near to the datacenter's other services, increasing the amount of useful work that can be accomplished in that time.
 Throughout the rise of this new cloud offering, datacenter network speeds have been steadily improving:
