@@ -95,9 +95,11 @@ attribute of serverless systems, with the three large providers already limiting
 microservices to minutes of runtime; we merely propose significantly reducing this
 time budget.
 
-Of course, the question remains of how to achieve preemption.  We initially doubted
-the existence of any efficient mechanism for truly fine-grained preemption; however,
-upon benchmarking the capabilities of the POSIX \texttt{setitimer()} interface, we
-were surprised to find that modern CPUs' HPETs (high precision event timers) permit
-reliably signaling a process as often as every few microseconds, and this approach
-scales to operating on all cores simultaneously.
+Of course, the question remains of how the worker processes should implement
+preemption, and at what granularity it is feasible to do so.  Hypothesizing that it
+would be impossible to reliably preempt at finer granularity than a millisecond, we
+performed a benchmark to assess the limits of the POSIX \texttt{setitimer()}
+mechanism for repeatedly delivering \texttt{SIGALRM} signals separated by a custom
+time interval.  We were surprised to find that, thanks to the HPETs (high precision
+event timers) on modern CPUs, the signals were reliably delivered when we requested
+intervals as small as 3 $\mu{}s$, even with timers set on all 14 worker cores.
