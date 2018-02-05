@@ -50,7 +50,7 @@ by the two methods. For latency, we measure the median time between when the hos
 process dispatches a request to a microservice, to when the the service begins
 useful work on a worker core. We find that the process-based isolation approach
 takes 10\textmu{}s and achieves only 200000 microservice invocations per
-second. In contrast, language-based isolation can achieves .1\textmu{}s and
+second. In contrast, language-based isolation can achieves 0.1\textmu{}s and
 over 2 million invocations per second.
 
 A 10\textmu{}s delay in microservice invocation is a substantial fraction of our
@@ -63,8 +63,7 @@ throughput is also limited by IPC overhead.
 With language-based isolation, we run user-provided microservice functions
 directly in worker processes. To prevent rogue functions from endlessly blocking
 other microservices, we must premept or terminate functions that run for too
-long. Assuming that we allow a microservice to run for 100\textmu{}s, we must
-preempt rogue functions that run for more than this time. Note that this
+long (e.g., longer than 100\textmu{}s).  This
 preemption interval is orders of magnitude faster than typical operating
 system preemption intervals ($\approx$5~ms).
 
