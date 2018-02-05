@@ -1,0 +1,14 @@
+\subsection{Isn't This Just...}
+
+\textbf{Active Networks?}  No:  A key challenge in active networks (the
+``capsule'', or code-carrying-packet view) was resource management in a
+global network.  Our scenario is simpler:  It lacks the hard realtime
+constraints of active networks, and the customers of an FaaS service are
+\emph{paying customers} to whom resource use can trivially be billed.
+
+\textbf{Java (etc.)-based OSes?}  No:  Our goal is not to provide
+extensibility of the OS (as in SPIN), or to allow unencumbered
+access to OS facilities (as in JANOS).  Indeed, we are quite happy
+imposing very tight constraints on the services and resources that
+can be accessed by by a Function, and the requirement for ``approximate
+statelessness'' that FaaS services impose makes this imposition tractable.
