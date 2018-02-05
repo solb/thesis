@@ -18,14 +18,14 @@ Language-based & .5 & 2000000 \\
 Our decision to use language-based isolation is based on two experimental
 results that we discuss below. First, process-level isolation is too slow for
 microsecond-scale remote functions. Second, high-precision timers on commodity
-CPUs allow premption at microsecond-scale. The experiments in this paper were
-conducted on an Intel Xeon E5-2683-v4 CPU (16 cores, 2.1~GHz), running
+CPUs allow premption at microsecond scale. The experiments in this paper were
+conducted on an Intel Xeon E5-2683 v4 CPU (16 cores, 2.1~GHz), running
 Linux 4.13.0.
 
 \subsection{Process-level isolation is too slow}
 We run the following experiment to evaluate the overhead of different isolation
-techniques. We use 15 \emph{worker} CPU cores to run microservices. A \emph{host}
-process that initiates microservice execution on the worker cores runs on the
+techniques. We use 15 \emph{worker} CPU cores to run microservices. A \emph{host
+process} that initiates microservice execution on the worker cores runs on the
 16th core. The host schedules up to 15 microservices at a time (i.e., one
 per worker core), choosing from a pool of 5000 microservices. It uses one of two
 methods to run microservices:
@@ -65,7 +65,7 @@ directly in worker processes. To prevent rogue functions from endlessly blocking
 other microservices, we must premept or terminate functions that run for too
 long (e.g., longer than 100\textmu{}s).  This
 preemption interval is orders of magnitude faster than typical operating
-system preemption intervals ($\approx$5~ms).
+system preemption intervals ($\approx$5ms).
 
 Fortunately, we found that high-precision event timers (HPETs) on modern CPUs
 are sufficient for this task. We measure the granularity and reliability of
