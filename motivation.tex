@@ -37,80 +37,45 @@ call. The host runs a microservice by waking up its process using IPC. We use
 UDP packets for IPC; other IPC methods perform similarly~XXXcite.
 \item \textbf{Language-based isolation:} Each worker core runs a single-threaded
 \emph{worker process} that is used to run different microservices, one at a time.
-The host schedules microservices on worker processes by sending them requests on
-a shared memory queue. Worker processes poll this queue to receive new requests.
+In this approach, a worker process runs a microservice by calling its registered
+function; we assume that the microservice function can be isolated from the
+worker process with language-based isolation techniques that we discuss in
+Section XXX. The host schedules microservices on worker processes by sending them
+requests on a shared memory queue. Worker processes poll this queue to receive
+new requests.
 \end{enumerate}
 
 Table~\ref{tab:isolation_methods} shows the latency and throughput achieved
-by the two methods. For latency, we measure the time between when the host
-process dispateches a microservice, to when the the service begins useful
-work on a worker core.
+by the two methods. For latency, we measure the median time between when the host
+process dispatches a request to a microservice, to when the the service begins
+useful work on a worker core. We find that the process-based isolation approach
+takes 10\textmu{}s and achieves only 200000 microservice invocations per
+second. In contrast, language-based isolation can achieves .1\textmu{}s and
+over 2 million invocations per second.
 
-Our first question was what isolation and execution mechanisms could support
-our aggressive goal of 10$\mu{}s$ remote function invocation latency, while
-having more microservices running than there are cores on a server.
-Because of the popularity of container-based approaches (which use processes
-plus some additional system call restrictions), we first measured the time
-to locally invoke a simple process via Unix IPC.  This result provides
-a lower bound on the invocation latency for a remote process over the network.
-\solb{This is a stronger claim than I was trying to make:\ I merely claimed it was a
-lower bound on the local invocation latency.  Throughout this section I've been
-assuming we're solely talking about local numbers, albeit motivated by the 20us
-network number that we're trying to stay *comfortably* below.}
-The results are shown in Figure~\ref{fig:motive}.
-
-The top (very slow) blue line shows the time to fork/exec a process upon receipt
-of a new function invocation.  At over 1 ms, this solution clearly does not
-suffice.  Next is the time required to dynamically load a library into a shared
-worker process.  This time is better, but is still an order of magnitude over
-our target.  The green line shows the time it takes to send a UDP packet
-\emph{locally} to an already-forked (but blocked) process.  The bottom
-line shows the latency of invoking a true function call as a preloaded dynamic
-library in a shared worker process.  From this, we observe that the
-``per-process'' model, wherein a cold start corresponds to forking a new
-process, and a warm start to unblocking it via I/O, has latencies that are
-generally outside of our target range.
-
-Because of this high latency, we eschew the process-per-microservice model.
-We instead propose
-collecting groups of microservices into shared \textbf{worker processes},
-each responsible for performing all the work assigned to a given CPU core.  We can
-ensure that these will always be running, so the cold start case now only requires
-loading user code into an existing process (a few tens of microseconds instead
-of milliseconds).  We do this by packaging user
-microservices as shared object files and using the dynamic linker/loader's
-\texttt{dlopen()} interface.  Because each worker owns its cores, they can spend any
-(rare) time between user tasks polling for the next job to arrive, so a warm start
-simply involves flipping a ready bit in memory shared between the two processes.
-Both cases appear in Figure~\ref{fig:motive} as the orange and red lines,
-respectively.  This time, the warm start is significantly faster than our objective
-at just a few hundred \textit{nanoseconds}, with the 99.9\% tail below 2
-$\mu{}s$.
-
-\begin{figure}
-\includegraphics[width=\columnwidth]{figs/2018-02-02-motivation_numfuns-latency-reordered}
-\caption{Median one-way invocation latencies for a microservice that does no work (note the log scale)}
-\label{fig:motive}
-\end{figure}
+A 10\textmu{}s delay in microservice invocation is a substantial fraction of our
+20\textmu{}s RPC latency; the fraction is likely to increase with
+improvements in network latency. We therefore conclude that process-based
+isolation is too slow for microsecond-scale scheduling. Furthermore, invocation
+throughput is also limited by IPC overhead.
 
 \subsection{Intra-process preemption is fast}
-The reader may be suspicious at the suggestion that we need to implement preemption,
-given that operating systems have provided this functionality as a core service for
-close to half a century.  However, we emphasize that our goals differ significantly
-from those of an operating system:  An OS kernel avoids frequent preemption due to
-the significant cost of rescheduling preempted work.  In contrast, the microservices
-in our model are unapologetically lightweight and short-lived, and our system can
-just kill any that time out.  Enforcing hard time limits is already an established
-attribute of serverless systems, with the three large providers already limiting
-microservices to minutes of runtime; we merely propose significantly reducing this
-time budget.
+With language-based isolation, we run user-provided microservice functions
+directly in worker processes. To prevent rogue functions from endlessly blocking
+other microservices, we must premept or terminate functions that run for too
+long. Assuming that we allow a microservice to run for 100\textmu{}s, we must
+preempt rogue functions that run for more than this time. Note that this
+preemption interval is orders of magnitude faster than typical operating
+system preemption intervals ($\approx$5~ms).
 
-Of course, the question remains of how the worker processes should implement
-preemption, and at what granularity it is feasible to do so.  Hypothesizing that it
-would be impossible to reliably preempt at finer granularity than a millisecond, we
-performed a benchmark to assess the limits of the POSIX \texttt{setitimer()}
-mechanism for repeatedly delivering \texttt{SIGALRM} signals separated by a custom
-time interval.  We were surprised to find that, thanks to the HPETs (high precision
-event timers) on modern CPUs, the signals were reliably delivered on time when we
-requested intervals as small as 3 $\mu{}s$, even with timers set on all 14 worker
-cores.
+Fortunately, we found that high-precision event timers (HPETs) on modern CPUs
+are sufficient for this task. We measure the granularity and reliability of
+these timers as follows: We run one thread that installs a timer that fires
+periodically at configurable intervals of $T$\textmu{}s. We install a signal
+handler that is called on each timer interrupt. Ideally, the signal handler
+would be called for the $i^{th}$ time at $T + i$\textmu{}s; we measure the
+average difference over 100 iterations between $T + i$ and the actual time
+when the signal handler runs for the $i^{th}$ time. We find that the variance
+is smaller than XXX\textmu{}s for $T > Y$\textmu{}s. This shows that
+intra-process premeption is fast and reliable enough for our needs.
+
