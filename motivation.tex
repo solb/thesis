@@ -4,11 +4,12 @@
 \begin{table}
 \begin{center}
 \small
-\begin{tabular}{lll}
-\textbf{Isolation method} & \textbf{Latency} & \textbf{Throughput} \\
+\begin{tabular}{lcr}
+   & \textbf{Latency} & \textbf{Throughput} \\
+  \textbf{Isolation method} & \textbf{(µ)} & \textbf{(invocations/sec)} \\
 \midrule
-Process-based & 5 & 200000 \\
-Language-based & .5 & 2000000 \\
+Process-based & 5 & 200,000 \\
+Language-based & 0.5 & 2,000,000 \\
 \end{tabular}
 \caption{Performance of isolation methods}
 \label{tab:isolation_methods}
@@ -49,18 +50,18 @@ new requests.
 
 Table~\ref{tab:isolation_methods} shows the latency and throughput achieved
 by the two methods. For latency, we measure the median time between when the host
-process dispatches a request to a microservice, to when the the service begins
+process dispatches a request to a microservice and when the service begins
 useful work on a worker core. We find that the process-based isolation approach
-takes 10\textmu{}s and achieves only 200000 microservice invocations per
+takes 10\textmu{}s and achieves only 200,000 microservice invocations per
 second. In contrast, language-based isolation can achieves 0.1\textmu{}s and
 over 2 million invocations per second.
 
 \solb{Update these numbers and the table.}
 
 A 10\textmu{}s delay in microservice invocation is a substantial fraction of our
-20\textmu{}s RPC latency; the fraction is likely to increase with
+20\textmu{}s RPC latency; \mk{What is ``our''?} the fraction is likely to increase with
 improvements in network latency. We therefore conclude that process-based
-isolation is too slow for microsecond-scale scheduling. Furthermore, invocation
+isolation is too slow for microsecond-scale scheduling; furthermore, invocation
 throughput is also limited by IPC overhead.
 
 \subsection{Intra-process preemption is fast}
@@ -70,6 +71,7 @@ other microservices, we must premept or terminate functions that run for too
 long (e.g., longer than 100\textmu{}s).  This
 preemption interval is orders of magnitude faster than typical operating
 system preemption intervals ($\approx$5ms).
+\mk{Can we add a citation here?}
 
 Fortunately, we found that high-precision event timers (HPETs) on modern CPUs
 are sufficient for this task. We measure the granularity and reliability of
@@ -82,3 +84,4 @@ when the signal handler runs for the $i^{th}$ time. We find that the variance
 is smaller than XXX\textmu{}s for $T > Y$\textmu{}s. This shows that
 intra-process premeption is fast and reliable enough for our needs.
 \solb{Update with actual numbers.}
+\mk{This is a bit confusing.}
