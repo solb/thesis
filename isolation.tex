@@ -1,14 +1,14 @@
 \section{Isolation}
 \label{sec:isolation}
 
-\solb{Dave's topic: ``Language-based isolation with defense in depth''}
-\solb{NB: All seccomp() stuff is currently in Future work.  Not that it can't be
-moved...}
 
 Of course, consolidating multiple users' jobs into a single process requires
-addressing the accompanying security challenges, and doing so in a way that
+addressing the accompanying security challenges (isolation---in the sense of
+confidentiality/integrity as well as resource limits), and doing so in a way that
 does not compromise our ambitious performance goals.
-Fortunately, we can learn from two recently-published systems whose own demanding
+
+Our guiding philosophy for doing so is ``Language-based isolation with defense in depth.''
+We draw inspiration from two recently-published systems whose own demanding
 performance requirements drove them to perform similar coalescing of traditionally
 independent components:  NetBricks~\cite{Panda2016} is a network functions runtime
 for providing programmable network capabilities; it is unique among this class of
@@ -36,17 +36,18 @@ the isolation we need:  It's difficult for microservices to crash the worker pro
 since most segmentation faults are prevented, and runtime errors such as integer
 overflow generate Rust panics that we can catch.  Microservices can't get references
 to data that doesn't belong to them thanks to the variable and pointer initialization
-rules.  However, given our performance goals, there is a significant aspect of the
+rules.  
+However, given our performance goals, there is a significant aspect of the
 required isolation that Rust doesn't provide:\ there is nothing to stop users from
-monopolizing the CPU.  While it is true that other modern systems languages such as
-Go~\cite{www-golang} and Erlang~\cite{www-erlang} include so-called ``green
-threading'' (support for sharing a kernel thread among multiple tasks), this
-multitasking is implemented cooperatively, so a task in a tight loop will never
-yield.  To prevent this kind of behavior, our system needs to be preemptive.
+monopolizing the CPU.  Our system, in contrast, must be preemptive.\footnote{It is surprisingly hard to find lightweight
+  threads that can be killed easily.  For example, 
+Go~\cite{www-golang} and Erlang~\cite{www-erlang}'s lightweight threads
+share a kernel thread among multiple tasks, but use cooperatative multitasking
+between tasks on a thread;  there is no way to involuntarily terminate a task
+from outside the task.}  We discuss our solution to this in the following
+section.
 
-\solb{Latter part of that paragraph -> end of this section}
-
-Users submit their microservices in the form of Rust source code, allowing the
+Users thus submit their microservices in the form of Rust source code, allowing the
 serverless operator to pass the \texttt{-Funsafe-code} flag while compiling to reject
 any \texttt{unsafe} code.  This process doesn't need to be performed on the compute
 nodes so long as the deployment server tasked with compilation runs the same version
