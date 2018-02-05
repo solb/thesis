@@ -51,7 +51,11 @@ around for several minutes after running a function, but doing so increases
 costs.  Finally, of course, existing services already have latencies in the
 millisecond range, as their requests traverse conventional OS stacks, go through
 containers, etc.
+\mk{Don't like the etc.}
 
+\mk{The transition to this paragraph isn't clear.  Is the idea that we just said
+low latency is important, but so is low tail latency?  The topic sentence should
+probably say that then.}
 Many modern distributed systems (e.g., those that handle search indexing or
 assembling multi-component views for website front pages) involve
 high-fanout communication, sometimes performing tens or thousands of
@@ -72,9 +76,13 @@ We further hypothesize---admittedly without much proof for this chicken-and-egg
 scenario---that substantially reducing both the latency and cost of running
 infrequently-used services will enable new classes and scales of applications
 for cloud functions, and in the remainder of this paper, present a design that
-achieves this.  As Lampson noted, there's power in making systems 
+achieves this.  As Lampson noted, there is power in making systems 
 ``fast rather than general or powerful''~\cite{Lampson1983}, because fast
 building blocks can be used more widely.
+
+\mk{Intro ends abuptly with an indication of what we are trying to do in this
+paper: propose a new idea, a better design, preliminary results, etc.  The
+previous text is mostly about the problem; do we have a solution/idea?}
 
 \subsection{Not yet rewritten}
 
@@ -84,3 +92,4 @@ cap instance execution time to 5--10 minutes.
 \solb{AK: I see you touched this recently.  Do you still want to see us say it (and
 where)?  I currently mention penultimate section of Motivation and related work that
 providers presently impose a limit, without actually saying what it is.}
+\mk{This subsection seems out of place.}
