@@ -25,6 +25,8 @@ Linux 4.13.0.
 \subsection{Process-level isolation is too slow}
 We run the following experiment to evaluate the overhead of different isolation
 techniques. We use 15 \emph{worker} CPU cores to run microservices. A \emph{host
+\solb{The term dispatch process is pervasive right now; I need to run through and
+change them all.}
 process} that initiates microservice execution on the worker cores runs on the
 16th core. The host schedules up to 15 microservices at a time (i.e., one
 per worker core), choosing from a pool of 5000 microservices. It uses one of two
@@ -53,6 +55,8 @@ takes 10\textmu{}s and achieves only 200000 microservice invocations per
 second. In contrast, language-based isolation can achieves 0.1\textmu{}s and
 over 2 million invocations per second.
 
+\solb{Update these numbers and the table.}
+
 A 10\textmu{}s delay in microservice invocation is a substantial fraction of our
 20\textmu{}s RPC latency; the fraction is likely to increase with
 improvements in network latency. We therefore conclude that process-based
@@ -77,4 +81,4 @@ average difference over 100 iterations between $T + i$ and the actual time
 when the signal handler runs for the $i^{th}$ time. We find that the variance
 is smaller than XXX\textmu{}s for $T > Y$\textmu{}s. This shows that
 intra-process premeption is fast and reliable enough for our needs.
-
+\solb{Update with actual numbers.}
