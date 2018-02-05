@@ -32,14 +32,15 @@ the equivalent of C's \texttt{const}), and data races, among other
 misbehaviors~\cite{www-rustlang-ub}.
 
 We require each microservice to be written in Rust, which gives us many aspects of
-the isolation we need:  It's difficult for microservices to crash the worker process,
+the isolation we need:  It is difficult for microservices to crash the worker process,
 since most segmentation faults are prevented, and runtime errors such as integer
-overflow generate Rust panics that we can catch.  Microservices can't get references
-to data that doesn't belong to them thanks to the variable and pointer initialization
+overflow generate Rust panics that we can catch.  Microservices cannot get references
+to data that does not belong to them thanks to the variable and pointer initialization
 rules.  
-However, given our performance goals, there is a significant aspect of the
-required isolation that Rust doesn't provide:\ there is nothing to stop users from
-monopolizing the CPU.  Our system, in contrast, must be preemptive.\footnote{It is surprisingly hard to find lightweight
+Given our performance goals, there is a significant aspect of the
+required isolation that Rust does not provide: there is nothing to stop users from
+monopolizing the CPU\@.
+Our system, however, must be preemptive.\footnote{It is surprisingly hard to find lightweight
   threads that can be killed easily.  For example, 
 Go~\cite{www-golang} and Erlang~\cite{www-erlang}'s lightweight threads
 share a kernel thread among multiple tasks, but use cooperatative multitasking
@@ -49,15 +50,16 @@ section.
 
 Users thus submit their microservices in the form of Rust source code, allowing the
 serverless operator to pass the \texttt{-Funsafe-code} flag while compiling to reject
-any \texttt{unsafe} code.  This process doesn't need to be performed on the compute
-nodes so long as the deployment server tasked with compilation runs the same version
-of the Rust compiler\footnote{This restriction exists because, as of the latest
-release (1.23.0) of the compiler, Rust doesn't have a stable ABI.}.  The operator
+any \texttt{unsafe} code.  This process does not need to happen on the compute
+nodes, provided that the deployment server tasked with compilation runs the same version
+of the Rust compiler.\footnote{This restriction exists because, as of the latest
+release (1.23.0) of the compiler, Rust does not have a stable ABI.}  The operator
 needs to trust the compiler, standard library, and any libraries against which it
 will permit the microservice to link, but importantly need not worry about the
 microservice itself.  We believe that most users would find it acceptable to be
-presented with a list of permissible dependencies.  Any libraries that make no use of
-\texttt{unsafe} code can be whitelisted without review, and to approximate how big
+presented with a list of permissible dependencies.\mk{Not sure if we should keep this sentence; it's probably reasonable,
+but might be seen as a bit of conjecture.}  Libraries that do not use
+\texttt{unsafe} code can be whitelisted without review.  To approximate how big
 such a list would be given the current Rust ecosystem, we turn to a 2017
 study~\cite{www-cratesio-unsafe} by the Tock authors that found just under half of
 the Rust package manager's top 1000 most-downloaded libraries to be free of
@@ -65,12 +67,13 @@ the Rust package manager's top 1000 most-downloaded libraries to be free of
 dependencies, but we suspect that reviewing a relatively small number of popular
 libraries would open up the majority of the most popular packages.
 
-After a microservice is compiled to a shared object file, it should be distributed to
+Once the microservice is compiled to a shared object file, it is distributed to
 each compute node on which it might run.  Then, in order to ensure that invokers will
 experience the warm-start latencies discussed in Section~\ref{sec:motive}, those
 nodes' dispatchers should instruct one or more of their workers to preload the
-dynamic library.  In the event that the provider experiences too many active
+dynamic library.  If the provider experiences too many active
 microservices for its available resources, it can unload some libraries; on their
 next invocation, they will experience invocation latency greater than the network
 latency, but comparable to the \textit{warm-start} latencies of today's serverless
 systems.
+\mk{Need to fix dispatcher/provider terminology}
