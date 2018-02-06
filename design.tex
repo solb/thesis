@@ -27,16 +27,18 @@ of this problem are (1) regaining control of the CPU and (2) aborting and cleani
 after the user code.
 
 As proposed in Section~\ref{sec:motive}, regaining control of the CPU happens when a
-\texttt{SIGALRM} from the kernel transfers control to the worker process's signal
+signal (\texttt{SIGALRM}) from the kernel transfers control to the worker process's
 handler.  The handler then checks how long the current microservice has been running
-and decides whether it should be killed.  (The handler is registered using the
+and decides whether it should be killed.  (We register the handler using the
 \texttt{SA\_RESTART} flag to \texttt{sigaction()} so that any interrupted blocking
-syscalls are restarted transparently.)
+syscalls are restarted transparently.)  However, there remain three important
+questions:
 
 \paragraph{For how long should each microservice be allowed to run?}
 %Consider a well-utilized but not overloaded compute node in which a user task
 %is executing on each available core, but there is no backlog behind which an incoming task must wait.
-Assume that each core executes one user task at a time and that all microservice
+Assume, as in Section~\ref{sec:motive}, that each core executes one user task at a
+time and that all microservice
 functions are pre-compiled and resident (warm invocation).
 %The impact of microservice runtime on tail latency in 
 %(This being preliminary work, any discussion of the cluster-level
@@ -44,8 +46,8 @@ functions are pre-compiled and resident (warm invocation).
 %this paper.)
 %Furthermore, we'll assume an incoming microservice that is warm on each
 %worker thread.
-We define $L$ to be the desired latency, $B$ to be the
-compute budget allotted to each microservice, and $r_c$ to be the remaining runtime
+We define $L$ to be the desired invocation latency, $B$ to be the
+runtime budget allotted to each microservice, and $r_c$ to be the remaining runtime
 of the microservice on CPU $c$.  Thus, in the worst case (where all tasks are
 executing for their entire allotted time) the probability that the incoming
 microservice will have somewhere to run in time to meet the invocation
@@ -56,9 +58,6 @@ p(r_\textrm{min} \le L) = \sum\limits_{c \in C} p(r_c \le L) = \big| C \big| \fr
 Given the 14 cores in our setup and imagining we want to keep the 99\% tail,
 $p(r_\textrm{min} \le L) = 0.99$, to an $L$ of 8~$\mu{}s$, we need to kill tasks
 running for more than 113~$\mu{}s$.
-\mk{Sec 2 says 16 cores (15 workers)}
-\mk{I'm a bit confused about the terminology of latency, runtime, and maybe invocation latency?}
-\mk{Check these numbers with sec2}
 
 \paragraph{How often should the handler execute (the \emph{quantum})?}
 We showed at the end of Section~\ref{sec:motive} that this is easily
