@@ -88,12 +88,10 @@ magnitude faster than Linux's default 4ms time quantum.
 
 Fortunately, we found that high-precision event timers (HPETs) on modern CPUs
 are sufficient for this task. We measure the granularity and reliability of
-these timers as follows: We run one thread that installs a timer that fires
-periodically at configurable intervals of $T$\textmu{}s. We install a signal
-handler that is called on each timer interrupt. Ideally, the signal handler
-would be called for the $i^{th}$ time at $T + i$\textmu{}s; we measure the
-average difference over 100 iterations between $T + i$ and the actual time
-when the signal handler runs for the $i^{th}$ time. We find that the variance
-is smaller than 0.3\textmu{}s for $T > Y$\textmu{}s. This shows that
-intra-process premeption is fast and reliable enough for our needs.
-\mk{This is a bit confusing.}
+these timers as follows: We run one thread that requests a periodic timer with a
+configurable interval of $T$\textmu{}s and installs an associated signal handler.
+Ideally, this handler would always be called exactly $T$\textmu{}s after its last
+invocation; we measure the deviation from $T$ over 256 iterations.
+We find that the variance
+is smaller than 0.3\textmu{}s for $T \ge 3$\textmu{}s. This shows that
+intra-process preemption is fast and reliable enough for our needs.
