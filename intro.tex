@@ -43,6 +43,8 @@ services.  In fact, acting as an access-control proxy is a recurring microservic
 pattern:\ receive an API request from a user, validate it, then access
 a backend storage service (e.g., S3) using the service's credentials.
 
+\solb{This is probably the most we ever focus on cold starts...  Maybe we should
+reduce it?}
 In this paper, we explore a design intended to reduce the tension between two of
 the desiderata for cloud functions:\ low latency invocation and low cost.  In
 today's practice, cloud functions execute within a heavyweight container, and
