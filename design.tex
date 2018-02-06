@@ -1,34 +1,26 @@
-\section{Design}
-\label{sec:design}
+\section{Providing Preemption}
+\label{sec:preemption}
 
-\solb{I was thinking of basing the conclusion off this; maybe it should just
-\textit{be} there?}
-
-In order to permit applications to \textit{fully leverage the 10s of $\mu{}s$
-latencies available from the latest datacenter networks}, we propose a novel design
-for serverless platforms that runs user-submitted microservices within shared
-processes.  This structure is possible thanks to our combined use of
-\textit{compile-time memory safety guarantees} and \textit{extremely fine-grained
-preemption}.  To the best of our knowledge, we are the first system to combine these
-two building blocks to create a system that is able to deliver single-digit
-invocation latency for lightweight, short-lived tasks.
-
-\solb{Is it weird to have the following paragraph after we discuss isolation and
-preemption?  I can't think of where else it would go.}
-
-Our system comprises (1) a central dispatch process that manages the compute node,
-receiving requests and assigning them to (2) a number of worker processes (one per
-dedicated compute core) via a shared memory region.  Each worker process runs a
-tight loop that polls on a ready bit in shared memory; once it finds work to be done,
-it sets itself up to catch any runtime panic and jumps into user code.  The worker
-process receives frequent \texttt{SIGALRM}s to ensure it never loses control of its
-CPU:\ in the associated handler, it checks how for long the current job has been
-running and ends any that has gone over budget.  The rest of this section covers the
-trust model and the preemption scheme.
+% \solb{I was thinking of basing the conclusion off this; maybe it should just
+% \textit{be} there?}
+% 
+% \solb{Is it weird to have the following paragraph after we discuss isolation and
+% preemption?  I can't think of where else it would go.}
+% 
+% Our system comprises (1) a central dispatch process that manages the compute node,
+% receiving requests and assigning them to (2) a number of worker processes (one per
+% dedicated compute core) via a shared memory region.  Each worker process runs a
+% tight loop that polls on a ready bit in shared memory; once it finds work to be done,
+% it sets itself up to catch any runtime panic and jumps into user code.  The worker
+% process receives frequent \texttt{SIGALRM}s to ensure it never loses control of its
+% CPU:\ in the associated handler, it checks how for long the current job has been
+% running and ends any that has gone over budget.  The rest of this section covers the
+% trust model and the preemption scheme.
 
 % <snip>
 
-\paragraph{Preemption scheme}
+%\paragraph{Preemption scheme}
+
 The system must be able to detect and recover from microservices that, whether
 maliciously or negligently, attempt to run for longer than permitted.  The two parts
 of this problem are (1) regaining control of the CPU and (2) aborting and cleaning up
@@ -39,16 +31,17 @@ As proposed in Section~\ref{sec:motive}, regaining control of the CPU happens wh
 handler.  The handler then checks how long the current microservice has been running
 and decides whether it should be killed.  (The handler is registered using the
 \texttt{SA\_RESTART} flag to \texttt{sigaction()} so that any interrupted blocking
-syscalls are transparently restarted.)  The remaining questions are:  ``For how
-long should each microservice be allowed to run?'' and ``How often should the handler
-execute (the \textbf{quantum})?''
+syscalls are restarted transparently.)
 
+\textbf{For how long should each microservice be allowed to run?}
 Let us consider the impact of microservice runtime on tail latency in a well-utilized
 but not overloaded compute node, which we'll consider to be one where there is a user
 task executing on each available core, but no backlog behind which an incoming task
-must wait.  (This being preliminary work, any discussion of the cluster-level
-scheduling responsible for these theoretical conditions are outside the scope of
-this paper.)  Furthermore, we'll assume an incoming microservice that is warm on each
+must wait.
+%(This being preliminary work, any discussion of the cluster-level
+%scheduling responsible for these theoretical conditions are outside the scope of
+%this paper.)
+Furthermore, we'll assume an incoming microservice that is warm on each
 worker thread.  We define $L$ to be the desired invocation latency, $B$ to be the
 compute budget allotted to each microservice, and $r_c$ to be the remaining runtime
 of the microservice on CPU $c$.  Thus, in the worst case (where all tasks are
@@ -61,6 +54,8 @@ Given the 14 cores in our setup and imagining we want to keep the 99\% tail
 ($p(r_\textrm{min} \le L) = 0.99$) to an $L$ of 8 $\mu{}s$, we need to kill tasks
 running for more than 113 $\mu{}s$.
 
+
+\textbf{How often should the handler execute (the \emph{quantum})?}
 We showed at the end of Section~\ref{sec:motive} that this is easily
 \textit{achievable}, but can it be done \textit{efficiently}?  To find out, we wrote
 a microservice that measures the throughput of computing SHA-512 hashes over 64 B of
@@ -78,6 +73,7 @@ latency.
 \label{fig:hashtput}
 \end{figure}
 
+\textbf{How do we clean up a terminated microservice?}
 The problem of regaining control addressed, we now discuss the mechanism for aborting
 and cleanup.  POSIX signal handlers receive as one of their arguments a pointer to a
 \texttt{ucontext\_t} structure containing a snapshot of the process's PCB (process

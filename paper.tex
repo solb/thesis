@@ -9,7 +9,7 @@
 \newcommand{\CONFERENCE}{USENIX ATC '18}
 \newcommand{\PAGENUMBERS}{yes}       % "yes" or "no"
 \newcommand{\COLOR}{yes}
-\newcommand{\showComments}{yes}
+\newcommand{\showComments}{no}
 \newcommand{\comment}[1]{}
 \newcommand{\onlyAbstract}{no}
 
@@ -25,8 +25,8 @@
 \usepackage{newtxtext,newtxmath}       % Times/Times-like math symbols
 \usepackage{bm}                        % bold math; use \bm{} in captions
 \usepackage[scaled=0.92]{helvet}
-\usepackage{courier}
-%\usepackage[scaled=0.83]{beramono}    % more compact, good for code
+%\usepackage{courier}
+\usepackage[scaled=0.83]{beramono}    % more compact, good for code
 %\usepackage{inconsolata}              % another nice alternative to courier
 
 
@@ -39,7 +39,7 @@
 
 \usepackage{ifthen}
 \ifthenelse{\equal{\PAGENUMBERS}{yes}}{%
-\usepackage[nohead,
+\usepackage[letterpaper,
             left=1in,right=1in,top=1in,
             footskip=0.5in,bottom=1in,     % Room for page numbers
             columnsep=0.25in
@@ -59,14 +59,15 @@
 %%  is below figure)
 %\usepackage[font=bf,aboveskip=0pt]{caption} % SPACE
 %%  Space between caption and body text of document
-%\addtolength{\textfloatsep}{-7pt} % SPACE
+\addtolength{\textfloatsep}{-7pt} % SPACE
 
 %%%
 %%%  Section headings
 %%%
-\usepackage{titlesec}
-%\titlespacing{\paragraph}{0pt}{*1}{*1}      % SPACE
-%\usepackage[compact]{titlesec}              % SPACE
+%\usepackage{titlesec}
+\usepackage[compact]{titlesec}              % SPACE
+\titlespacing{\paragraph}{0pt}{*1}{*1}      % SPACE
+\titlespacing*{\section}{0pt}{2.5ex plus 1ex minus .2ex}{1.3ex plus .2ex}
 
 %\titleformat{\section}%                     % ACM: caps + period (for 10pt doc)
 %  {\bf\large\uppercase}{\thesection.\quad}{0pt}{}
@@ -257,7 +258,7 @@ Copyright 200X ACM X-XXXXX-XX-X/XX/XX ...\$5.00}
 \input{motivation}
 \input{isolation}
 \input{design}
-\input{eval}
+%\input{eval}
 \input{future}
 \input{concl}
 

@@ -8,7 +8,7 @@ to a compiler bug or the operator allowing use of a buggy or malicious library) 
 contained.  We endeavor to catalog many of these here, along with proposed solutions
 that we intend to implement going forward.
 
-\paragraph{Non-reentrancy}
+\paragraph{Non-reentrancy.}
 Most importantly, the described preemption approach using Rust panics to unwind the
 stack doesn't yet reliably leave the worker process in a usable state because it
 can corrupt the internal state of certain functions if it happens to interrupt them;
@@ -19,7 +19,7 @@ allocator with a custom one that manages a separate heap for each microservice. 
 latter approach would also open the possiblity of one-shot memory deallocation by
 simply ``deallocating'' an entire heap.
 
-\paragraph{Dispatch process}
+\paragraph{Dispatch process.}
 We believe it would be unwise to run the system in production without isolating the
 dispatch process from interference or corruption by a misbehaving worker.  In
 practice, this should include at least:\ running the workers in separate,
@@ -31,7 +31,7 @@ detect a worker that has somehow crashed; and keeping a recovery log in the disp
 process so that any user jobs lost to a problem dispatch process can be reassigned to
 operational workers.
 
-\paragraph{System calls}
+\paragraph{System calls.}
 Of the Linux system calls, there are many that a microservice simply has no business
 executing.  A few examples:  A call to \texttt{setitimer()}, \texttt{signal()},
 \texttt{sigaction()}, \texttt{sigprocmask}, or a similar entry point could be used to
@@ -49,7 +49,7 @@ itself down during initialization, restricting the accessible syscalls to a
 whitelisted set.  The process should handle \texttt{SIGSYS} and tear down the running
 microservice if it is ever received.
 
-\paragraph{Library functions}
+\paragraph{Library functions.}
 It may be desirable to further restrict the worker process's actions by blocking
 certain libc functions.  This could be accomplished either by using the dynamic
 linker to interpose stub implementations, or by linking against a custom build of the
@@ -59,7 +59,7 @@ and preventing control from returning to the worker loop loop, although this cou
 accomplished using static analysis or even a simple search when we compiled submitted
 code.
 
-\paragraph{Resource leaks}
+\paragraph{Resource leaks.}
 For all the memory safety it provides, there are properties that Rust does not
 guarantee of safe code~\cite{www-rustlang-nu}; one example is that destructor
 invocation is not guaranteed, not least because of the language's choice of reference
@@ -75,7 +75,7 @@ expensive, they could be run only after so many tasks had run or the system load
 sufficiently low, and/or the system could track which microservices were (likely)
 responsible for resource leaks and impose warnings or bans.
 
-\paragraph{Side channels}
+\paragraph{Side channels.}
 As this year's Meltdown~\cite{Lipp2018} and Spectre~\cite{Kocher2018} CPU
 vulnerabilities reminded our community, the peril of timing attacks and other
 sidechannels can lurk at any abstraction layer and deserves careful consideration.
@@ -95,7 +95,7 @@ shortcoming is not limited to this project, but that many such severe attacks wi
 discovered in existing systems, both in the months to come and after the introduction
 of much-needed tooling to support the looming pervasive vulnerability search.
 
-\paragraph{Potpourri}
+\paragraph{Potpourri.}
 The reader may be disheartened by the number of attack vectors we've considered, or
 even that we've failed to consider.  However, there is a small piece of good news:\
 because that the worker processes should be well-isolated from the rest of the
