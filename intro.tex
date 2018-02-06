@@ -43,24 +43,20 @@ services.  In fact, acting as an access-control proxy is a recurring microservic
 pattern:\ receive an API request from a user, validate it, then access
 a backend storage service (e.g., S3) using the service's credentials.
 
-\solb{This is probably the most we ever focus on cold starts...  Maybe we should
-reduce it?}
 In this paper, we explore a design intended to reduce the tension between two of
-the desiderata for cloud functions:\ low latency invocation and low cost.  In
-today's practice, cloud functions execute within a heavyweight container, and
-``cold start'' latencies range from hundreds of milliseconds to seconds.  (A
-cold start occurs when the service has not received any requests for several
-minutes.)  To reduce cold starts, FaaS providers typically keep containers
-around for several minutes after running a function, but doing so increases
-costs.  Existing services have latencies in the millisecond range, as their requests
-traverse conventional OS stacks, go through containers, etc.
-\mk{Don't like the etc.}
+the desiderata for cloud functions:\ low latency invocation and low cost.  We first
+emphasize that serverless platforms' invocation latencies are bimodal, with the cusps
+corresponding to warm and cold starts.  The latter occur when the cloud provider has
+discarded a microservice's container after several minutes of inactivity, and
+currently range from hundreds of milliseconds to seconds.  Although our approach can
+reduce these warm start times by at least an order of magnitude, we focus our
+argument on warm starts because we expect to be able to keep many more of our lighter
+microservices warm.
 
-\mk{The transition to this paragraph isn't clear.  Is the idea that we just said
-low latency is important, but so is low tail latency?  The topic sentence should
-probably say that then.}
-Many modern distributed systems (e.g., those that handle search indexing or
-assembling multi-component views for website front pages) involve
+Even in the case of warm starts, we find that traditional invocation techniques
+exhibit a significant latency tail.  Unfortunately, such a latency profile is
+unsuitable for many modern distributed systems (e.g., those that handle search
+indexing or assembling multi-component views for website front pages), which involve
 high-fanout communication, sometimes performing tens or thousands of
 lookups to handle each user request.  Because their user-visible response time often
 depends on the tail latency of the slowest chain of dependent
@@ -68,8 +64,9 @@ responses~\cite{Dean:cacm2013}, much recent work seeks to reduce
 such systems' response
 times~\cite{Jalaparti:sigcomm2013,Xu:nsdi2013,Li:socc2014,Jeon:asplos2016}.
 
-This goal is supported by the impressively low network latencies available in
-modern datacenters.  For example, it
+Thus we seek to reduce both the invocation latency and its predictability, a
+goal supported by the impressively low network latencies available in
+modern datacenters. It
 now takes $<20\mu{}s$ to perform an RPC between two machines in Microsoft's Azure
 cloud~\cite{www-firestone-azure-latency}.  We believe, however, that fully leveraging
 this improving network performance will require reducing microservices' invocation
@@ -82,10 +79,6 @@ for cloud functions, and in the remainder of this paper, present a design that
 achieves this.  As Lampson noted, there is power in making systems 
 ``fast rather than general or powerful''~\cite{Lampson1983}, because fast
 building blocks can be used more widely.
-
-\mk{Intro ends abuptly with an indication of what we are trying to do in this
-paper: propose a new idea, a better design, preliminary results, etc.  The
-previous text is mostly about the problem; do we have a solution/idea?}
 
 In this paper, we propose a restructuring of the serverless model centered around
 low-latency: \textit{lightweight microservices} run in \textit{shared processes}
