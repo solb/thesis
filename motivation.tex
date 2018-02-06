@@ -40,13 +40,22 @@ call. The host runs a microservice by waking up its process using IPC. We use
 UDP datagrams for IPC; other IPC methods perform similarly~XXXcite.
 \item \textbf{Language-based isolation:} Each worker core runs a single-threaded
 \emph{worker process} that is used to run different microservices, one at a time.
-In this approach, a worker process runs a microservice by calling its registered
+In this approach, shown in Figure~\ref{fig:sysdesign}, a worker process runs a
+microservice by calling its registered
 function; we assume that the microservice function can be isolated from the
 worker process with language-based isolation techniques that we discuss in
 Section XXX. The host schedules microservices on worker processes by sending them
 requests on a shared memory queue. Worker processes poll this queue to receive
 new requests.
 \end{enumerate}
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/system}
+\caption{Design of the language-based isolation approach.  The host process forwards
+requests over a shared-memory queue to a number of worker processes, each of which
+runs one user-supplied microservice at a time.}
+\label{fig:sysdesign}
+\end{figure}
 
 Table~\ref{tab:isolation_methods} shows the latency and throughput achieved
 by the two methods. For latency, we measure the time between when the host
