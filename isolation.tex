@@ -17,6 +17,8 @@ more traditional process model) a type of lightweight application known as a cap
 that is embedded within the kernel and communicates with it using simple function
 calls.  As their primary line of defense against untrusted code, both systems
 leverage Rust~\cite{www-rustlang}, a new type-safe systems programming language.
+(The defense in depth should come from operating system--level protections discussed
+in Section~\ref{sec:future}.)
 
 Rust is a strongly-typed, compiled language that reprises C's abstention from a
 heavyweight runtime.  Unlike many other modern systems languages, Rust is an
