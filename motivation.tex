@@ -42,7 +42,8 @@ In this approach, shown in Figure~\ref{fig:sysdesign}, a worker process runs a
 microservice by calling its registered
 function; we assume that the microservice function can be isolated from the
 worker process with language-based isolation techniques that we discuss in
-Section XXX. The host schedules microservices on worker processes by sending them
+Section~\ref{sec:isolation}. The host schedules microservices on worker processes by
+sending them
 requests on a shared memory queue. Worker processes poll this queue to receive
 new requests.
 \end{enumerate}
