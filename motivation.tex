@@ -34,8 +34,12 @@ methods to run microservices:
 \begin{enumerate}
 \item \textbf{Process-based isolation:} Each microservice is a separate process.
 At any time, most microservice processes are blocked on an IPC
-call. The host runs a microservice by waking up its process using IPC. We use
-UDP datagrams for IPC; other IPC methods perform similarly~XXXcite.
+call. The host runs a microservice by waking up its process using a UDP datagram.
+\solb{We were going to say that other IPC methods perform similarly; however, it
+looks like sources suggest they can be a couple of microseconds faster.  I expect
+the tail and throughput will still be bad; do you think we should (a) benchmark w/
+Unix domain sockets [should be doable within an hour or so], (b) state this
+hypothesis, or (c) not bring up other mechanisms?}
 \item \textbf{Language-based isolation:} Each worker core runs a single-threaded
 \emph{worker process} that is used to run different microservices, one at a time.
 In this approach, shown in Figure~\ref{fig:sysdesign}, a worker process runs a
