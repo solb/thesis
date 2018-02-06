@@ -49,7 +49,10 @@ emphasize that serverless platforms' invocation latencies are bimodal, with the 
 corresponding to warm and cold starts.  The latter occur when the cloud provider has
 discarded a microservice's container after several minutes of inactivity, and
 currently range from hundreds of milliseconds to seconds.  Although our approach can
-reduce these warm start times by at least an order of magnitude, we focus our
+reduce these warm start times by at least an order of magnitude, \solb{We don't
+currently elaborate on this, having streamlined the next section to focus on warm
+starts.  Is it a claim we want to include at all?  Should I add a brief paragraph in
+it in the motivation?} we focus our
 argument on warm starts because we expect to be able to keep many more of our lighter
 microservices warm.
 

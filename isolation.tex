@@ -69,10 +69,9 @@ libraries would open up the majority of the most popular packages.
 Once the microservice is compiled to a shared object file, it is distributed to
 each compute node on which it might run.  Then, in order to ensure that invokers will
 experience the warm-start latencies discussed in Section~\ref{sec:motive}, those
-nodes' dispatchers should instruct one or more of their workers to preload the
+nodes' host processes should instruct one or more of their workers to preload the
 dynamic library.  If the provider experiences too many active
 microservices for its available resources, it can unload some libraries; on their
 next invocation, they will experience invocation latency greater than the network
 latency, but comparable to the \textit{warm-start} latencies of today's serverless
 systems.
-\mk{Need to fix dispatcher/provider terminology}
