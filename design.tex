@@ -33,29 +33,34 @@ and decides whether it should be killed.  (The handler is registered using the
 \texttt{SA\_RESTART} flag to \texttt{sigaction()} so that any interrupted blocking
 syscalls are restarted transparently.)
 
-\textbf{For how long should each microservice be allowed to run?}
-Let us consider the impact of microservice runtime on tail latency in a well-utilized
-but not overloaded compute node, which we'll consider to be one where there is a user
-task executing on each available core, but no backlog behind which an incoming task
-must wait.
+\paragraph{For how long should each microservice be allowed to run?}
+%Consider a well-utilized but not overloaded compute node in which a user task
+%is executing on each available core, but there is no backlog behind which an incoming task must wait.
+Assume that each core executes one user task at a time and that all microservice
+functions are pre-compiled and resident (warm invocation).
+%The impact of microservice runtime on tail latency in 
 %(This being preliminary work, any discussion of the cluster-level
 %scheduling responsible for these theoretical conditions are outside the scope of
 %this paper.)
-Furthermore, we'll assume an incoming microservice that is warm on each
-worker thread.  We define $L$ to be the desired invocation latency, $B$ to be the
+%Furthermore, we'll assume an incoming microservice that is warm on each
+%worker thread.
+We define $L$ to be the desired latency, $B$ to be the
 compute budget allotted to each microservice, and $r_c$ to be the remaining runtime
 of the microservice on CPU $c$.  Thus, in the worst case (where all tasks are
 executing for their entire allotted time) the probability that the incoming
-microservice will have somewhere to run in time to meet the latency SLO is given by:
+microservice will have somewhere to run in time to meet the invocation
+latency SLO is given by:
 \begin{equation}
 p(r_\textrm{min} \le L) = \sum\limits_{c \in C} p(r_c \le L) = \big| C \big| \frac{L}{B}
 \end{equation}
-Given the 14 cores in our setup and imagining we want to keep the 99\% tail
-($p(r_\textrm{min} \le L) = 0.99$) to an $L$ of 8 $\mu{}s$, we need to kill tasks
-running for more than 113 $\mu{}s$.
+Given the 14 cores in our setup and imagining we want to keep the 99\% tail,
+$p(r_\textrm{min} \le L) = 0.99$, to an $L$ of 8~$\mu{}s$, we need to kill tasks
+running for more than 113~$\mu{}s$.
+\mk{Sec 2 says 16 cores (15 workers)}
+\mk{I'm a bit confused about the terminology of latency, runtime, and maybe invocation latency?}
+\mk{Check these numbers with sec2}
 
-
-\textbf{How often should the handler execute (the \emph{quantum})?}
+\paragraph{How often should the handler execute (the \emph{quantum})?}
 We showed at the end of Section~\ref{sec:motive} that this is easily
 \textit{achievable}, but can it be done \textit{efficiently}?  To find out, we wrote
 a microservice that measures the throughput of computing SHA-512 hashes over 64 B of
@@ -66,6 +71,7 @@ throughput had reached 90\% of baseline.  Considering this an acceptable perform
 degradation, we adopt this quantum and prescribe a runtime budget of 93 $\mu{}s$ so
 that we can always kill over-budget microservices in time to avoid impacting the tail
 latency.
+\mk{tail latency or SLO?}
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/2018-02-02-evaluation_quantum-hasher_throughput-throughput}
@@ -73,15 +79,16 @@ latency.
 \label{fig:hashtput}
 \end{figure}
 
-\textbf{How do we clean up a terminated microservice?}
-The problem of regaining control addressed, we now discuss the mechanism for aborting
-and cleanup.  POSIX signal handlers receive as one of their arguments a pointer to a
+\paragraph{How do we clean up a terminated microservice?}
+We now discuss the mechanism for aborting
+and cleanup.  POSIX signal handlers receive a pointer argument to the
 \texttt{ucontext\_t} structure containing a snapshot of the process's PCB (process
-control block) the moment before it received the signal.  The most na\"ive way to
+control block) the moment before it received the signal.  A naïve way to
 regain control would be to reset the GPRs (general-purpose registers) in this
-structure to values recorded just before the worker's tight scheduling loop.  The
-problem with this approach is that none of the microservice's state or memory
-allocations would be expunged from the worker.
+structure to values recorded just before the worker's tight scheduling loop.
+This approach, however, does not release the microservice's state or memory
+allocations back to the worker.
+\mk{do we need to remind reader about workers?}
 
 One of the few heavyweight components of the Rust runtime is panic handling, which is
 reminiscent of C++'s exception handling.  The compiler inserts landing pads into each
@@ -90,7 +97,7 @@ the standard library unwinds the stack, jumping to each landing pad in turn.  We
 co-opt this functionality by using the \texttt{SIGALRM} handler to change the context
 to describe executing a function that raises an explicit panic in a fake stack frame
 just above the real top of the stack.
+\mk{this sounds cool, but slightly opaque.  What is context here?}
 
-Note that there are several limitations and security ramifications of our current
-approach that would need to be addressed before it was safe to use in a production
-environment; for details, see Section~\ref{sec:future}.
+Section~\ref{sec:future} discusses several limitations and security
+ramifications of this approach.
