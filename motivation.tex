@@ -25,13 +25,13 @@ Linux 4.13.0.
 
 \subsection{Process-level isolation is too slow}
 We run the following experiment to evaluate the overhead of different isolation
-techniques. We use 15 \emph{worker} CPU cores to run microservices. A \emph{host
+techniques. We use 14 \emph{worker} CPU cores to run microservices. Another core runs
+runs a \emph{host} process that initiates microservice execution on the workers.
+The host schedules up to 14 microservices at a time (i.e., one
+per worker core), choosing from a pool of 5,000 microservices. It uses one of two
+methods to run microservices:
 \solb{The term dispatch process is pervasive right now; I need to run through and
 change them all.}
-process} that initiates microservice execution on the worker cores runs on the
-16th core. The host schedules up to 15 microservices at a time (i.e., one
-per worker core), choosing from a pool of 5000 microservices. It uses one of two
-methods to run microservices:
 
 \begin{enumerate}
 \item \textbf{Process-based isolation:} Each microservice is a separate process.
