@@ -83,10 +83,8 @@ invocation throughput is also limited by IPC overhead.
 With language-based isolation, we run user-provided microservice functions
 directly in worker processes. To prevent rogue functions from endlessly blocking
 other microservices, we must premept or terminate functions that run for too
-long (e.g., longer than 100\textmu{}s).  This
-preemption interval is orders of magnitude faster than typical operating
-system preemption intervals ($\approx$5ms).
-\mk{Can we add a citation here?}
+long (e.g., longer than 100\textmu{}s).  This preemption interval is orders of
+magnitude faster than Linux's default 4ms time quantum.
 
 Fortunately, we found that high-precision event timers (HPETs) on modern CPUs
 are sufficient for this task. We measure the granularity and reliability of
