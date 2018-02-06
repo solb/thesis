@@ -50,9 +50,8 @@ today's practice, cloud functions execute within a heavyweight container, and
 cold start occurs when the service has not received any requests for several
 minutes.)  To reduce cold starts, FaaS providers typically keep containers
 around for several minutes after running a function, but doing so increases
-costs.  Finally, of course, existing services already have latencies in the
-millisecond range, as their requests traverse conventional OS stacks, go through
-containers, etc.
+costs.  Existing services have latencies in the millisecond range, as their requests
+traverse conventional OS stacks, go through containers, etc.
 \mk{Don't like the etc.}
 
 \mk{The transition to this paragraph isn't clear.  Is the idea that we just said

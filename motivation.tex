@@ -35,9 +35,9 @@ change them all.}
 
 \begin{enumerate}
 \item \textbf{Process-based isolation:} Each microservice is a separate process.
-At any time, most microservice processes are sleeping while blocked on an IPC
+At any time, most microservice processes are blocked on an IPC
 call. The host runs a microservice by waking up its process using IPC. We use
-UDP packets for IPC; other IPC methods perform similarly~XXXcite.
+UDP datagrams for IPC; other IPC methods perform similarly~XXXcite.
 \item \textbf{Language-based isolation:} Each worker core runs a single-threaded
 \emph{worker process} that is used to run different microservices, one at a time.
 In this approach, a worker process runs a microservice by calling its registered
@@ -49,11 +49,11 @@ new requests.
 \end{enumerate}
 
 Table~\ref{tab:isolation_methods} shows the latency and throughput achieved
-by the two methods. For latency, we measure the median time between when the host
+by the two methods. For latency, we measure the time between when the host
 process dispatches a request to a microservice and when the service begins
 useful work on a worker core. We find that the process-based isolation approach
 takes 9\textmu{}s and achieves only 300,000 microservice invocations per
-second. In contrast, language-based isolation can achieves 1.2\textmu{}s (with a tail
+second. In contrast, language-based isolation achieves 1.2\textmu{}s (with a tail
 of just 2.0\textmu{}s) and over 5 million invocations per second.
 
 A 9\textmu{}s delay in microservice invocation is a substantial fraction of our
