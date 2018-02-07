@@ -2,7 +2,6 @@ TARGET=paper
 all: pdf
 
 pdf:
-	git submodule update --init
 	GS_OPTIONS=-dPDFSETTINGS=/prepress rubber -e "bibtex.crossrefs 100" --pdf -Wrefs -Wmisc paper
 
 clean:
