@@ -59,7 +59,7 @@ runs one user-supplied microservice at a time.}
 
 Table~\ref{tab:isolation_methods} shows the latency and throughput achieved
 by the two methods. For latency, we measure the time between when the host
-process dispatches a request to a microservice and when the service begins
+process dispatches a request to a microservice and when the microservice begins
 useful work on a worker core. We find that the process-based isolation approach
 takes 9\textmu{}s and achieves only 300,000 microservice invocations per
 second. In contrast, language-based isolation achieves 1.2\textmu{}s (with a tail
@@ -68,7 +68,8 @@ observe that, with trivial microservices, there is a difference in memory
 footprint:\ for 5,000 resident microservices, the system memory usage rises by about
 2 GiB for the process-based approach, versus just 1.3 for the language-based one.  Of
 course, these numbers will substantially rise for larger programs, but we expect the
-gap to widen as various microservices include the same libraries.}.
+gap to widen as various registered microservices include the same libraries.}.
+\ak{Not sure if we need this footnote.}
 
 A 9\textmu{}s delay in microservice invocation is already a substantial fraction of
 Azure's 20\textmu{}s RPC latency, a fraction that will only increase with

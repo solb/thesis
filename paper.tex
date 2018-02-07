@@ -126,6 +126,23 @@
                                              % avoid weird PDF compile issues
 
 %%%
+%%% Special commands
+%%%
+\usepackage[binary-units=true]{siunitx}
+\newcommand{\ns}[1]{\SI{#1}{\nano\second}}
+\newcommand{\us}[1]{\SI{#1}{\micro\second}}
+\newcommand{\ms}[1]{\SI{#1}{\milli\second}}
+\newcommand{\byte}[1]{\SI{#1}{\byte}}
+\newcommand{\kbyte}[1]{\SI{#1}{\kilo\byte}}
+\newcommand{\mbyte}[1]{\SI{#1}{\mega\byte}}
+\newcommand{\gbyte}[1]{\SI{#1}{\giga\byte}}
+\newcommand{\Gbps}[1]{\SI{#1}{Gbps}}
+\newcommand{\GHz}[1]{\SI{#1}{GHz}}
+\newcommand{\GbE}[1]{\SI{#1}{GbE}}
+\newcommand{\GBps}[1]{\SI{#1}{GBps}}
+\newcommand{\Mrps}[1]{\SI{#1}{Mrps}}
+
+%%%
 %%%  PDF setup
 %%%
 \ifthenelse{\equal{\COLOR}{yes}}{%
@@ -145,8 +162,8 @@ bookmarksopen = {true}
 
 % Anonymize figure inclusion
 % Requires pdfTeX version 1.40.17
-\pdftrailerid{} %Remove ID
-\pdfsuppressptexinfo15 %Suppress PTEX.Fullbanner and info of imported PDFs
+%\pdftrailerid{} %Remove ID
+%\pdfsuppressptexinfo15 %Suppress PTEX.Fullbanner and info of imported PDFs
 
 % Uncomment next line if your printer outputs black
 % boxes instead of drop shadows; older PDF interpreters
