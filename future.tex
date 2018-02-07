@@ -40,17 +40,11 @@ workers.
 
 \paragraph{System calls.}
 The system must restrict microservices from accessing certain system calls.
-\texttt{setitimer()}, \texttt{signal()}, \texttt{sigaction()}, and
-\texttt{sigprocmask} could be used to
-disable preemption.  Calls that create
-kernel threads (\texttt{fork()}, \texttt{spawn()}, \texttt{clone()},
-or \texttt{pthread\_create()}) can create resource problems or make a
-microservice hard to clean up after.
-The \texttt{nice()} and \texttt{sched\_.*()} calls could
-create competition between processes.
-An \texttt{exit}[\texttt{\_group}]\texttt{()} or \texttt{kill()} could
-be used to terminate the entire worker.
-Finally, user functions should not have unmonitored file system access.
+Otherwise, the microservice can use system calls to disable preemption
+(e.g., \texttt{signal()}), create kernel threads (e.g., \texttt{fork()}),
+create competition between threads (e.g., \texttt{nice()}), or even terminate
+the entire worker (e.g., \texttt{exit()}). Finally, user functions should not
+have unmonitored file system access.
 % The system must restrict microservices from accessing certain system calls.
 % \texttt{setitimer()}, \texttt{signal()}, \texttt{sigaction()}, and
 % \texttt{sigprocmask} could be used to
