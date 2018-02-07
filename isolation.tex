@@ -21,7 +21,7 @@ in Section~\ref{sec:future}.)
 
 Rust is a strongly-typed, compiled language that uses a lightweight runtime
 similar to C.  Unlike many other modern systems languages, Rust is an
-attractive choice when predictabile performance is critical due to its
+attractive choice when predictable performance is critical due to its
 lack of a garbage collector.  Still, it manages to provide strong memory safety
 guarantees by focusing on ``zero-cost abstractions'' (i.e., those that can be
 compiled down to code whose safety is assured without runtime checks).  In
@@ -29,7 +29,7 @@ particular, safe Rust code is guaranteed to be free of null or dangling pointer
 dereferences, invalid variable values (e.g., casts are checked and unions are
 tagged), reads from uninitialized memory, mutations of non-\texttt{mut} data (roughly
 the equivalent of C's \texttt{const}), and data races, among other
-misbehaviors~\cite{www-rustlang-ub}.
+misbehaviours~\cite{www-rustlang-ub}.
 
 We require each microservice to be written in Rust, which gives us many aspects of
 the isolation we need:  It is difficult for microservices to crash the worker process,
@@ -42,6 +42,6 @@ Given our performance goals, there is a crucial isolation aspect that
 Rust does not provide: there is nothing to stop users from monopolizing the CPU\@.
 Our system, however, must be preemptive. We are unaware of existing preemption
 techniques that work at microsecond scales. Note that coroutine-like
-cooperatative multitasking approaches (such as lightweight threads in
+cooperative multitasking approaches (such as lightweight threads in
 Go~\cite{www-golang} and Erlang~\cite{www-erlang}) are not preemptive, so they
 do not work for us. We discuss our solution to this in the following section.
