@@ -17,11 +17,11 @@ Language-based & 1.2 & 2.0 & 5.4 million \\
 \end{table}
 
 Our decision to use language-based isolation is based on two experimental
-results that we discuss below. First, process-level isolation is too slow for
+findings:  First, process-level isolation is too slow for
 microsecond-scale remote functions. Second, high-precision timers on commodity
-CPUs allow premption at microsecond scale. The experiments in this paper were
-conducted on an Intel Xeon E5-2683 v4 CPU (16 cores, 2.1~GHz), running
-Linux 4.13.0.
+CPUs allow preemption at microsecond scale.  We conducted these experiments
+on an Intel Xeon E5-2683 v4 server (16 cores, 2.1~GHz) running
+Linux 4.13.0; we discuss the results below.
 
 \subsection{Process-level isolation is too slow}
 We run the following experiment to evaluate the overhead of different isolation
