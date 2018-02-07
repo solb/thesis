@@ -11,15 +11,14 @@ However, this model only partially delivered two related benefits:
 \item Scale up rapidly on demand.
 \end{enumerate}
 
-The VM approach suffered from relatively coarse granularity, creating entire
-machines at a time, and with minutes to months of minimum billing
-time. Relatively long startup
+The VM approach suffered from relatively coarse granularity:  Its atomic compute unit
+of machines were billed at a minimum of minutes to months.  Relatively long startup
 times required system designers to keep some spare capacity online to handle load
 spikes.
 
 These shortcomings led cloud providers to introduce a new model, known as
 serverless computing, in which the customer provides \textit{only} their code,
-without having to configure its environment.   Such ``Function as a Service''
+without having to configure its environment.   Such ``function as a service''
 (FaaS) platforms are now available as AWS Lambda~\cite{www-amazon-lambda}, Google
 Cloud Functions~\cite{www-google-cf}, Azure Functions~\cite{www-microsoft-af}, and
 Apache OpenWhisk~\cite{www-apache-openwhisk}.  These platforms provide a model in
@@ -30,7 +29,7 @@ separate invocations of the user code.  Property (2) enables easy auto-scaling
 of the function as load changes.
 
 Because these services execute within a cloud provider's existing
-infrastructure, they reap the benefits of low-latency access to other cloud
+infrastructure, they benefit from low-latency access to other cloud
 services.  In fact, acting as an access-control proxy is a recurring microservice
 pattern: receive an API request from a user, validate it, then access
 a backend storage service (e.g., S3) using the service's credentials.
