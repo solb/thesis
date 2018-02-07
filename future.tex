@@ -14,7 +14,7 @@ failures (e.g., compiler bug or the operator allowing use of a buggy or maliciou
 % that we intend to implement going forward.
 
 \paragraph{Non-reentrancy.}
-Our proposal to use Rust panics to unwind the stack during preemption can
+Our use of Rust panics to unwind the stack during preemption can
 corrupt the internal state of non-reentrant functions (e.g., Rust's dynamic
 allocator).  Possible fixes include blacklisting these functions and delaying
 preemption until they are finished or replacing the problematic function with a
@@ -25,14 +25,21 @@ safe one (e.g., a custom memory allocator).
 
 \paragraph{Host process.}
 Our current implementation does not provide isolation between the host
-and worker processes.  We propose using standard OS techniques to reduce
+and worker processes.  We plan to apply standard OS techniques to reduce
 the chance of corruption or interference by a misbehaving worker.  Examples
 include auditing interactions with the shared memory region to ensure invalid
 or inconsistent data originating from the host cannot create an unrecoverable
 dispatch error; handling the \texttt{SIGCHLD} signal to detect a worker that has
 somehow crashed; and keeping a recovery log in the host process so that any
 user jobs lost to a failed worker process can be reassigned to operational
-workers.
+workers.  
+
+\paragraph{Further defense in depth with ERIM.}
+ERIM outlines a set of techniques and binary rewriting tools useful for using
+Intel's Memory Protection Keys to restrict memory access by 
+threads within a process~\cite{vahldiek2018erim}.  While preliminary and without
+source yet available, this appears to be an attractive approach for
+defense-in-depth both within worker processes and between the worker and hosts.
 
 %We believe it would be unwise to run the system in production without isolating the
 %dispatch process from interference or corruption by a misbehaving worker.  In
