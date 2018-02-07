@@ -78,8 +78,8 @@ latency SLO.
 \end{figure}
 
 \paragraph{How do we clean up a terminated microservice?}
-We now discuss the mechanism for aborting
-and cleanup.  POSIX signal handlers receive as an argument a pointer to their
+We now discuss our mechanism for aborting and cleaning up after a microservice
+exceeds its runtime budget.  POSIX signal handlers receive as an argument a pointer to their
 \textit{context}, a snapshot of the process's PCB (process control block) at the
 moment before it received the signal.  When the handler returns, the system will
 transfer control back to the point described by the context, so a naïve way for our
@@ -97,5 +97,5 @@ co-opt this functionality by having the \texttt{SIGALRM} handler set its context
 to describe executing a function that raises an explicit panic in a fake stack frame
 just above the real top of the stack.
 
-Section~\ref{sec:future} discusses several limitations and security
-ramifications of this approach.
+Section~\ref{sec:future} discusses the limitations and security ramifications of
+this approach.
