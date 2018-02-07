@@ -1,32 +1,39 @@
 \section{Deployment}
 \label{sec:deploy}
 
-Users thus submit their microservices in the form of Rust source code, allowing the
-serverless operator to pass the \texttt{-Funsafe-code} flag while compiling to reject
-any \texttt{unsafe} code.  This process does not need to happen on the compute
-nodes, provided that the deployment server tasked with compilation runs the same version
-of the Rust compiler.\footnote{This restriction exists because, as of the latest
-release (1.23.0) of the compiler, Rust does not have a stable ABI.}  The operator
+We now describe our microservices in the broader context of our full proposed
+serverless system.  We clarify their lifecycle, interactions with the compute nodes,
+and the trust model for the cloud provider.
+
+Users submit their microservices in the form of Rust source code, allowing the
+serverless operator to pass the \texttt{-Funsafe-code} compilation flag to reject
+any \texttt{unsafe} code.  This process need not occur on the compute
+nodes, provided the deployment server tasked with compilation runs the same version
+of the Rust compiler\footnote{This restriction exists because, as of the latest
+release (1.23.0) of the compiler, Rust does not have a stable ABI.}.  The operator
 needs to trust the compiler, standard library, and any libraries against which it
-will permit the microservice to link, but importantly need not worry about the
-microservice itself.  We believe that most users would find it acceptable to be
-presented with a list of permissible dependencies.\mk{Not sure if we should keep this sentence; it's probably reasonable,
-but might be seen as a bit of conjecture.}  Libraries that do not use
-\texttt{unsafe} code can be whitelisted without review.  To approximate how big
-such a list would be given the current Rust ecosystem, we turn to a 2017
+will permit the microservice to link (since they might contain \texttt{unsafe} code),
+but importantly need not worry about the microservice itself.
+
+We believe that many users would find it acceptable to be presented with a specific
+list of permitted dependencies.  But how big a list could the provider hope to offer
+at the time of launching the service?  It bears noting that libraries including only
+safe Rust code could be whitelisted without review.  To approximate how big such a
+list would be given the current Rust ecosystem, we turn to a 2017
 study~\cite{www-cratesio-unsafe} by the Tock authors that found just under half of
 the Rust package manager's top 1000 most-downloaded libraries to be free of
 \texttt{unsafe} code.  They caution that many of those packages have unsafe
 dependencies, but we suspect that reviewing a relatively small number of popular
 libraries would open up the majority of the most popular packages.
 
-Once the microservice is compiled to a shared object file, it is distributed to
-each compute node on which it might run.  Then, in order to ensure that invokers will
-experience the warm-start latencies discussed in Section~\ref{sec:motive}, those
-nodes' host processes should instruct one or more of their workers to preload the
-dynamic library.  If the provider experiences too many active
-microservices for its available resources, it can unload some libraries; on their
-next invocation, they will experience invocation latency greater than the network
-latency, but comparable to the \textit{warm-start} latencies of today's serverless
-systems.
+If the application compiles (is proven memory-safe) and links (depends only on
+trusted libraries) successfully, the deployment server produces a shared object file,
+which the provider then distributes to each compute node on which it might run.
+Then, in order to ensure that invokers will experience the warm-start latencies
+discussed in Section~\ref{sec:motive}, those nodes' host processes should instruct
+one or more of their workers to preload the dynamic library.  If the provider
+experiences too many active microservices for its available resources, it can
+unload some libraries; on their next invocation, they will experience invocation
+latency greater than the network latency, but comparable to the \textit{warm-start}
+latencies of today's serverless systems.
 \ak{We don't have cold-start numbers for either approach. Maybe a table?}
