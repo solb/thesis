@@ -13,12 +13,7 @@ However, this model only partially delivered two related benefits:
 
 The VM approach suffered from relatively coarse granularity, creating entire
 machines at a time, and with minutes to months of minimum billing
-time.
-%\footnote{Amazon recently followed Google's lead in moving down from
-%  hour-granularity, but both services remain more expensive for always-on VMs
-%  than providers who rent in month-long increments.} \ak{I don't think we
-%need this footnote.}
-Relatively long startup
+time. Relatively long startup
 times required system designers to keep some spare capacity online to handle load
 spikes.
 
@@ -28,44 +23,31 @@ without having to configure its environment.   Such ``Function as a Service''
 (FaaS) platforms are now available as AWS Lambda~\cite{www-amazon-lambda}, Google
 Cloud Functions~\cite{www-google-cf}, Azure Functions~\cite{www-microsoft-af}, and
 Apache OpenWhisk~\cite{www-apache-openwhisk}.  These platforms provide a model in
-which: (1)  User code is invoked whenever some \textbf{event} occurs (e.g., an HTTP
+which: (1)  User code is invoked whenever some event occurs (e.g., an HTTP
 request to some API), runs to completion, and nominally stops running (and being
 billed) after it completes; and (2)  There is no state preserved between
 separate invocations of the user code.  Property (2) enables easy auto-scaling
 of the function as load changes.
-
-\solb{We used to address the 5- to 9-minute capped runtime quota here; add it back in
-if we end up referring back to it.}
 
 Because these services execute within a cloud provider's existing
 infrastructure, they reap the benefits of low-latency access to other cloud
 services.  In fact, acting as an access-control proxy is a recurring microservice
 pattern:\ receive an API request from a user, validate it, then access
 a backend storage service (e.g., S3) using the service's credentials.
+\ak{Any references would be useful here.}
 
 In this paper, we explore a design intended to reduce the tension between two of
-the desiderata for cloud functions:\ low latency invocation and low cost.  We first
-emphasize that serverless platforms' invocation latencies are bimodal, with the cusps
-corresponding to warm and cold starts.  The latter occur when the cloud provider has
-discarded a microservice's container after several minutes of inactivity, and
-currently range from hundreds of milliseconds to seconds.  Although our approach can
-reduce these warm start times by at least an order of magnitude, \solb{We don't
-currently elaborate on this, having streamlined the next section to focus on warm
-starts.  Is it a claim we want to include at all?  Should I add a brief paragraph in
-it in the motivation?} we focus our
-argument on warm starts because we expect to be able to keep many more of our lighter
-microservices warm.
-
-Even in the case of warm starts, we find that traditional invocation techniques
-exhibit a significant latency tail.  Unfortunately, such a latency profile is
+the desiderata for cloud functions:\ low latency invocation and low cost.  We
+find that traditional invocation techniques exhibit high latency with a
+large tail. Such a latency profile is
 unsuitable for many modern distributed systems (e.g., those that handle search
 indexing or assembling multi-component views for website front pages), which involve
 high-fanout communication, sometimes performing tens or thousands of
 lookups to handle each user request.  Because their user-visible response time often
 depends on the tail latency of the slowest chain of dependent
-responses~\cite{Dean:cacm2013}, much recent work seeks to reduce
-such systems' response
-times~\cite{Jalaparti:sigcomm2013,Xu:nsdi2013,Li:socc2014,Jeon:asplos2016}.
+responses~\cite{Dean:cacm2013}, shrinking the tail is crucial~\cite{Jalaparti:sigcomm2013,
+Xu:nsdi2013,Li:socc2014,Jeon:asplos2016}.
+\ak{The search indexing example is weird here.}
 
 Thus we seek to reduce both the invocation latency and its predictability, a
 goal supported by the impressively low network latencies available in
