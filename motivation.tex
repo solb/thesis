@@ -61,19 +61,18 @@ process dispatches a request to a microservice and when the microservice begins
 useful work on a worker core. We find that the process-based isolation approach
 takes \us{9} and achieves only 300,000 microservice invocations per
 second. In contrast, language-based isolation achieves \us{1.2} (with a tail
-of just \us{2.0}) and over 5 million invocations per second.\footnote{We also
-observe that, with trivial microservices, there is a difference in memory
-footprint: for 5,000 resident microservices, the system memory usage rises by about
-2 GiB for the process-based approach, versus just 1.3 for the language-based one.  Of
-course, these numbers will substantially rise for larger programs, but we expect the
-gap to widen as various registered microservices include the same libraries.}
-\ak{Not sure if we need this footnote.}
+of just \us{2.0}) and over 5 million invocations per second.
 
 A \us{9} delay in microservice invocation is already a substantial fraction of
 Azure's \us{20} RPC latency, a fraction that will only increase with
 improvements in network latency. We therefore conclude that even in the average case,
 process-based isolation is too slow for microsecond-scale scheduling; furthermore,
 invocation throughput is also limited by IPC overhead.
+
+We also observe a decrease in total memory footprint:\@ loading 5,000 resident
+trivial microservices consumes 2 GiB of memory with the process-based approach, but
+only 1.3 with the language-based one.  However, this benefit may be reduced as
+microservices' code sizes increase.
 
 \subsection{Intra-process preemption is fast}
 With language-based isolation, we run user-provided microservice functions
