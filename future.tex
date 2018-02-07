@@ -26,7 +26,7 @@ safe one (e.g., a custom memory allocator).
 \paragraph{Host process.}
 Our current implementation does not provide isolation between the host
 and worker processes.  We plan to apply standard OS techniques to reduce
-the chance of corruption or interference by a misbehaving worker.  Examples
+the chance of interference by a misbehaving worker.  Examples
 include auditing interactions with the shared memory region to ensure invalid
 or inconsistent data originating from the host cannot create an unrecoverable
 dispatch error; handling the \texttt{SIGCHLD} signal to detect a worker that has
