@@ -88,10 +88,10 @@ unwinding the stack during preemption is not guaranteed to free all of a
 microservice's memory or other resources.  Potential solutions are interposing
 on the dynamic allocator to record tracking information (likely proving
 expensive) or using per-microservice heaps that main worker process can simply
-deallocation when terminating a microservice.  The work can also deallocate
+deallocate when terminating a microservice.  The worker can also deallocate
 other resources, such as unclosed file descriptors.  If these checks end up
 being too expensive, the worker could execute its cleanup after a certain number
-of microservices have run or when the load is. sufficiently low.
+of microservices have run or when the load is sufficiently low.
 %, and/or the system could track which microservices were (likely)
 %responsible for resource leaks and impose warnings or bans.
 
@@ -101,7 +101,7 @@ attacks~\cite{Lipp2018,Kocher2018}.  For example, microservices have access to
 the memory addresses and timings of dynamic memory allocations, as well as the
 numbers of opened file descriptors.  Although side-channels exist in many
 systems, the short duration of microservice functions may
-make mitigating such attacks more challenging; nevertheless, standard
+make mounting such attacks more challenging; nevertheless, standard
 preventative practices found in the literature should apply.
 
 % As this year's Meltdown~\cite{Lipp2018} and Spectre~\cite{Kocher2018} CPU
