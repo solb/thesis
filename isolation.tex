@@ -1,17 +1,16 @@
 \section{Providing Isolation}
 \label{sec:isolation}
 
-Of course, consolidating multiple users' jobs into a single process requires
-addressing the accompanying security challenges (isolation---in the sense of
-confidentiality/integrity as well as resource limits), and doing so in a way that
-does not compromise our ambitious performance goals.
+Consolidating multiple users' jobs into a single process requires
+addressing security and isolation. We aim to do this in a way that does not
+compromise our ambitious performance goals.
 
 Our guiding philosophy for doing so is ``Language-based isolation with defense in depth.''
 We draw inspiration from two recently-published systems whose own demanding
 performance requirements drove them to perform similar coalescing of traditionally
 independent components:  NetBricks~\cite{Panda2016} is a network functions runtime
 for providing programmable network capabilities; it is unique among this class of
-systems for running the submitted functions in-process rather than in VMs.
+systems for running network functions from different vendors in-process rather than in VMs.
 Tock~\cite{Levy2017} is an embedded operating system that provides (in addition to a
 more traditional process model) a type of lightweight application known as a capsule
 that is embedded within the kernel and communicates with it using simple function
