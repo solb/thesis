@@ -19,9 +19,9 @@ leverage Rust~\cite{www-rustlang}, a new type-safe systems programming language.
 (The defense in depth should come from operating system--level protections discussed
 in Section~\ref{sec:future}.)
 
-Rust is a strongly-typed, compiled language that reprises C's abstention from a
-heavyweight runtime.  Unlike many other modern systems languages, Rust is an
-attractive choice when both performance and predictability are critical due to its
+Rust is a strongly-typed, compiled language that uses a lightweight runtime
+similar to C.  Unlike many other modern systems languages, Rust is an
+attractive choice when predictabile performance is critical due to its
 lack of a garbage collector.  Still, it manages to provide strong memory safety
 guarantees by focusing on ``zero-cost abstractions'' (i.e., those that can be
 compiled down to code whose safety is assured without runtime checks).  In
@@ -36,14 +36,12 @@ the isolation we need:  It is difficult for microservices to crash the worker pr
 since most segmentation faults are prevented, and runtime errors such as integer
 overflow generate Rust panics that we can catch.  Microservices cannot get references
 to data that does not belong to them thanks to the variable and pointer initialization
-rules.  
-Given our performance goals, there is a significant aspect of the
-required isolation that Rust does not provide: there is nothing to stop users from
-monopolizing the CPU\@.
-Our system, however, must be preemptive.\footnote{It is surprisingly hard to find lightweight
-  threads that can be killed easily.  For example, 
-Go~\cite{www-golang} and Erlang~\cite{www-erlang}'s lightweight threads
-share a kernel thread among multiple tasks, but use cooperatative multitasking
-between tasks on a thread;  there is no way to involuntarily terminate a task
-from outside the task.}  We discuss our solution to this in the following
-section.
+rules.
+
+Given our performance goals, there is a crucial isolation aspect that
+Rust does not provide: there is nothing to stop users from monopolizing the CPU\@.
+Our system, however, must be preemptive. We are unaware of existing preemption
+techniques that work at microsecond scales. Note that coroutine-like
+cooperatative multitasking approaches (such as lightweight threads in
+Go~\cite{www-golang} and Erlang~\cite{www-erlang}) are not preemptive, so they
+do not work for us. We discuss our solution to this in the following section.
