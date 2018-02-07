@@ -51,7 +51,7 @@ As with system calls, there may exist library functions in Rust (and certainly
 in libc, which we deny by default) that are unsafe to allow microservices 
 access to.  Because the Rust standard library by necessity uses unsafe
 code,  defense-in-depth suggests that a whitelisting-based approach should be
-be employed for access to its functions.  Certainly library functions must
+employed for access to its functions.  Certainly library functions must
 obviously be masked---for example, our use of Rust's panic handler for
 preemption means that we must deny microservice code the ability to catch the
 panic and return to execution.  While we mitigate this possibility by
@@ -65,7 +65,7 @@ linking against a custom build of the library, or using more in-depth static ana
 
 % Similar steps may be needed in the Rust standard library as well; for
 % instance, we currently have no way to stop a user from catching the panic we trigger
-% and preventing control from returning to the worker loop loop, although this could be
+% and preventing control from returning to the worker loop, although this could be
 % accomplished using static analysis or even a simple search when we compiled submitted
 % code.
 % simple search when we compiled submitted code.

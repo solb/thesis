@@ -25,7 +25,7 @@ Linux 4.13.0; we discuss the results below.
 
 \subsection{Process-level isolation is too slow}
 We run the following experiment to evaluate the overhead of different isolation
-techniques. We use 14 \emph{worker} CPU cores to run microservices. Another core runs
+techniques. We use 14 \emph{worker} CPU cores to run microservices. Another core 
 runs a \emph{host} process that initiates microservice execution on the workers.
 The host schedules up to 14 microservices at a time (i.e., one
 per worker core), choosing from a pool of 5,000 microservices. It uses one of two
