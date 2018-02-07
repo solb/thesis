@@ -57,9 +57,10 @@ have unmonitored file system access.
 % starvation.  An \texttt{exit}[\texttt{\_group}]\texttt{()} or \texttt{kill()} could
 % be used to terminate the entire worker.
 
-We propose forcing each worker process to use the \texttt{seccomp()} system call
+We propose forcing each worker process to use the \texttt{seccomp()} system
+call\cite{seccomp-manpage}
 to lock itself down during initialization, thereby limiting the process to a
-whitelisted set of system calls. \mk{need to cite seccomp} Finally, the process
+whitelisted set of system calls. Finally, the process
 should handle \texttt{SIGSYS} and tear down the running microservice if it is
 ever received.
 
