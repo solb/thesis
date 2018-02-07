@@ -38,41 +38,23 @@ workers.
 %dispatch process from interference or corruption by a misbehaving worker.  In
 %practice, this should include at least:\
 
-\paragraph{System calls.}
-The system must restrict microservices from accessing certain system calls.
-Otherwise, the microservice can use system calls to disable preemption
-(e.g., \texttt{signal()}), create kernel threads (e.g., \texttt{fork()}),
-create competition between threads (e.g., \texttt{nice()}), or even terminate
-the entire worker (e.g., \texttt{exit()}). Finally, user functions should not
-have unmonitored file system access.
-% The system must restrict microservices from accessing certain system calls.
-% \texttt{setitimer()}, \texttt{signal()}, \texttt{sigaction()}, and
-% \texttt{sigprocmask} could be used to
-% disable preemption.  Other examples include system calls that provide
-% unmonitored filesystem access, the creation of
-% kernel threads via [\texttt{v}]\texttt{fork()}, \texttt{spawn()}, \texttt{clone()},
-% or \texttt{pthread\_create()} could create resource problems or make a microservice
-% hard to clean up after.  The \texttt{nice()} and \texttt{sched\_.*()} calls could
-% create competition between processes, adversely affecting performance or even causing
-% starvation.  An \texttt{exit}[\texttt{\_group}]\texttt{()} or \texttt{kill()} could
-% be used to terminate the entire worker.
-
-We propose forcing each worker process to use the \texttt{seccomp()} system
-call\cite{seccomp-manpage}
-to lock itself down during initialization, thereby limiting the process to a
-whitelisted set of system calls. Finally, the process
-should handle \texttt{SIGSYS} and tear down the running microservice if it is
-ever received.
 
 \paragraph{Library functions.}
-As with system calls, blocking access to library functions (e.g., \texttt{libc}
-or the Rust standard library) is important for isolation and security.  Possible
+As with system calls, there may exist library functions in Rust (and certainly
+in libc, which we deny by default) that are unsafe to allow microservices 
+access to.  Because the Rust standard library by necessity uses unsafe
+code,  defense-in-depth suggests that a whitelisting-based approach should be
+be employed for access to its functions.  Certainly library functions must
+obviously be masked---for example, our use of Rust's panic handler for
+preemption means that we must deny microservice code the ability to catch the
+panic and return to execution.  While we mitigate this possibility by
+detecting and blacklisting microservices that fail to yield under a SIGALRM, it
+would be desirable to block such behavior entirely.
+Possible
 options include using the dynamic linker to interpose stub implementations or
-linking against a custom build of the library.
+linking against a custom build of the library, or using more in-depth static analysis.
 
-Using Rust's panic handler for preemption opens the possibility that a user
-function could catch the panic and prevent control from returning to the
-worker. Options here include detecting this behavior using static analysis.
+
 
 % Similar steps may be needed in the Rust standard library as well; for
 % instance, we currently have no way to stop a user from catching the panic we trigger
