@@ -9,21 +9,20 @@ Users submit their microservices in the form of Rust source code, allowing the
 serverless operator to pass the \texttt{-Funsafe-code} compilation flag to reject
 any \texttt{unsafe} code.  This process need not occur on the compute
 nodes, provided the deployment server tasked with compilation runs the same version
-of the Rust compiler\footnote{This restriction exists because, as of the latest
-release (1.23.0) of the compiler, Rust does not have a stable ABI.}.  The operator
+of the Rust compiler.\footnote{This restriction exists because, as of the latest
+release (1.23.0) of the compiler, Rust does not have a stable ABI.}  The operator
 needs to trust the compiler, standard library, and any libraries against which it
 will permit the microservice to link (since they might contain \texttt{unsafe} code),
 but importantly need not worry about the microservice itself.
 
-We believe that many users would find it acceptable to be presented with a specific
-list of permitted dependencies.  But how big a list could the provider hope to offer
-at the time of launching the service?  It bears noting that libraries including only
+We believe that restricting microservices to a specific
+list of permitted dependencies is reasonable.  Any libraries that contains only
 safe Rust code could be whitelisted without review.  To approximate how big such a
 list would be given the current Rust ecosystem, we turn to a 2017
 study~\cite{www-cratesio-unsafe} by the Tock authors that found just under half of
 the Rust package manager's top 1000 most-downloaded libraries to be free of
-\texttt{unsafe} code.  They caution that many of those packages have unsafe
-dependencies, but we suspect that reviewing a relatively small number of popular
+unsafe code.  They caution that many of those packages have unsafe
+dependencies, but reviewing a relatively small number of popular
 libraries would open up the majority of the most popular packages.
 
 If the application compiles (is proven memory-safe) and links (depends only on
