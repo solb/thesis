@@ -1,0 +1,54 @@
+digraph {
+	compound=true;
+	rankdir=LR;
+	splines=false;
+	node [shape=rect];
+
+	subgraph {
+		node [label=<
+			<table border="0" cellborder="1" cellspacing="0">
+				<tr>
+					<td> </td>
+					<td> </td>
+					<td> </td>
+					<td> </td>
+					<td> </td>
+					<td> </td>
+				</tr>
+			</table>
+		>, margin=0, shape=none];
+
+		queue0;
+		queue1;
+		queue2;
+	}
+
+	subgraph {
+		label="Worker process";
+		edge [color=invis, label=<<sub>...</sub>>];
+		node [label="μservice"];
+
+		subgraph cluster0 {
+			uservice00 -> uservice0N;
+		}
+
+		subgraph cluster1 {
+			uservice10 -> uservice1N;
+		}
+
+		subgraph cluster2 {
+			uservice20 -> uservice2N;
+		}
+
+		queue1 -> queue2 [constraint=false];
+	}
+
+	dispatch [height=3, label="Dispatch\nprocess"];
+
+	dispatch:ne -> queue0;
+	dispatch -> queue1;
+	dispatch:se -> queue2
+	queue0 -> uservice00 [lhead=cluster0];
+	queue1 -> uservice10 [lhead=cluster1];
+	queue2 -> uservice20 [lhead=cluster2];
+}
