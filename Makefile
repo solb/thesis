@@ -1,10 +1,11 @@
 TARGET=paper
+DEPEND=figs/system-crop.pdf
 
 .PHONY: all
 all: pdf
 
 .PHONY: pdf
-pdf:
+pdf: $(DEPEND)
 	GS_OPTIONS=-dPDFSETTINGS=/prepress rubber -e "bibtex.crossrefs 100" --pdf -Wrefs -Wmisc paper
 
 .PHONY: clean
@@ -14,3 +15,9 @@ clean:
 .PHONY: ps
 ps: pdf
 	GS_OPTIONS=-dPDFSETTINGS=/prepress pdftops -level1 $(TARGET).pdf
+
+%.pdf: %.dot
+	dot -Tpdf -o $@ $<
+
+%-crop.pdf: %.pdf
+	pdfcrop $<
