@@ -60,9 +60,10 @@ which runs one user-supplied microservice at a time.}
 \end{figure}
 
 Table~\ref{tab:isolation_methods} shows the latency and throughput achieved
-by the two methods. For latency, we measure the time between when the dispatcher
+by the two methods, using trivial microservices that simply record a timestamp. For
+latency, we measure the time between when the dispatcher
 process invokes a microservice and when the microservice begins
-useful work on a worker core. We find that the process-based isolation approach
+running on a worker core. We find that the process-based isolation approach
 takes \us{9} and achieves only 300,000 microservice invocations per
 second. In contrast, language-based isolation achieves \us{1.2} (with a tail
 of just \us{2.0}) and over 5 million invocations per second.  Cold starts
