@@ -29,7 +29,7 @@ If the application compiles (is proven memory-safe) and links (depends only on
 trusted libraries) successfully, the deployment server produces a shared object file,
 which the provider then distributes to each compute node on which it might run.
 Then, in order to ensure that invokers will experience the warm-start latencies
-discussed in Section~\ref{sec:motive}, those nodes' host processes should instruct
+discussed in Section~\ref{sec:motive}, those nodes' dispatch processes should instruct
 one or more of their workers to preload the dynamic library.  If the provider
 experiences too many active microservices for its available resources, it can
 unload some libraries; on their next invocation, they will experience higher

@@ -26,38 +26,38 @@ Linux 4.13.0; we discuss the results below.
 \subsection{Process-level isolation is too slow}
 We run the following experiment to evaluate the overhead of different isolation
 techniques. We use 14 \emph{worker} CPU cores to run microservices. Another core 
-runs a \emph{host} process that initiates microservice execution on the workers.
-The host schedules up to 14 microservices at a time (i.e., one
+runs a \emph{dispatch} process that initiates microservice execution on the workers.
+The dispatcher schedules up to 14 microservices at a time (i.e., one
 per worker core), choosing from a pool of 5,000 microservices. It uses one of two
 methods to run microservices:
 
 \begin{enumerate}
 \item \textbf{Process-based isolation:} Each microservice is a separate process.
 At any time, most microservice processes are blocked on an IPC
-call. The host runs a microservice by waking up its process using a UDP datagram.
+call. The dispatcher runs a microservice by waking up its process using a UDP datagram.
 \item \textbf{Language-based isolation:} Each worker core runs a single-threaded
 \emph{worker process} that is used to run different microservices, one at a time.
 In this approach, shown in Figure~\ref{fig:sysdesign}, a worker process runs a
 microservice by calling its registered
 function; we assume that the microservice function can be isolated from the
 worker process with language-based isolation techniques that we discuss in
-Section~\ref{sec:isolation}. The host schedules microservices on worker processes by
-sending them
+Section~\ref{sec:isolation}. The dispatcher schedules microservices on worker
+processes by sending them
 requests on a shared memory queue. Worker processes poll this queue to receive
 new requests.
 \end{enumerate}
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/system-crop}
-\caption{Design of the language-based isolation approach.  The host process forwards
+\caption{Design of the language-based isolation approach.  The dispatch process forwards
 requests over a shared-memory queue to a number of worker processes, each of which
 runs one user-supplied microservice at a time.}
 \label{fig:sysdesign}
 \end{figure}
 
 Table~\ref{tab:isolation_methods} shows the latency and throughput achieved
-by the two methods. For latency, we measure the time between when the host
-process dispatches a request to a microservice and when the microservice begins
+by the two methods. For latency, we measure the time between when the dispatch
+process invokes a microservice and when the microservice begins
 useful work on a worker core. We find that the process-based isolation approach
 takes \us{9} and achieves only 300,000 microservice invocations per
 second. In contrast, language-based isolation achieves \us{1.2} (with a tail
