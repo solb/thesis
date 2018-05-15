@@ -7,7 +7,7 @@
 % \solb{Is it weird to have the following paragraph after we discuss isolation and
 % preemption?  I can't think of where else it would go.}
 % 
-% Our system comprises (1) a central dispatch process that manages the compute node,
+% Our system comprises (1) a central dispatcher process that manages the compute node,
 % receiving requests and assigning them to (2) a number of worker processes (one per
 % dedicated compute core) via a shared memory region.  Each worker process runs a
 % tight loop that polls on a ready bit in shared memory; once it finds work to be done,

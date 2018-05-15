@@ -43,7 +43,7 @@ digraph {
 		queue1 -> queue2 [constraint=false];
 	}
 
-	dispatch [height=3, label="Dispatch\nprocess"];
+	dispatch [height=3, label="Dispatcher\nprocess"];
 
 	dispatch:ne -> queue0;
 	dispatch -> queue1;
