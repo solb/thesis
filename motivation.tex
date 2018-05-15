@@ -35,6 +35,8 @@ methods to run microservices:
 \item \textbf{Process-based isolation:} Each microservice is a separate process.
 At any time, most microservice processes are blocked on an IPC
 call. The dispatcher runs a microservice by waking up its process using a UDP datagram.
+We expect this approach to exhibit lower latency than the container isolation common
+in contemporary serverless deployments.
 \item \textbf{Language-based isolation:} Each worker core runs a single-threaded
 \emph{worker process} that is used to run different microservices, one at a time.
 In this approach, shown in Figure~\ref{fig:sysdesign}, a worker process runs a
