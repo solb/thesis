@@ -11,8 +11,8 @@
 Process-based & 8.7 & 27.3 & .29 million \\
 Language-based & 1.2 & 2.0 & 5.4 million \\
 \end{tabular}
-\caption{Performance of isolation methods}
-\label{tab:isolation_methods}
+\caption{Warm-start invocation performance}
+\label{tab:warm_start}
 \end{center}
 \end{table}
 
@@ -24,14 +24,19 @@ on an Intel Xeon E5-2683 v4 server (16 cores, 2.1~GHz) running
 Linux 4.13.0; we discuss the results below.
 
 \subsection{Process-level isolation is too slow}
-We run the following experiment to evaluate the invocation overhead of different
+We use the following environment to evaluate the invocation overhead of different
 isolation techniques: We use 14 \emph{worker} CPU cores to run microservices. Another
 core runs a \emph{dispatcher} process that initiates microservice execution on the
 workers.  Since we only seek to model a single compute node, all requests originate
 from the dispatcher, which in the case of a full serverless platform would instead
 forward them from some cluster-level scheduler.  The dispatcher schedules up to 14
 microservices at a time (i.e., one per worker core), choosing from a pool of 5,000
-microservices. It uses one of two methods to run microservices:
+microservices.
+
+\paragraph{Warm-start requests.}
+This experiment models a situation where all of the microservices have either been
+invoked before or prefetched and are already resident on the compute node.  The
+dispatcher uses one of two methods to run a microservice:
 
 \begin{enumerate}
 \item \textbf{Process-based isolation:} Each microservice is a separate process.
@@ -59,16 +64,14 @@ which runs one user-supplied microservice at a time.}
 \label{fig:sysdesign}
 \end{figure}
 
-Table~\ref{tab:isolation_methods} shows the latency and throughput achieved
+Table~\ref{tab:warm_start} shows the latency and throughput achieved
 by the two methods, using trivial microservices that simply record a timestamp. For
 latency, we measure the time between when the dispatcher
 process invokes a microservice and when the microservice begins
 running on a worker core. We find that the process-based isolation approach
 takes \us{9} and achieves only 300,000 microservice invocations per
 second. In contrast, language-based isolation achieves \us{1.2} (with a tail
-of just \us{2.0}) and over 5 million invocations per second.  Cold starts
-(which save server memory for infrequently-used microservices)
-require only on the order of \us{100}.
+of just \us{2.0}) and over 5 million invocations per second.
 
 A \us{9} delay in microservice invocation is already a substantial fraction of
 Azure's \us{20} RPC latency, a fraction that will only increase with
@@ -80,6 +83,35 @@ The total memory footprint also shrinks:\@ loading 5,000 resident
 trivial microservices consumes 2 GiB of memory with the process-based approach, but
 only 1.3 GiB with the language-based one.  However, this benefit may be reduced as
 microservices' code sizes increase.
+
+\paragraph{Cold-start requests.}
+While achieving ideal wakeup times is only possible when the microservices are
+already resident in the system, the tail latency of the serverless platform will be
+determined by the time taken to process requests whose microservices must be loaded
+before they can be invoked.  To assess the difference between process-based and
+language-based isolation in this context, we run the experiment with the following
+change:  In the process model, the dispatch thread now launches a microservice
+process to handle each request by \texttt{fork()/exec()}'ing.  In the language model,
+the dispatch thread asks a worker to load a microservice's dynamic library (and
+unload it afterward).  The results, showin in Table~\ref{tab:cold_start}, show an
+order-of-magnitude slip in the language-based approach's latency; however, this is
+overshadowed by the three orders of magnitude increase in the case of process-based
+isolation.
+
+\begin{table}
+\begin{center}
+\small
+\begin{tabular}{lrrr}
+   & \multicolumn{2}{c}{\textbf{Latency (µs)}} \\
+  \textbf{Isolation method} & Median & 99\% \\
+\midrule
+Process-based & 2845.8 & 15976.0 \\
+Language-based & 38.7 & 42.2 \\
+\end{tabular}
+\caption{Cold-start invocation latency}
+\label{tab:cold_start}
+\end{center}
+\end{table}
 
 \subsection{Intra-process preemption is fast}
 With language-based isolation, we run user-provided microservice functions
