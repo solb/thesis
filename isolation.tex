@@ -35,7 +35,8 @@ the isolation we need:  It is difficult for microservices to crash the worker pr
 since most segmentation faults are prevented, and runtime errors such as integer
 overflow generate Rust panics that we can catch.  Microservices cannot get references
 to data that does not belong to them thanks to the variable and pointer initialization
-rules.
+rules.  (In the future, it might be possible to support subsets of other languages by
+compiling them to safe Rust.)
 
 Given our performance goals, there is a crucial isolation aspect that
 Rust does not provide: there is nothing to stop users from monopolizing the CPU\@.
