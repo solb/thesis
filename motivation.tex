@@ -20,10 +20,10 @@
 \end{table}
 
 Our decision to use language-based isolation is based on two experimental
-findings:  First, process-level isolation is too slow for
-microsecond-scale remote functions. Second, high-precision timers on commodity
+findings:  (1) Process-level isolation is too slow for
+microsecond-scale user functions. (2) High-precision timers on commodity
 CPUs allow preemption at microsecond scale.  We conducted our experiments
-on an Intel Xeon E5-2683 v4 server (16 cores, 2.1~GHz) running
+on a single Intel Xeon E5-2683 v4 server (16 cores, 2.1~GHz) running
 Linux 4.13.0; we discuss the results below.
 
 \subsection{Process-level isolation is too slow}
@@ -36,15 +36,11 @@ forward them from some cluster-level scheduler.  The dispatcher schedules up to 
 microservices at a time (i.e., one per worker core), choosing from a pool of 5,000
 microservices.
 
-\paragraph{Warm-start requests.}
-This experiment models a situation where all of the microservices have either been
-invoked before or prefetched and are already resident on the compute node.  The
-dispatcher uses one of two methods to run a microservice:
-
+To provide a comparison against contemporary system designs, we use two different
+isolation mechanisms:
 \begin{enumerate}
-\item \textbf{Process-based isolation:} Each microservice is a separate process.
-At any time, most microservice processes are blocked on an IPC
-call. The dispatcher runs a microservice by waking up its process using a UDP datagram.
+\item \textbf{Process-based isolation:} Each microservice is a separate process run
+on one of the worker cores.
 We expect this approach to exhibit lower latency than the container isolation common
 in contemporary serverless deployments.
 \item \textbf{Language-based isolation:} Each worker core runs a single-threaded
@@ -55,7 +51,7 @@ function; we assume that the microservice function can be isolated from the
 worker process with language-based isolation techniques that we discuss in
 Section~\ref{sec:isolation}. The dispatcher schedules microservices on worker
 processes by sending them
-requests on a shared memory queue. Worker processes poll this queue to receive
+requests on a shared memory queue, which worker processes poll to receive
 new requests.
 \end{enumerate}
 
@@ -67,14 +63,24 @@ which runs one user-supplied microservice at a time.}
 \label{fig:sysdesign}
 \end{figure}
 
-Table~\ref{tab:invocperf} shows the latency and throughput achieved
-by the two methods, using trivial microservices that simply record a timestamp. For
-latency, we measure the time between when the dispatcher
-process invokes a microservice and when the microservice begins
-running on a worker core. We find that the process-based isolation approach
-takes \us{9} and achieves only 300,000 microservice invocations per
-second. In contrast, language-based isolation achieves \us{1.2} (with a tail
-of just \us{2.0}) and over 5 million invocations per second.
+We use 5,000 copies of a trivial microservice that simply records a timestamp.
+Latency measurements are from when the dispatcher process invokes a microservice
+until the moment that microservice records its timestamp.  We run the experiment in
+two modes:
+
+\paragraph{Warm-start requests.}
+We first model a situation where all of the microservices are already resident on the
+compute node.  In the case of process-based isolation, the dispatcher launches all
+5,000 microservices at the beginning of the experiment, but they all block on an IPC
+call; the dispatcher then invokes each microservice by waking up its process using a
+UDP datagram.  In the case of language-based isolation, the microservices are
+preloaded into worker processes.
+
+Table~\ref{tab:invocperf} shows the latency and throughput achieved by the two
+methods.  We find that the process-based isolation approach takes \us{9} and achieves
+only 300,000 microservice invocations per second. In contrast, language-based
+isolation achieves \us{1.2} (with a tail of just \us{2.0}) and over 5 million
+invocations per second.
 
 A \us{9} delay in microservice invocation is already a substantial fraction of
 Azure's \us{20} RPC latency, a fraction that will only increase with
