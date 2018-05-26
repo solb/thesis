@@ -96,7 +96,7 @@ language-based isolation in this context, we run the experiment with the followi
 change:  In the process model, the dispatch thread now launches a microservice
 process to handle each request by \texttt{fork()/exec()}'ing.  In the language model,
 the dispatch thread asks a worker to load a microservice's dynamic library (and
-unload it afterward).  The results, showin in Table~\ref{tab:invocperf}, show an
+unload it afterward).  The results, shown in in Table~\ref{tab:invocperf}, reveal an
 order-of-magnitude slip in the language-based approach's latency; however, this is
 overshadowed by the three orders of magnitude increase in the case of process-based
 isolation.
