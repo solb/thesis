@@ -24,7 +24,7 @@ on an Intel Xeon E5-2683 v4 server (16 cores, 2.1~GHz) running
 Linux 4.13.0; we discuss the results below.
 
 \subsection{Process-level isolation is too slow}
-We use the following environment to evaluate the invocation overhead of different
+We use a single-machine experiment to evaluate the invocation overhead of different
 isolation techniques: We use 14 \emph{worker} CPU cores to run microservices. Another
 core runs a \emph{dispatcher} process that initiates microservice execution on the
 workers.  Since we only seek to model a single compute node, all requests originate
