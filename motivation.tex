@@ -4,15 +4,18 @@
 \begin{table}
 \begin{center}
 \small
-\begin{tabular}{lrrr}
-   & \multicolumn{2}{c}{\textbf{Latency (µs)}} & \textbf{Throughput} \\
-  \textbf{Isolation method} & Median & 99\% & \textbf{(invocations/sec)} \\
+\begin{tabular}{llrrr}
+  \multicolumn{2}{c}{\textbf{Microservices}} & \multicolumn{2}{c}{\textbf{Latency (µs)}} & \textbf{Throughput} \\
+  \textbf{Resident?} & \textbf{Isolation} & Median & 99\% & \textbf{(invocations/s)} \\
 \midrule
-Process-based & 8.7 & 27.3 & .29 million \\
-Language-based & 1.2 & 2.0 & 5.4 million \\
+\multirow{2}{*}{Warm-start} & Process & 8.7 & 27.3 & .29 million \\
+& Language & 1.2 & 2.0 & 5.4 million \\
+\midrule
+\multirow{2}{*}{Cold-start} & Process & 2845.8 & 15976.0 & \multicolumn{1}{c}{---} \\
+& Language & 38.7 & 42.2 & \multicolumn{1}{c}{---} \\
 \end{tabular}
-\caption{Warm-start invocation performance}
-\label{tab:warm_start}
+\caption{Microservice invocation performance}
+\label{tab:invocperf}
 \end{center}
 \end{table}
 
@@ -64,7 +67,7 @@ which runs one user-supplied microservice at a time.}
 \label{fig:sysdesign}
 \end{figure}
 
-Table~\ref{tab:warm_start} shows the latency and throughput achieved
+Table~\ref{tab:invocperf} shows the latency and throughput achieved
 by the two methods, using trivial microservices that simply record a timestamp. For
 latency, we measure the time between when the dispatcher
 process invokes a microservice and when the microservice begins
@@ -93,25 +96,10 @@ language-based isolation in this context, we run the experiment with the followi
 change:  In the process model, the dispatch thread now launches a microservice
 process to handle each request by \texttt{fork()/exec()}'ing.  In the language model,
 the dispatch thread asks a worker to load a microservice's dynamic library (and
-unload it afterward).  The results, showin in Table~\ref{tab:cold_start}, show an
+unload it afterward).  The results, showin in Table~\ref{tab:invocperf}, show an
 order-of-magnitude slip in the language-based approach's latency; however, this is
 overshadowed by the three orders of magnitude increase in the case of process-based
 isolation.
-
-\begin{table}
-\begin{center}
-\small
-\begin{tabular}{lrrr}
-   & \multicolumn{2}{c}{\textbf{Latency (µs)}} \\
-  \textbf{Isolation method} & Median & 99\% \\
-\midrule
-Process-based & 2845.8 & 15976.0 \\
-Language-based & 38.7 & 42.2 \\
-\end{tabular}
-\caption{Cold-start invocation latency}
-\label{tab:cold_start}
-\end{center}
-\end{table}
 
 \subsection{Intra-process preemption is fast}
 With language-based isolation, we run user-provided microservice functions
