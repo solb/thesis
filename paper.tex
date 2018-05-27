@@ -87,7 +87,7 @@
 %%%  Lists
 %%%
 \usepackage{enumitem}
-\setlist{itemsep=0pt,parsep=0pt}             % more compact lists
+\setlist{itemsep=0pt,parsep=0pt,topsep=0pt}             % more compact lists
 
 %%%
 %%%  Header / Footer
@@ -192,8 +192,26 @@ bookmarksopen = {true}
 \soulregister\ref7
 \soulregister\pageref7
 
+\makeatletter
+\newlength{\secaskip}
+\newlength{\secbskip}
+\let\@section\section
+\renewcommand{\section}{\@ifstar{\section@star}{\section@nostar}}
+\newcommand{\section@nostar}[1]{\vspace{\secbskip}\@section{#1}\vspace{\secaskip}}
+\newcommand{\section@star}[1]{\vspace{\secbskip}\@section*{#1}\vspace{\secaskip}}
+\let\@subsection\subsection
+\renewcommand{\subsection}{\@ifstar{\subsection@star}{\subsection@nostar}}
+\newcommand{\subsection@nostar}[1]{\vspace{\secbskip}\@subsection{#1}\vspace{\secaskip}}
+\newcommand{\subsection@star}[1]{\vspace{\secbskip}\@subsection*{#1}\vspace{\secaskip}}
+\makeatother
+
+\setlength{\secaskip}{-6pt}
+\setlength{\secbskip}{-12pt}
+
 %\setlength{\parindent}{0pt}
-%\setlength{\parskip}{\baselineskip}
+\setlength{\parskip}{0pt}
+
+\setlength{\belowcaptionskip}{-12pt}
 
 %\clubpenalty=10000  % Don't allow orphans
 %\widowpenalty=10000 % Don't allow widows
@@ -254,7 +272,7 @@ Copyright 200X ACM X-XXXXX-XX-X/XX/XX ...\$5.00}
 {\em * Carnegie Mellon University \; $^\dagger$ Intel Labs}}
 
 % This needs to be the last thing before \begin{document}
-%\usepackage{microtype}  % SPACE
+\usepackage{microtype}  % SPACE
 
 %%%%%%%%%%%%%%%%%%%%  START DOCUMENT  %%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
