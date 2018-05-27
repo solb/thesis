@@ -49,10 +49,10 @@ defense-in-depth both within worker processes and between the worker and hosts.
 \paragraph{Library functions.}
 As with system calls, there may exist library functions in Rust (and certainly
 in libc, which we deny by default) that are unsafe to allow microservices 
-access to.  Because the Rust standard library by necessity uses unsafe
-code,  defense-in-depth suggests that a whitelisting-based approach should be
+access to.  Because the Rust standard library requires unsafe
+code, defense-in-depth suggests that a whitelisting-based approach should be
 employed for access to its functions.  Certainly library functions must
-obviously be masked---for example, our use of Rust's panic handler for
+be masked---for example, our use of Rust's panic handler for
 preemption means that we must deny microservice code the ability to catch the
 panic and return to execution.  While we mitigate this possibility by
 detecting and blacklisting microservices that fail to yield under a SIGALRM, it

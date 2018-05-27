@@ -23,7 +23,7 @@ without having to configure its environment.   Such ``function as a service''
 Cloud Functions~\cite{www-google-cf}, Azure Functions~\cite{www-microsoft-af}, and
 Apache OpenWhisk~\cite{www-apache-openwhisk}.  These platforms provide a model in
 which: (1)  User code is invoked whenever some event occurs (e.g., an HTTP
-request to some API), runs to completion, and nominally stops running (and being
+API request), runs to completion, and nominally stops running (and being
 billed) after it completes; and (2)  There is no state preserved between
 separate invocations of the user code.  Property (2) enables easy auto-scaling
 of the function as load changes.
@@ -31,17 +31,17 @@ of the function as load changes.
 Because these services execute within a cloud provider's existing
 infrastructure, they benefit from low-latency access to other cloud
 services.  In fact, acting as an access-control proxy is a recurring microservice
-pattern: receive an API request from a user, validate it, then access
+pattern:\@ receive an API request from a user, validate it, then access
 a backend storage service (e.g., S3) using the service's credentials.
 %\ak{Any references would be useful here.}
 
 In this paper, we explore a design intended to reduce the tension between two of
-the desiderata for cloud functions: low latency invocation and low cost.  Traditional
-invocation techniques used today exhibit high latency with a
-large tail; these latencies are
+the desiderata for cloud functions:\@ low latency invocation and low cost.  Contemporary
+invocation techniques exhibit high latency with a
+large tail; this is
 unsuitable for many modern distributed systems which involve
-high-fanout communication, sometimes performing tens or thousands of
-lookups to handle each user request.  Because their user-visible response time often
+high-fanout communication, sometimes performing thousands of
+lookups to handle each user request.  Because user-visible response time often
 depends on the tail latency of the slowest chain of dependent
 responses~\cite{Dean:cacm2013}, shrinking the tail is crucial~\cite{Jalaparti:sigcomm2013,
 Xu:nsdi2013,Li:socc2014,Jeon:asplos2016}.
@@ -67,7 +67,7 @@ achieves this.  As Lampson noted, there is power in making systems
 ``fast rather than general or powerful''~\cite{Lampson1983}, because fast
 building blocks can be used more widely.
 
-Of course, a microservice will only ever be as fast as the slowest service it relies
+Of course, a microservice is only as fast as the slowest service it relies
 on; however, recall that many such services are offered in the same clouds and
 datacenters as serverless platforms.  It is our belief that decreasing network
 latencies will push these services to respond faster as well, and that new hardware

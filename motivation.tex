@@ -21,38 +21,35 @@
 
 Our decision to use language-based isolation is based on two experimental
 findings:  (1) Process-level isolation is too slow for
-microsecond-scale user functions. (2) High-precision timers on commodity
-CPUs allow preemption at microsecond scale.  We conducted our experiments
+microsecond-scale user functions. (2) Commodity
+CPUs support task preemption at microsecond scale.  We conducted our experiments
 on a single Intel Xeon E5-2683 v4 server (16 cores, 2.1~GHz) running
 Linux 4.13.0; we discuss the results below.
 
 \subsection{Process-level isolation is too slow}
-We use a single-machine experiment to evaluate the invocation overhead of different
-isolation techniques: We use 14 \emph{worker} CPU cores to run microservices. Another
+We use a single-machine experiment to evaluate the invocation overhead of
+isolation: We use 14 \emph{worker} CPU cores to run microservices. Another
 core runs a \emph{dispatcher} process that initiates microservice execution on the
-workers.  Since we only seek to model a single compute node, all requests originate
-from the dispatcher, which in the case of a full serverless platform would instead
-forward them from some cluster-level scheduler.  The dispatcher schedules up to 14
-microservices at a time (i.e., one per worker core), choosing from a pool of 5,000
-microservices.
+workers.  All requests originate
+from the dispatcher (which in the case of a full serverless platform would instead
+forward them from some cluster-level scheduler).  The dispatcher schedules up to 14
+microservices at a time (i.e., one per worker core), choosing from a pool of 5,000.
 
 To provide a comparison against contemporary system designs, we use two different
 isolation mechanisms:
 \begin{enumerate}
-\item \textbf{Process-based isolation:} Each microservice is a separate process run
-on one of the worker cores.
+\item \textbf{Process-based isolation:} Each microservice is a separate process.
 We expect this approach to exhibit lower latency than the container isolation common
 in contemporary serverless deployments.
-\item \textbf{Language-based isolation:} Each worker core runs a single-threaded
-\emph{worker process} that is used to run different microservices, one at a time.
+\item \textbf{Language-based isolation:} Each worker core hosts a single-threaded
+\emph{worker process} that directly executes different microservices, one at a time.
 In this approach, shown in Figure~\ref{fig:sysdesign}, a worker process runs a
 microservice by calling its registered
 function; we assume that the microservice function can be isolated from the
 worker process with language-based isolation techniques that we discuss in
 Section~\ref{sec:isolation}. The dispatcher schedules microservices on worker
 processes by sending them
-requests on a shared memory queue, which worker processes poll to receive
-new requests.
+requests on a shared memory queue, which idle worker processes poll.
 \end{enumerate}
 
 \begin{figure}
@@ -63,10 +60,9 @@ which runs one user-supplied microservice at a time.}
 \label{fig:sysdesign}
 \end{figure}
 
-We use 5,000 copies of a trivial microservice that simply records a timestamp.
-Latency measurements are from when the dispatcher process invokes a microservice
-until the moment that microservice records its timestamp.  We run the experiment in
-two modes:
+We use 5,000 copies of a microservice that simply records a timestamp:\@
+latency is measured between when the dispatcher invokes a microservice
+and the time that microservice records.  There are two experiment modes:
 
 \paragraph{Warm-start requests.}
 We first model a situation where all of the microservices are already resident on the
@@ -74,7 +70,7 @@ compute node.  In the case of process-based isolation, the dispatcher launches a
 5,000 microservices at the beginning of the experiment, but they all block on an IPC
 call; the dispatcher then invokes each microservice by waking up its process using a
 UDP datagram.  In the case of language-based isolation, the microservices are
-preloaded into worker processes.
+dynamic libraries preloaded into the worker processes.
 
 Table~\ref{tab:invocperf} shows the latency and throughput achieved by the two
 methods.  We find that the process-based isolation approach takes \us{9} and achieves
@@ -84,28 +80,28 @@ invocations per second.
 
 Considering that FaRM achieved mean TATP transaction commit latencies as low as
 \us{19} in 2015~\cite{Dragojevic:sosp2015}, a \us{9} delay in microservice invocation
-already represents almost 50\% overhead for a microservice providing a thin external
+already represents almost 50\% overhead for a microservice providing a thin API
 gateway to such a backend service.  We therefore conclude that even in the average
 case, process-based isolation is too slow for microsecond-scale scheduling.
-Furthermore, IPC overhead means that invocation throughput is also limited.
+Furthermore, IPC overhead limits invocation throughput.
 
-The total memory footprint also shrinks:\@ loading 5,000 resident
+Process-based isolation also has a higher memory footprint:\@ loading the 5,000
 trivial microservices consumes 2 GiB of memory with the process-based approach, but
-only 1.3 GiB with the language-based one.  However, this benefit may be reduced as
+only 1.3 GiB with the language-based one.  However, this benefit may reduce as
 microservices' code sizes increase.
 
 \paragraph{Cold-start requests.}
 While achieving ideal wakeup times is only possible when the microservices are
-already resident in the system, the tail latency of the serverless platform will be
-determined by the time taken to process requests whose microservices must be loaded
+already resident, the tail latency of the serverless platform will be
+determined by requests whose microservices must be loaded
 before they can be invoked.  To assess the difference between process-based and
 language-based isolation in this context, we run the experiment with the following
-change:  In the process model, the dispatch thread now launches a microservice
-process to handle each request by \texttt{fork()/exec()}'ing.  In the language model,
-the dispatch thread asks a worker to load a microservice's dynamic library (and
-unload it afterward).  The results, shown in in Table~\ref{tab:invocperf}, reveal an
+change:  In the former case, the dispatcher now launches a transient
+microservice process for each request by \texttt{fork()/exec()}'ing.  In the latter,
+the dispatcher asks a worker to load a microservice's dynamic library (and
+unload it afterward).  The results in Table~\ref{tab:invocperf} reveal an
 order-of-magnitude slip in the language-based approach's latency; however, this is
-overshadowed by the three orders of magnitude increase in the case of process-based
+overshadowed by the three orders of magnitude increase for process-based
 isolation.
 
 \subsection{Intra-process preemption is fast}
@@ -113,13 +109,13 @@ In a serverless system using language-based isolation, a cluser-level scheduler 
 handle routing of requests to individual worker nodes.  Since we run user-provided
 microservices directly in worker processes, a rogue long-running microservice could
 thwart such scheduling by unexpectedly consuming the resources of a worker that
-already has numerous other requests queued.  We hypothesize that, in such situations,
+already had numerous other requests queued.  We hypothesize that, in such situations,
 it is better for tail latency to preempt the long microservice than retarget the
 waiting jobs to other nodes in real time.  At our scale, this means a preemption
 interval up to two orders of magnitude faster than Linux's default \ms{4} time
 quantum.
 
-Fortunately, we found that high-precision event timers (HPETs) on modern CPUs
+Fortunately, we find that high-precision event timers (HPETs) on modern CPUs
 are sufficient for this task. We measure the granularity and reliability of
 these timers as follows: We run one thread that requests a periodic timer with a
 configurable interval of $T$~\textmu{}s and installs an associated signal handler.

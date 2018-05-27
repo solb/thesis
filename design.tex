@@ -37,7 +37,7 @@ questions:
 \paragraph{For how long should each microservice be allowed to run?}
 %Consider a well-utilized but not overloaded compute node in which a user task
 %is executing on each available core, but there is no backlog behind which an incoming task must wait.
-Assume, as in Section~\ref{sec:motive}, that each core executes one user task at a
+Assume that each core executes one user task at a
 time and that all microservice
 functions are pre-compiled and resident (warm invocation).
 %The impact of microservice runtime on tail latency in 
@@ -46,7 +46,7 @@ functions are pre-compiled and resident (warm invocation).
 %this paper.)
 %Furthermore, we'll assume an incoming microservice that is warm on each
 %worker thread.
-We define $L$ to be the desired invocation latency, $B$ to be the
+We define $L$ to be the desired warm invocation latency, $B$ to be the
 runtime budget allotted to each microservice, and $r_c$ to be the remaining runtime
 of the microservice on CPU $c$.  Thus, in the worst case (where all tasks are
 executing for their entire allotted time) the probability that the incoming
@@ -66,9 +66,9 @@ a microservice that measures the throughput of computing SHA-512 hashes over 64 
 data at a time.  We then subjected its worker process to \texttt{SIGALRM}s, varying
 the quantum and observing the resulting hashing throughput.
 Figure~\ref{fig:hashtput} illustrates that by a quantum of about \us{20},
-throughput had reached 90\% of baseline.  Considering this an acceptable performance
-degradation, we adopt this quantum and prescribe a runtime budget of \us{93} so
-that we can always kill over-budget microservices in time to avoid violating our tail
+throughput had reached 90\% of baseline.  Considering this performance degradation,
+acceptable we adopt this quantum and prescribe a runtime budget of \us{93} so
+that we can kill over-budget microservices in time to avoid violating our tail
 latency SLO.
 
 \begin{figure}
@@ -90,12 +90,10 @@ allocations back to the worker.
 
 One of the few heavyweight components of the Rust runtime is panic handling,
 reminiscent of C++'s exception handling.  The compiler inserts landing pads into each
-function that call the destructors for the variables in its stack frame, and if the
-program ever panics,
-the standard library unwinds the stack, jumping to each landing pad in turn.  We
-co-opt this functionality by having the \texttt{SIGALRM} handler set its context
-to describe executing a function that raises an explicit panic in a fake stack frame
-just above the real top of the stack.
+function that call the destructors for the variables in its stack frame:\@ if the
+program ever panics, the standard library uses these to unwind the stack.  We co-opt
+this functionality by having the \texttt{SIGALRM} handler set its context to raise an
+explicit panic in a fake stack frame just above the real top of the stack.
 
 Section~\ref{sec:future} discusses the limitations and security ramifications of
 this approach.

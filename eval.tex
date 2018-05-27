@@ -16,9 +16,9 @@ will permit the microservice to link (since they might contain \texttt{unsafe} c
 but importantly need not worry about the microservice itself.
 
 We believe that restricting microservices to a specific
-list of permitted dependencies is reasonable.  Any libraries that contains only
-safe Rust code could be whitelisted without review.  To approximate how big such a
-list would be given the current Rust ecosystem, we turn to a 2017
+list of permitted dependencies is reasonable.  Any library that contains only
+safe Rust code could be whitelisted without review.  To approximate the size of such
+a list given the current Rust ecosystem, we turn to a 2017
 study~\cite{www-cratesio-unsafe} by the Tock authors that found just under half of
 the Rust package manager's top 1000 most-downloaded libraries to be free of
 unsafe code.  They caution that many of those packages have unsafe
@@ -33,5 +33,4 @@ discussed in Section~\ref{sec:motive}, those nodes' dispatcher processes should
 instruct one or more of their workers to preload the dynamic library.  If the
 provider experiences too many active microservices for its available resources, it
 can unload some libraries; on their next invocation, they will experience higher
-(cold start) invocation latencies since we need to synchronously load the dynamic
-library.
+(cold start) invocation latencies as they synchronously load the dynamic library.

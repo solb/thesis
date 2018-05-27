@@ -10,11 +10,10 @@ We draw inspiration from two recently-published systems whose own demanding
 performance requirements drove them to perform similar coalescing of traditionally
 independent components:  NetBricks~\cite{Panda2016} is a network functions runtime
 for providing programmable network capabilities; it is unique among this class of
-systems for running network functions from different vendors in-process rather than in VMs.
-Tock~\cite{Levy2017} is an embedded operating system that provides (in addition to a
-more traditional process model) a type of lightweight application known as a capsule
-that is embedded within the kernel and communicates with it using simple function
-calls.  As their primary line of defense against untrusted code, both systems
+systems for running third-party network functions in-process rather than in VMs.
+Tock~\cite{Levy2017} is an embedded microkernel whose servers (``capsules'') form
+a common compilation unit and communicate using type-safe function calls.
+As their primary defense against untrusted code, both systems
 leverage Rust~\cite{www-rustlang}, a new type-safe systems programming language.
 
 
@@ -30,13 +29,13 @@ tagged), reads from uninitialized memory, mutations of non-\texttt{mut} data (ro
 the equivalent of C's \texttt{const}), and data races, among other
 misbehaviours~\cite{www-rustlang-ub}.
 
-We require each microservice to be written in Rust, which gives us many aspects of
-the isolation we need:  It is difficult for microservices to crash the worker process,
-since most segmentation faults are prevented, and runtime errors such as integer
-overflow generate Rust panics that we can catch.  Microservices cannot get references
-to data that does not belong to them thanks to the variable and pointer initialization
-rules.  (In the future, it might be possible to support subsets of other languages by
-compiling them to safe Rust.)
+We require each microservice to be written in Rust (although, in the future, it
+might be possible to support subsets of other languages by compiling them to safe
+Rust), giving us many aspects of the isolation we need.  It is difficult for
+microservices to crash the worker process, since most segmentation faults are
+prevented, and runtime errors such as integer overflow generate Rust panics that we
+can catch.  Microservices cannot get references to data that does not belong to them
+thanks to the variable and pointer initialization rules.
 
 Given our performance goals, there is a crucial isolation aspect that
 Rust does not provide: there is nothing to stop users from monopolizing the CPU\@.
