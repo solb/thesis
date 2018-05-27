@@ -50,18 +50,13 @@ code within the process handles the signal.
 Our defense-in-depth comes from using lightweight operating-system protections
 to block access to certain system calls, as well as the proposed mechanisms
 in Section~\ref{sec:future}.  Some system calls must be blocked to have any
-defense at all; 
-otherwise, the microservice could disable the \texttt{SIGALRM}-based preemption
-(e.g., \texttt{signal()}), create kernel threads (e.g., \texttt{fork()}),
-create competition between threads (e.g., \texttt{nice()}), or even terminate
-the entire worker (e.g., \texttt{exit()}). Finally, user functions should not
-have unmonitored file system access.
+defense at all; otherwise, the microservice could create kernel threads (e.g.,
+\texttt{fork()}), create competition between threads (e.g., \texttt{nice()}), or even
+terminate the entire worker (e.g., \texttt{exit()}). Finally, user functions should
+not have unmonitored file system access.
 
-We propose to block access to system calls using the \texttt{seccomp()} system
-call~\cite{seccomp-manpage} to have each worker process lock itself down during
-initialization, thereby limiting the process to a
-whitelisted set of system calls.  Prior to lockdown, the worker
-process installs its \texttt{SIGALRM} handler for preemption, and
-a  \texttt{SIGSYS} handler and tear down the running microservice if it is
-ever received.
-
+We propose to block system calls using Linux's \texttt{seccomp()} system
+call~\cite{seccomp-manpage}, which each worker process should call during
+initialization, thereby limiting itself to a whitelisted set of system calls.
+Prior to lockdown, the worker process should install a \texttt{SIGSYS} handler and
+tear down the running microservice if it is ever received.

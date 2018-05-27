@@ -28,7 +28,9 @@ after the user code.
 
 As proposed in Section~\ref{sec:motive}, regaining control of the CPU happens when a
 signal (\texttt{SIGALRM}) from the kernel transfers control to the worker process's
-handler.  The handler then checks how long the current microservice has been running
+handler\footnote{For defense in depth, the worker process should be prevented from
+subsequently modifying this signal-handling configuration.}.  The handler then checks
+how long the current microservice has been running
 and decides whether it should be killed.  (We register the handler using the
 \texttt{SA\_RESTART} flag to \texttt{sigaction()} so that any interrupted blocking
 syscalls are restarted transparently.)  However, there remain three important
