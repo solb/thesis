@@ -33,7 +33,6 @@ infrastructure, they benefit from low-latency access to other cloud
 services.  In fact, acting as an access-control proxy is a recurring microservice
 pattern:\@ receive an API request from a user, validate it, then access
 a backend storage service (e.g., S3) using the service's credentials.
-%\ak{Any references would be useful here.}
 
 In this paper, we explore a design intended to reduce the tension between two of
 the desiderata for cloud functions:\@ low latency invocation and low cost.  Contemporary
@@ -45,19 +44,14 @@ lookups to handle each user request.  Because user-visible response time often
 depends on the tail latency of the slowest chain of dependent
 responses~\cite{Dean:cacm2013}, shrinking the tail is crucial~\cite{Jalaparti:sigcomm2013,
 Xu:nsdi2013,Li:socc2014,Jeon:asplos2016}.
-%\ak{The search indexing example is weird here.}
 
 Thus we seek to reduce the invocation latency and improve predictability, a
-goal supported by the impressively low network latencies available in
-modern datacenters. It
-now takes $<20\mu{}s$ to perform an RPC between two machines in Microsoft's Azure
-cloud~\cite{www-firestone-azure-latency}.  \solb{Anuj mentioned there's a more recent
-Google or Microsoft reference from NSDI.  I came across
-\url{https://www.usenix.org/system/files/conference/nsdi17/nsdi17-firestone.pdf\#page=12}
-(see right before Figure 10).  It gives a 25-$\mu{}s$ number that I \textit{think}
-(?) is for between machines...}  We believe, however, that fully leveraging this
-improving network performance will require reducing microservices' invocation
-latencies to the point where the network is once again the bottleneck.
+goal supported by the impressively low network latencies available in modern
+datacenters. It now takes $<20\mu{}s$ to perform an RPC between two machines in
+Microsoft Azure's virtual machines~\cite{Firestone:nsdi2018}. We believe,
+however, that fully leveraging this improving network performance will require
+reducing microservices' invocation latencies to the point where the network is
+once again the bottleneck.
 
 We further hypothesize---admittedly without much proof for this chicken-and-egg
 scenario---that substantially reducing both the latency and cost of running
