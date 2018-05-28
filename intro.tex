@@ -61,12 +61,12 @@ achieves this.  As Lampson noted, there is power in making systems
 ``fast rather than general or powerful''~\cite{Lampson1983}, because fast
 building blocks can be used more widely.
 
-Of course, a microservice is only as fast as the slowest service it relies
-on; however, recall that many such services are offered in the same clouds and
-datacenters as serverless platforms.  It is our belief that decreasing network
-latencies will push these services to respond faster as well, and that new hardware
-technologies such as 3D XPoint will further accelerate this trend by offering
-lower-latency reads \solb{I couldn't find a recent public citation to support this}.
+Of course, a microservice is only as fast as the slowest service it relies on;
+however, recall that many such services are offered in the same clouds and
+datacenters as serverless platforms. Decreasing network latencies will push
+these services to respond faster as well, and that new stable storage
+technologies such as 3D XPoint (projected to offer sub-microsecond reads and
+writes) will further accelerate this trend by offering lower-latency storage.
 
 In this paper, we propose a restructuring of the serverless model centered around
 low-latency: \textit{lightweight microservices} run in \textit{shared processes}
