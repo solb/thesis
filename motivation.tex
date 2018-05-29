@@ -1,23 +1,13 @@
 \section{Motivation}
 \label{sec:motive}
 
-\begin{table}
-\begin{center}
-\small
-\begin{tabular}{llrrr}
-  \multicolumn{2}{c}{\textbf{Microservices}} & \multicolumn{2}{c}{\textbf{Latency (µs)}} & \textbf{Throughput} \\
-  \textbf{Resident?} & \textbf{Isolation} & Median & 99\% & \textbf{(invocations/s)} \\
-\midrule
-\multirow{2}{*}{Warm-start} & Process & 8.7 & 27.3 & .29 million \\
-& Language & 1.2 & 2.0 & 5.4 million \\
-\midrule
-\multirow{2}{*}{Cold-start} & Process & 2845.8 & 15976.0 & \multicolumn{1}{c}{---} \\
-& Language & 38.7 & 42.2 & \multicolumn{1}{c}{---} \\
-\end{tabular}
-\caption{Microservice invocation performance}
-\label{tab:invocperf}
-\end{center}
-\end{table}
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/system-crop}
+\caption{Language-based isolation design.  The dispatcher process
+uses shared in-memory queues to feed requests to the worker processes, each of
+which runs one user-supplied microservice at a time.}
+\label{fig:sysdesign}
+\end{figure}
 
 Our decision to use language-based isolation is based on two experimental
 findings:  (1) Process-level isolation is too slow for
@@ -53,14 +43,6 @@ processes by sending them
 requests on a shared memory queue, which idle worker processes poll.
 \end{enumerate}
 
-\begin{figure}
-\includegraphics[width=\columnwidth]{figs/system-crop}
-\caption{Language-based isolation design.  The dispatcher process
-uses shared in-memory queues to feed requests to the worker processes, each of
-which runs one user-supplied microservice at a time.}
-\label{fig:sysdesign}
-\end{figure}
-
 We use 5,000 copies of a microservice that simply records a timestamp:\@
 latency is measured between when the dispatcher invokes a microservice
 and the time that microservice records.  There are two experiment modes:
@@ -72,6 +54,24 @@ compute node.  In the case of process-based isolation, the dispatcher launches a
 call; the dispatcher then invokes each microservice by waking up its process using a
 UDP datagram.  In the case of language-based isolation, the microservices are
 dynamic libraries preloaded into the worker processes.
+
+\begin{table}
+\begin{center}
+\small
+\begin{tabular}{@{}llrrc@{}}
+  \multicolumn{2}{c}{\textbf{Microservices}} & \multicolumn{2}{c}{\textbf{Latency (µs)}} & \textbf{Throughput} \\
+  \textbf{Resident?} & \textbf{Isolation} & Median & 99\% & \textbf{(M invoc/s)} \\
+\midrule
+\multirow{2}{*}{Warm-start} & Process & 8.7 & 27.3 & 0.29 \\
+& Language & 1.2 & 2.0 & 5.4~~ \\
+\midrule
+\multirow{2}{*}{Cold-start} & Process & 2845.8 & 15976.0 & \multicolumn{1}{c}{---} \\
+& Language & 38.7 & 42.2 & \multicolumn{1}{c}{---} \\
+\end{tabular}
+\caption{Microservice invocation performance}
+\label{tab:invocperf}
+\end{center}
+\end{table}
 
 Table~\ref{tab:invocperf} shows the latency and throughput achieved by the two
 methods.  We find that the process-based isolation approach takes \us{9} and achieves
