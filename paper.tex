@@ -203,10 +203,14 @@ bookmarksopen = {true}
 \renewcommand{\subsection}{\@ifstar{\subsection@star}{\subsection@nostar}}
 \newcommand{\subsection@nostar}[1]{\vspace{\secbskip}\@subsection{#1}\vspace{\secaskip}}
 \newcommand{\subsection@star}[1]{\vspace{\secbskip}\@subsection*{#1}\vspace{\secaskip}}
+\newlength{\parsecskip}
+\let\@paragraph\paragraph
+\renewcommand{\paragraph}[1]{\vspace{\parsecskip}\@paragraph{#1}}
 \makeatother
 
 \setlength{\secaskip}{-6pt}
 \setlength{\secbskip}{-12pt}
+\setlength{\parsecskip}{-4pt}
 
 %\setlength{\parindent}{0pt}
 \setlength{\parskip}{0pt}
