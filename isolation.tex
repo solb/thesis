@@ -2,18 +2,18 @@
 \label{sec:isolation}
 
 Consolidating multiple users' jobs into a single process requires
-addressing security and isolation. We aim to do this in a way that does not
-compromise our ambitious performance goals.
+addressing security and isolation. We aim to do it without
+compromising our ambitious performance goals.
 
-Our guiding philosophy for doing so is ``Language-based isolation with defense in depth.''
-We draw inspiration from two recently-published systems whose own demanding
-performance requirements drove them to perform similar coalescing of traditionally
-independent components:  NetBricks~\cite{Panda2016} is a network functions runtime
-for providing programmable network capabilities; it is unique among this class of
-systems for running third-party network functions in-process rather than in VMs.
-Tock~\cite{Levy2017} is an embedded microkernel whose servers (``capsules'') form
-a common compilation unit and communicate using type-safe function calls.
-As their primary defense against untrusted code, both systems
+Our guiding philosophy for achieving this is ``language-based isolation with defense
+in depth.'' We draw inspiration from two recently-published systems whose own
+demanding performance requirements drove them to perform similar coalescing of
+traditionally independent components:  NetBricks~\cite{Panda2016} is a network
+functions runtime for providing programmable network capabilities; it is unique among
+this class of systems for running third-party network functions in-process rather
+than in VMs.  Tock~\cite{Levy2017} is an embedded microkernel whose servers
+(``capsules'') form a common compilation unit and communicate using type-safe
+function calls.  As their primary defense against untrusted code, both systems
 leverage Rust~\cite{www-rustlang}, a new type-safe systems programming language.
 
 

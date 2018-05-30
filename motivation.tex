@@ -82,9 +82,9 @@ invocations per second.
 
 Considering that the FaRM distributed computing platform
 achieved mean TATP transaction commit latencies as low as
-\us{19} in 2015~\cite{Dragojevic:sosp2015}, a \us{9} delay in microservice invocation
-already represents almost 50\% overhead for a microservice providing a thin API
-gateway to such a backend service.  We therefore conclude that even in the average
+\us{19} in 2015~\cite{Dragojevic:sosp2015}, a \us{9} microservice invocation delay
+represents almost 50\% overhead for a microservice providing a thin API
+gateway to such a backend.  We therefore conclude that even in the average
 case, process-based isolation is too slow for microsecond-scale scheduling.
 Furthermore, IPC overhead limits invocation throughput.
 
