@@ -1,5 +1,5 @@
 TARGET=paper
-DEPEND=figs/system-crop.pdf
+DEPEND=figs/fancy_system.pdf
 
 .PHONY: all
 all: pdf
