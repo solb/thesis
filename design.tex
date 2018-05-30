@@ -54,8 +54,10 @@ of the microservice on CPU $c$.  Thus, in the worst case (where all tasks are
 executing for their entire allotted time) the probability that the incoming
 microservice will have somewhere to run in time to meet the invocation
 latency SLO is given by:
+\vspace{-10pt}
 \begin{equation}
 p(r_\textrm{min} \le L) = \sum\limits_{c \in C} p(r_c \le L) = \big| C \big| \frac{L}{B}
+\vspace{-10pt}
 \end{equation}
 Given the 14 cores in our setup and imagining we want to keep the 99\% tail,
 $p(r_\textrm{min} \le L) = 0.99$, to an $L$ of 8~$\mu{}s$, we need to kill tasks
