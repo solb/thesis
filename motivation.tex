@@ -13,9 +13,8 @@ Our decision to use language-based isolation is based on two experimental
 findings:  (1) Process-level isolation is too slow for
 microsecond-scale user functions. (2) Commodity
 CPUs support task preemption at microsecond scale.  We conducted our experiments
-\footnote{\solb{Add link to source code repo.}}
 on a single Intel\textcopyright\@ Xeon\textcopyright\@ E5-2683 v4 server (16 cores, 2.1~GHz) running
-Linux 4.13.0.
+Linux 4.13.0.\footnote{\solb{Add link to source code repo.}}
 
 \subsection{Process-level isolation is too slow}
 We use a single-machine experiment to evaluate the invocation overhead of different
