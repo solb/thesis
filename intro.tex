@@ -7,14 +7,14 @@ Services that outgrew self-hosted servers moved to datacenter racks, then
 eventually to virtualized cloud hosting environments.
 However, this model only partially delivered two related benefits:
 \begin{enumerate}
-\item Pay for only what you use at very fine granularity.
-\item Scale up rapidly on demand.
+\item Pay for only what you use at very fine granularity
+\item Scale up rapidly on demand
 \end{enumerate}
 
 The VM approach suffered from relatively coarse granularity:  Its atomic compute unit
 of machines were billed at a minimum of minutes to months.  Relatively long startup
-times required system designers to keep some spare capacity online to handle load
-spikes.
+times often required system designers to keep some spare capacity online to handle
+load spikes.
 
 These shortcomings led cloud providers to introduce a new model, known as
 serverless computing, in which the customer provides \textit{only} their code,
@@ -22,9 +22,9 @@ without having to configure its environment.   Such ``function as a service''
 (FaaS) platforms are now available as AWS Lambda~\cite{www-amazon-lambda}, Google
 Cloud Functions~\cite{www-google-cf}, Azure Functions~\cite{www-microsoft-af}, and
 Apache OpenWhisk~\cite{www-apache-openwhisk}.  These platforms provide a model in
-which: (1)  User code is invoked whenever some event occurs (e.g., an HTTP
+which: (1)  user code is invoked whenever some event occurs (e.g., an HTTP
 API request), runs to completion, and nominally stops running (and being
-billed) after it completes; and (2)  There is no state preserved between
+billed) after it completes; and (2)  there is no state preserved between
 separate invocations of the user code.  Property (2) enables easy auto-scaling
 of the function as load changes.
 
@@ -47,7 +47,8 @@ Xu:nsdi2013,Li:socc2014,Jeon:asplos2016}.
 
 Thus we seek to reduce the invocation latency and improve predictability, a
 goal supported by the impressively low network latencies available in modern
-datacenters. It now takes $<20\mu{}s$ to perform an RPC between two machines in
+datacenters. For example, it now takes $<20\mu{}s$ to perform an RPC between two
+machines in
 Microsoft Azure's virtual machines~\cite{Firestone:nsdi2018}. We believe,
 however, that fully leveraging this improving network performance will require
 reducing microservices' invocation latencies to the point where the network is
@@ -70,7 +71,7 @@ writes) will further accelerate this trend by offering lower-latency storage.
 
 In this paper, we propose a restructuring of the serverless model centered around
 low-latency: \textit{lightweight microservices} run in \textit{shared processes}
-and are isolated primarily using \textit{compile-time guarantees} and
+and are isolated primarily with language-based \textit{compile-time guarantees} and
 \textit{fine-grained preemption}.
 
 %% \subsection{Not yet rewritten}

@@ -14,16 +14,16 @@ findings:  (1) Process-level isolation is too slow for
 microsecond-scale user functions. (2) Commodity
 CPUs support task preemption at microsecond scale.  We conducted our experiments
 \footnote{\solb{Add link to source code repo.}}
-on a single Intel Xeon E5-2683 v4 server (16 cores, 2.1~GHz) running
-Linux 4.13.0; we discuss the results below.
+on a single Intel\textcopyright\@ Xeon\textcopyright\@ E5-2683 v4 server (16 cores, 2.1~GHz) running
+Linux 4.13.0.
 
 \subsection{Process-level isolation is too slow}
-We use a single-machine experiment to evaluate the invocation overhead of
-isolation: We use 14 \emph{worker} CPU cores to run microservices. Another
+We use a single-machine experiment to evaluate the invocation overhead of different
+isolation mechanisms: We use 14 \emph{worker} CPU cores to run microservices. Another
 core runs a \emph{dispatcher} process that initiates microservice execution on the
 workers.  All requests originate
 from the dispatcher (which in the case of a full serverless platform would instead
-forward them from some cluster-level scheduler).  The dispatcher schedules up to 14
+forward from a cluster-level scheduler).  The dispatcher schedules up to 14
 microservices at a time (i.e., one per worker core), choosing from a pool of 5,000.
 
 To provide a comparison against contemporary system designs, we use two different
@@ -73,13 +73,14 @@ dynamic libraries preloaded into the worker processes.
 \end{center}
 \end{table}
 
-Table~\ref{tab:invocperf} shows the latency and throughput achieved by the two
+Table~\ref{tab:invocperf} shows the latency and throughput of the two
 methods.  We find that the process-based isolation approach takes \us{9} and achieves
-only 300,000 microservice invocations per second. In contrast, language-based
-isolation achieves \us{1.2} (with a tail of just \us{2.0}) and over 5 million
+only 300,000 warm microservice invocations per second. In contrast, language-based
+isolation achieves \us{1.2} latency (with a tail of just \us{2.0}) and over 5 million
 invocations per second.
 
-Considering that FaRM achieved mean TATP transaction commit latencies as low as
+Considering that the FaRM distributed computing platform
+achieved mean TATP transaction commit latencies as low as
 \us{19} in 2015~\cite{Dragojevic:sosp2015}, a \us{9} delay in microservice invocation
 already represents almost 50\% overhead for a microservice providing a thin API
 gateway to such a backend service.  We therefore conclude that even in the average
@@ -92,9 +93,9 @@ only 1.3 GiB with the language-based one.  However, this benefit may reduce as
 microservices' code sizes increase.
 
 \paragraph{Cold-start requests.}
-While achieving ideal wakeup times is only possible when the microservices are
-already resident, the tail latency of the serverless platform will be
-determined by requests whose microservices must be loaded
+Achieving ideal wakeup times is possible only when the microservices are
+already resident, but the tail latency of the serverless platform depends on
+those requests whose microservices must be loaded
 before they can be invoked.  To assess the difference between process-based and
 language-based isolation in this context, we run the experiment with the following
 change:  In the former case, the dispatcher now launches a transient
@@ -113,13 +114,13 @@ thwart such scheduling by unexpectedly consuming the resources of a worker that
 already had numerous other requests queued.  We hypothesize that, in such situations,
 it is better for tail latency to preempt the long microservice than retarget the
 waiting jobs to other nodes in real time.  At our scale, this means a preemption
-interval up to two orders of magnitude faster than Linux's default \ms{4} time
-quantum.
+interval up to two orders of magnitude faster than Linux's default \ms{4} process
+scheduling quantum.
 
 Fortunately, we find that high-precision event timers (HPETs) on modern CPUs
 are sufficient for this task. We measure the granularity and reliability of
-these timers as follows: We run one thread that requests a periodic timer with a
-configurable interval of $T$~\textmu{}s and installs an associated signal handler.
+these timers as follows: We install a signal handler and configure a POSIX timer to
+trigger it every $T$~\textmu{}s.
 Ideally, this handler would always be called exactly $T$~\textmu{}s after its last
 invocation; we measure the deviation from $T$ over 256 iterations.
 We find that the variance

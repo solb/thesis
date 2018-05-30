@@ -4,11 +4,11 @@
 In order to permit applications to \textit{fully leverage the 10s of $\mu{}s$
 latencies available from the latest datacenter networks}, we propose a novel design
 for serverless platforms that runs user-submitted microservices within shared
-processes.  This structure is possible because of
+processes.  This structure is possible because of language-based
 \textit{compile-time memory safety guarantees} and \textit{microsecond-scale
 preemption}.  Our implementation and experiments demonstrate that these goals of
 high throughput, low invocation latency, and rapid preemption are achievable
-on today's commodity systems, while supporting hundreds of thousands of
-microservices concurrently available for execution on each machine.  We believe that these
+on today's commodity systems, while potentially supporting hundreds of thousands of
+concurrently available microservices on each compute node.  We believe that these
 two building blocks will enable new FaaS platforms that can deliver single-digit
 invocation latency for lightweight, short-lived tasks.

@@ -19,8 +19,8 @@ leverage Rust~\cite{www-rustlang}, a new type-safe systems programming language.
 
 Rust is a strongly-typed, compiled language that uses a lightweight runtime
 similar to C.  Unlike many other modern systems languages, Rust is an
-attractive choice when predictable performance is critical due to its
-lack of a garbage collector.  Still, it manages to provide strong memory safety
+attractive choice when predictable performance is critical because it does not use
+a garbage collector.  Still, it manages to provide strong memory safety
 guarantees by focusing on ``zero-cost abstractions'' (i.e., those that can be
 compiled down to code whose safety is assured without runtime checks).  In
 particular, safe Rust code is guaranteed to be free of null or dangling pointer
@@ -43,7 +43,7 @@ Our system, however, must be preemptive. We are unaware of existing preemption
 techniques that work at microsecond scales. Note that coroutine-like
 cooperative multitasking approaches (such as lightweight threads in
 Go~\cite{www-golang} and Erlang~\cite{www-erlang}) are not preemptive, so they
-do not work for us. We discuss our solution to this in the following section;
+do not work for us. We briefly discuss our solution to this in the following section;
 it depends on installing a \texttt{SIGALRM} handler and ensuring that trusted
 code within the process handles the signal.
 
@@ -56,7 +56,7 @@ terminate the entire worker (e.g., \texttt{exit()}). Finally, user functions sho
 not have unmonitored file system access.
 
 We propose to block system calls using Linux's \texttt{seccomp()} system
-call~\cite{seccomp-manpage}, which each worker process should call during
-initialization, thereby limiting itself to a whitelisted set of system calls.
-Prior to lockdown, the worker process should install a \texttt{SIGSYS} handler and
-tear down the running microservice if it is ever received.
+call~\cite{seccomp-manpage}; each worker process should call this during
+initialization to limit itself to a whitelisted set of system calls.
+Prior to lockdown, the worker process should install a \texttt{SIGSYS} handler
+for regaining control from any microservice that attempts to violate the policy.
