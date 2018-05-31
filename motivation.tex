@@ -108,15 +108,18 @@ overshadowed by the three orders of magnitude increase for process-based
 isolation.
 
 \subsection{Intra-process preemption is fast}
-In a serverless system using language-based isolation, a cluser-level scheduler would
-handle routing of requests to individual worker nodes.  Since we run user-provided
+In a complete serverless system, some cluser-level scheduler would route incoming
+requests to individual worker nodes.  Since we run user-provided
 microservices directly in worker processes, a rogue long-running microservice could
 thwart such scheduling by unexpectedly consuming the resources of a worker that
 already had numerous other requests queued.  We hypothesize that, in such situations,
 it is better for tail latency to preempt the long microservice than retarget the
-waiting jobs to other nodes in real time.  At our scale, this means a preemption
-interval up to two orders of magnitude faster than Linux's default \ms{4} process
-scheduling quantum.
+waiting jobs to other nodes in real time.  (Only the compute node already assigned a
+request is well positioned to know whether that request is being excessively
+delayed:\@ whereas other nodes can only tell that the request hasn't yet
+\textit{completed}, this node alone knows whether it has been \textit{scheduled}.)
+At our scale, this means a preemption interval up to two orders of magnitude faster
+than Linux's default \ms{4} process scheduling quantum.
 
 Fortunately, we find that high-precision event timers (HPETs) on modern CPUs
 are sufficient for this task. We measure the granularity and reliability of
