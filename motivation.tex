@@ -60,18 +60,18 @@ dynamic libraries preloaded into the worker processes.
 \small
 \begin{tabular}{@{}llrrc@{}}
   \multicolumn{2}{c}{\textbf{Microservices}} & \multicolumn{2}{c}{\textbf{Latency (µs)}} & \textbf{Throughput} \\
-  \textbf{Resident?} & \textbf{Isolation} & Median & 99\% & \textbf{(M invoc/s)} \\
+  \textbf{Resident?} & \textbf{Isolation} & \textbf{Median} & \textbf{99\%} & \textbf{(M invoc/s)} \\
 \midrule
 \multirow{2}{*}{Warm-start} & Process & 8.7 & 27.3 & 0.29 \\
 & Language & 1.2 & 2.0 & 5.4~~ \\
 \midrule
-\multirow{2}{*}{Cold-start} & Process & 2845.8 & 15976.0 & \multicolumn{1}{c}{---} \\
-& Language & 38.7 & 42.2 & \multicolumn{1}{c}{---} \\
+\multirow{2}{*}{Cold-start} & Process & 2845.8 & 15976.0 & \multicolumn{1}{c}{--} \\
+& Language & 38.7 & 42.2 & \multicolumn{1}{c}{--} \\
 \end{tabular}
 \caption{Microservice invocation performance}
 \label{tab:invocperf}
 \end{center}
-\vspace{-12pt}
+\vspace{-24pt}
 \end{table}
 
 Table~\ref{tab:invocperf} shows the latency and throughput of the two
