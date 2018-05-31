@@ -29,8 +29,8 @@ To provide a comparison against contemporary system designs, we use two differen
 isolation mechanisms:
 \begin{enumerate}
 \item \textbf{Process-based isolation:} Each microservice is a separate process.
-We expect this approach to exhibit lower latency than the container isolation common
-in contemporary serverless deployments.
+We expect this approach to exhibit latency at least as low as the container isolation
+common in contemporary serverless deployments.
 \item \textbf{Language-based isolation:} Each worker core hosts a single-threaded
 \emph{worker process} that directly executes different microservices, one at a time.
 In this approach, shown in Figure~\ref{fig:sysdesign}, a worker process runs a
