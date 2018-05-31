@@ -13,17 +13,17 @@ Our decision to use language-based isolation is based on two experimental
 findings:  (1) Process-level isolation is too slow for
 microsecond-scale user functions. (2) Commodity
 CPUs support task preemption at microsecond scale.  We conducted our experiments
-on a single Intel\textcopyright\@ Xeon\textcopyright\@ E5-2683 v4 server (16 cores, 2.1~GHz) running
+on an Intel\textcopyright\@ Xeon\textcopyright\@ E5-2683 v4 server (16 cores, 2.1~GHz) and
 Linux 4.13.0.\footnote{\solb{Add link to source code repo.}}
 
 \subsection{Process-level isolation is too slow}
 We use a single-machine experiment to evaluate the invocation overhead of different
-isolation mechanisms: We use 14 \emph{worker} CPU cores to run microservices. Another
-core runs a \emph{dispatcher} process that initiates microservice execution on the
+isolation mechanisms: Microservices run on 14 \emph{worker} CPU cores. Another
+core runs a \emph{dispatcher} process that launches microservices on the
 workers.  All requests originate
-from the dispatcher (which in the case of a full serverless platform would instead
-forward from a cluster-level scheduler).  The dispatcher schedules up to 14
-microservices at a time (i.e., one per worker core), choosing from a pool of 5,000.
+at the dispatcher (which in a full serverless platform would
+forward from a cluster scheduler); it schedules $\le$14
+microservices at a time, one per worker core, choosing from a pool of 5,000.
 
 To provide a comparison against contemporary system designs, we use two different
 isolation mechanisms:
@@ -108,7 +108,7 @@ overshadowed by the three orders of magnitude increase for process-based
 isolation.
 
 \subsection{Intra-process preemption is fast}
-In a complete serverless system, some cluser-level scheduler would route incoming
+In a complete serverless platform, some cluser-level scheduler would route incoming
 requests to individual worker nodes.  Since we run user-provided
 microservices directly in worker processes, a rogue long-running microservice could
 thwart such scheduling by unexpectedly consuming the resources of a worker that
