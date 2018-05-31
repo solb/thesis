@@ -43,7 +43,7 @@ requests on a shared memory queue, which idle worker processes poll.
 \end{enumerate}
 
 \noindent
-We use 5,000 copies of a microservice that simply records a timestamp:\@
+We use 5,000 copies of a Rust microservice that simply records a timestamp:\@
 latency is measured between when the dispatcher invokes a microservice
 and the time that microservice records.  There are two experiment modes:
 
