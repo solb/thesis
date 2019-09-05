@@ -1,5 +1,19 @@
 \begin{abstract}
     
-TODO
+In a world where programs increasingly execute on rented datacenter computing
+resources, CPU time is money.  Both application developers and cloud providers would
+benefit from an easy abstraction for enforcing execution time limits at sub-process
+granularity.  We propose one such abstraction that is \textbf{lightweight} with
+respect to the OS and scheduler, \textbf{preemptive} to guard against tight
+computation loops, and uses an interface featuring structured control flow centered
+around familiar \textbf{functions}.  We present \textit{libinger}, a
+language-independent prototype implemented entirely in userland that functions atop
+the existing system stack with no major changes, and requires only light runtime
+support.  We then assess the overheads of this runtime support.  Finally, we present
+a few case studies demonstrating possible uses of the abstraction and discuss its
+end-to-end performance.
+
+\solb{``light runtime support'': Intro or design should explain that we require neither
+garbage collection nor kernel changes}
 
 \end{abstract}
