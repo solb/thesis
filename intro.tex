@@ -1,3 +1,44 @@
 \section{Introduction}
 
-TODO
+As with other aspects of isolation, operating systems traditionally enforce resource
+limits at the process level (e.g., via the kernel's preemptive process scheduler and
+mechanisms such as the \texttt{setrlimit} system call~\cite{setrlimit-manpage}).
+However, such an abstraction has two fundamental implications for application
+programmers who want to apply it to only a portion of their program's code:  The
+first is \textbf{ease of use}, because the unstructured control flow associated with
+process creation requires potentially involved code changes\footnote{The problem is
+worse than just the need to restructure the control flow:\@ as we'll see, any
+granular preemption is susceptible to concurrency problems, including conflicts
+involving POSIX's notion of \textit{async-safety}.}, and can make subsequent
+memory sharing difficult.  Equally problematic is the \textbf{performance}, because
+process creation incurs unwanted overheads in the virtual memory subsystem and
+necessarily involves repeated trips through the kernel's scheduler and
+context-switching codepaths, even in the case of a single-threaded program.
+
+We propose an abstraction that differs in several significant ways from this state of
+the art:  (1) To avoid unnecessarily involving the OS scheduler, it \textit{runs
+timed functions on the} caller's \textit{kernel thread}.  (2) Its \textit{preemption
+supports granularities in the 10s of microseconds}, orders of magnitude finer than
+contemporary OS schedulers (e.g., Linux traditionally defaulted to a 4-ms scheduling
+quantum\footnote{With the advent of the Completely Fair Scheduler, this interval has
+gone from fixed to floating, but it still only sinks as low as 1.5 ms.
+\solb{citation(s) needed: Probably the kernel docs}}).  (3) Its \textit{API avoids
+unstructured control flow}, minimizing both the design implications for application
+programmers and the code changes necessary to port existing software.
+
+\solb{``10s of microseconds'': Still need to benchmark this}
+
+In order to demonstrate the feasibility of such an abstraction, we have developed a
+prototype implementation in the form of \textit{libinger}\footnote{In the style of
+GNU's \textit{libiberty}, our library's name comes from the linker option used when
+building your application against it:\@ as the proverb goes, ``If you don't want your
+calls to linger, link with \texttt{-linger}.''}, an open-source shared library
+implemented in a combination of C, Rust~\cite{www-rustlang}, and x86-64 assembly.
+The rest of the paper proceeds as follows:  We discuss related work and contrast with
+other approaches to supporting timed function calls.  Next, we discuss the design of
+libinger.  Then we address its runtime costs, and present and benchmark sample use
+cases.  We address possible areas of future work.  Finally, we conclude.
+
+\solb{Section headings seem slightly mismatched to this flow.}
+
+\solb{Do we want to list our primary contributions here?}
