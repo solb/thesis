@@ -1,5 +1,22 @@
 \section{Introduction}
 
+\dga{Punt the intro until we've done the related work, design, and so forth.}
+
+\dga{Use the phrase ``resource container'' to generalize, and note that processes
+are the simplest abstraction that provides this.  Threads give you some, but have
+significant limitations.}
+
+\dga{Don't mention \texttt{setrlimit}.}
+
+\dga{Don't tie unstructured control flow to \texttt{fork()}; instead, further
+emphasize ``subsequent memory sharing difficult'' and the thread difficulties.}
+
+\solb{Cite \textit{fork() in the road}.}
+
+\mk{Motivate with thread library and microservices.}
+
+\mk{Look at the Windoze APIs.}
+
 As with other aspects of isolation, operating systems traditionally enforce resource
 limits at the process level (e.g., via the kernel's preemptive process scheduler and
 mechanisms such as the \texttt{setrlimit} system call~\cite{setrlimit-manpage}).
@@ -28,6 +45,13 @@ programmers and the code changes necessary to port existing software.
 
 \solb{``10s of microseconds'': Still need to benchmark this}
 
+\dga{Be careful about how soon (actually, just how) you broach the topic of Rust.
+You've provided a core functionality that allows the preemption of well-behaved
+functions.  To harden those guarantees, we have a Rust interface allowing you to
+combine that core with Rust-based language safety.}
+
+\mk{The first time you mention Rust, be sure to say it's not fundamental.}
+
 In order to demonstrate the feasibility of such an abstraction, we have developed a
 prototype implementation in the form of \textit{libinger}\footnote{In the style of
 GNU's \textit{libiberty}, our library's name comes from the linker option used when
@@ -38,6 +62,12 @@ The rest of the paper proceeds as follows:  We discuss related work and contrast
 other approaches to supporting timed function calls.  Next, we discuss the design of
 libinger.  Then we address its runtime costs, and present and benchmark sample use
 cases.  We address possible areas of future work.  Finally, we conclude.
+
+\dga{We're going to need an architecture diagram.  Maybe only in the design section,
+but if so it shouldn't appear to contradict what we say here.}
+
+\mk{Make it clear from the flow which of Design people should skip if they don't want
+to know about libgotcha's internals.}
 
 \solb{Section headings seem slightly mismatched to this flow.}
 
