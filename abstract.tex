@@ -11,7 +11,8 @@ language-independent prototype implemented entirely in userland that functions a
 the existing system stack with no major changes, and requires only light runtime
 support.  We then assess the overheads of this runtime support.  Finally, we present
 a few case studies demonstrating possible uses of the abstraction and discuss its
-end-to-end performance.
+end-to-end performance.  In particular, we show how lightweight preemptible functions
+can be trivially applied to implement a preemptive thread library in userland.
 
 \solb{``light runtime support'': Intro or design should explain that we require neither
 garbage collection nor kernel changes}
