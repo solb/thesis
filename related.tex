@@ -1,7 +1,24 @@
 \section{Related Work}
 
+\begin{table*}
+\begin{tabular}{c||c|c|c|c|c|c}
+& Non- & Divorces from & \multicolumn{2}{c|}{Dependencies} & \multicolumn{2}{c}{Third-party code support} \\
+System & cooperative & threading & In userland & Works without GC & No rewriting & No recompilation \\
+\hline
+\textit{Scheme engines} & \checkmark* & \checkmark & \checkmark && $\dagger$ & \\
+\textit{Lilt} && \checkmark & \checkmark && $\dagger$ & \\
+\textit{goroutines} &&& \checkmark &&& \\
+\textit{Realtime library} & \checkmark && \checkmark & \checkmark && \\
+\textit{Shinjuku} & \checkmark &&& \checkmark && \\
+\hline
+\textit{libinger} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark
+\end{tabular}
+\centering{* = the language specification leaves the interaction with blocking system calls unclear} \\
+\centering{$\dagger$ = assuming the third-party library is written in a purely functional (stateless) fashion}
+\caption{Systems providing intra-process bounded execution time}
+\label{tab:related}
+\end{table*}
+
 TODO
 
 \solb{Shinjuku: Highlight the advantages of not using a separate watchdog core}
-
-\solb{Fig. 1A: Checkmark chart comparing against prior art}
