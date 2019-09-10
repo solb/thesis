@@ -19,6 +19,33 @@ System & cooperative & threading & In userland & Works without GC & No rewriting
 \label{tab:related}
 \end{table*}
 
-TODO
+A number of past projects (Table~\ref{tab:related}) have sought to provide bounded
+execution time at sub-process granularity.  For the purposes of our discussion, we
+refer to the portion of the code whose execution should be bounded as a \textbf{timed
+function} (a generalization of preemptible functions); exactly what form this takes
+depends on the system's interface.
 
-\solb{Shinjuku: Highlight the advantages of not using a separate watchdog core}
+Their interfaces notwithstanding, perhaps the systems' most distinguishing
+characteristic is the mechanism by which they enforce execution bounds.  At one end
+of the spectrum are so-called \textbf{cooperative} multitasking systems where a
+running timed function implicitly but voluntarily cedes use of the CPU to another
+task via a runtime check.  (A simple example is a system that injects code to check
+whether the timed function has expired at the beginning of every one of its function
+calls.)  The other extreme is filled by \textbf{preemptive} systems where the CPU
+interrupts the timed function and uses some independent code to reassign the CPU to
+another task.  (This is analogous to the clock interrupt--based scheduler provided
+by modern operating system kernels.)
+
+The cooperative approach has difficulty handling two types of timed functions, which
+may be able to avoid interruption:\@ (1) \textbf{blocking-call} ones that cause
+long-running traps (e.g., by making I/O system calls) transfer control to the kernel,
+thereby preventing the interruption logic from being run; and (2)
+\textbf{compute-bound} ones (e.g., tight loops), which may simply never call into the
+interruption logic.  Nonpreemptive systems may employ refined approaches to mitigate
+these problems, and in theory handle all the cases a preemptive one would be able to;
+in such a case, we classify them as \textbf{noncooperative}, since they do not assume
+that the timed function is well behaved.
+
+\solb{Explain that FFI is a pain point for third-party code even in Scheme and Lilt}
+
+\solb{Mention futures' relevance (and irrelevance)}
