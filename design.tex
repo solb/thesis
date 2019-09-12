@@ -203,10 +203,6 @@ function's real address, memoizes the result by updating the GOT entry, and fina
 jumps into the real function.  Subsequent calls to the PLT stub then forward to the
 real function after executing only the initial \texttt{jmpq} instruction.
 
-\paragraph{Intercepting cross-library calls}
-
-\solb{Figure showing \texttt{procedure\_linkage\_override()}'s path through the tables}
-
 \begin{figure}
 \begin{verbatim}
 0000000000001030 <printf@plt>:
@@ -216,6 +212,13 @@ real function after executing only the initial \texttt{jmpq} instruction.
 \end{verbatim}
 \caption{Example PLT entry for call to \texttt{printf()}}
 \label{fig:plt}
+\end{figure}
+
+\paragraph{Intercepting cross-library calls}
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/tables}
+\caption{\texttt{procedure\_linkage\_override()}'s table lookups}
 \end{figure}
 
 \subsection{Case study: Establishing AS-safety}
