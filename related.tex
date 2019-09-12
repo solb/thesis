@@ -2,8 +2,8 @@
 
 \begin{table*}
 \begin{tabular}{c||c|c|c|c|c|c}
-& Non- & Divorces from & \multicolumn{2}{c|}{Dependencies} & \multicolumn{2}{c}{Third-party code support} \\
-System & cooperative & threading & In userland & Works without GC & No redesign & No recompilation \\
+&& Divorces from & \multicolumn{2}{c|}{Dependencies} & \multicolumn{2}{c}{Third-party code support} \\
+System & Unblockable & threading & In userland & Works without GC & No redesign & No recompilation \\
 \hline
 \textit{Scheme engines} & \checkmark* & \checkmark & \checkmark && $\dagger$ & --- \\
 \textit{Lilt} && \checkmark & \checkmark && $\dagger$ & \\
@@ -19,15 +19,18 @@ System & cooperative & threading & In userland & Works without GC & No redesign 
 \label{tab:related}
 \end{table*}
 
-A number of past projects (Table~\ref{tab:related}) have sought to provide bounded
-execution time at sub-process granularity.  For the purposes of our discussion, we
+\dga{Make the word timed function more generic so we can use it for threads too.}
+
+A number of past projects (Table~\ref{tab:related}) have sought to provide
+bounded-time execution of chunks of code at a sub-process granularity.
+For the purposes of our discussion, we
 refer to the portion of the code whose execution should be bounded as a \textbf{timed
 function} (a generalization of preemptible functions); exactly what form this takes
 depends on the system's interface.
 
 Their interfaces notwithstanding, perhaps the systems' most distinguishing
 characteristic is the mechanism by which they enforce execution bounds.  At one end
-of the spectrum are so-called \textbf{cooperative} multitasking systems where a
+of the spectrum are \textbf{cooperative} multitasking systems where a
 running timed function implicitly but voluntarily cedes use of the CPU to another
 task via a runtime check.  (A simple example is a system that injects code to check
 whether the timed function has expired at the beginning of every one of its function
@@ -36,6 +39,10 @@ interrupts the timed function and uses some independent code to reassign the CPU
 another task.  (This is analogous to the clock interrupt--based scheduler provided
 by modern operating system kernels.)
 
+\dga{Dave's stack can't handle the I/O system calls parenthetical.}
+
+\dga{Refined approaches is too vague.}
+
 The cooperative approach has difficulty handling two types of timed functions, which
 may be able to avoid interruption:\@ (1) \textbf{blocking-call} ones that cause
 long-running traps (e.g., by making I/O system calls) transfer control to the kernel,
@@ -43,7 +50,7 @@ thereby preventing the interruption logic from being run; and (2)
 \textbf{compute-bound} ones (e.g., tight loops), which may simply never call into the
 interruption logic.  Nonpreemptive systems may employ refined approaches to mitigate
 these problems, and in theory handle all the cases a preemptive one would be able to;
-in such a case, we classify them as \textbf{noncooperative}, since they do not assume
+in such a case, we classify them as \textbf{unblockable}, since they do not assume
 that the timed function is well behaved.
 
 One early well-known example of timed functions was the \textit{engines} feature of
@@ -69,6 +76,9 @@ Blocking-call functions are a challenge, however:\@ handling them would require
 operating system support, reminiscent of \textit{Singularity}'s static language-based
 isolation~\cite{hunt:msr2005}.
 
+\dga{Topic sentence broken. ``Recent language support for userland threading could be
+used to provide support for timed functions.  Once such example is goroutines...}
+
 More recent language support for timed functions is provied by the Go
 language~\cite{www-golang} in the form of \textit{goroutines}.  It breaks from
 Scheme's interface by presenting such functions as separate threads of executions.
@@ -77,6 +87,8 @@ threads per kernel thread, which is performed cooperatively by conditionally yie
 at function call points.  This has long caused problems with tight loops, with the
 traditional workaround being to manually add calls to the \texttt{runtime.Gosched()}
 yield function~\cite{www-golang-tightloop}.
+
+\mk{Just use the authors' names (e.g., M\&A-RT or just RT).}
 
 All the solutions discussed thus far rely on languages with a heavyweight, managed
 runtime that includes garbage collection.  However, some recent systems have sought
@@ -88,6 +100,9 @@ literature.  They install a time-based signal handler responsible for both sched
 tasks and migrating them between cores.  Thanks to their lightweight runtime, they
 are able to achieve average overall scheduling latencies in the tens of microseconds.
 
+\mk{It's not obvious why M\&A-RT isn't our panacea.  And I couldn't tie the idea of
+shared state back to the third-party code support column in the table.}
+
 \textit{Shinjuku}~\cite{Kaffes:nsdi2019} is an operating system designed to perform
 preemption at microsecond scale.  Built on the Dune framework~\cite{Belay:osdi2012},
 it runs tasks on a pool of worker threads controlled by a single centralized
@@ -98,9 +113,14 @@ imposed by performing them within a VT-x virtual machine, as required by Dune.  
 then implement optimizations to reduce these overheads at the expense of Shinjuku's
 isolation from the rest of the system.
 
+\dga{The FFI bit is jarring as a dependent clause.  Adding timed functions to a
+system that doesn't assume concurrency causes problems with shared state, and is only
+saved by the fact that they only support functional code.  Then talk about Go's
+specific FFI limitation separately.}
+
 Because Scheme engines and Lilt exist within a functional programming ecosystem, they
 are able to assume that timed functions will not interact with shared state.  This
-would be a very onerous requirement to impose in languages such as C, where it is
+would be an onerous requirement to impose in languages such as C, where it is
 common for libraries to rely on such state for error handling (e.g., libc's
 \texttt{errno} variable), resource allocation and assignment, caching and
 memoization, and countless other purposes.  Indeed, handling shared state turns out
@@ -108,7 +128,7 @@ to be the key challenge of providing timed functions, and one that prior work do
 not attempt to address:\@ foreign-function interface (FFI) calls to other languages
 don't work from Scheme engines or Lilt, are considered nonpreemptible when they
 occur in goroutines~\cite{www-golang-fficall}, and are not discussed by either the
-realtime threading library of Shinjuku.
+realtime threading library or Shinjuku.
 
 The fundamental problem with shared state is that interrupting nonreentrant code can
 leave its storage in an undefined state.  This implies that if we have two functions,
@@ -117,11 +137,20 @@ runtime a call to \texttt{bar()} in the middle of the execution of \texttt{foo()
 the result is undefined behavior.  In the C language, it's important to consider
 shared state whenever writing a signal handler, since it may be called at any point
 in the program's execution.  The POSIX standard defines the term async-signal-safe to
-refer to a function that is safe to invoke from a signal handler
+refer to a function that is safe to invoke from a signal
 handler~\cite{signal-safety-manpage}; the list of standard library functions required
 to exhibit this property notably excludes all heap-allocation functions such as
 \texttt{malloc()}.  Note that async-signal-safety is a stronger requirement than
 thread safety, since the code may interrupt itself, even within a critical section!
+
+\dga{Stronger requirement point should come earlier.  Addendum: Traditional
+approaches to thread safety would result in deadlock under the self-interruption
+case.  Circumventing would require substantial interface-level (breaking API)
+changes.}
+
+\dga{Note that solutions involving allowing the timed function to continue running
+are not acceptable because they give up our preemption property.  Maybe a concrete
+example?}
 
 A key observation about timed functions is that, as soon as an application calls one,
 its safety properties change.  In particular, because the function might not run to
