@@ -75,7 +75,9 @@ type stateful as well, allowing \texttt{resume()} to mutate it in place.
 function, we return it directly from \texttt{launch()}.  This decision was made
 because many modern languages have first-class tagged union (sum) types that allow
 the compiler to enforce that the caller explicitly checks whether the function
-completed and only accesses the appropriate side of the union.
+completed and only accesses the appropriate side of the union.  In addition to the
+barebones C interface, our current implementation provides a Rust interface
+demonstrating many of these extensions.
 
 Those familiar with futures may notice their applicability to preemptible functions
 and simularity to our interface.  While each language's futures differ slightly,
@@ -85,26 +87,91 @@ budget of 0 $\mu$s.  Each attempt to poll the future for a value should resolve 
 call to \texttt{resume()} with the timeout passed to poll (if allowed by the
 language's API), or else previously associated with the future by other means.
 
-The rest of this section describes the implementation of the software stack that
-supports preemptible functions and fine-grained userland preemptive threading.  We
-start by discussing \textit{libgotcha} (Section~\ref{sec:libgotcha}), a library that
-seeks to automatically address many problems related to shared state in third-party
-code.  Next, we give an aside illustrating the straightforward application of
-libgotcha to provide POSIX async-signal-safety in places where it wouldn't otherwise
-exist (Section~\ref{sec:statefulness}).  We then cover the \textit{libinger} library
-for running preemptible functions (Section~\ref{sec:libinger}) and its interaction
-with libgotcha.  Finally, we present our experience with porting a userland threading
-library to libinger in order to make it preemptive (Section~\ref{sec:threading}).
-Figure~\ref{fig:architecture} shows these components in the overall architecture.
+The rest of this section describes the implementation of a novel open-source software
+stack supporting preemptible functions and fine-grained userland preemptive
+threading.  We start by discussing \textit{libgotcha} (Section~\ref{sec:libgotcha}),
+a library that seeks to automatically address many problems related to shared state
+in third-party code.  Next, we give an aside illustrating the straightforward
+application of libgotcha to provide POSIX async-signal-safety in places where it
+wouldn't otherwise exist (Section~\ref{sec:statefulness}).  We then cover the
+\textit{libinger} library for running preemptible functions
+(Section~\ref{sec:libinger}) and its interaction with libgotcha.  Finally, we present
+our experience with porting a userland threading library to libinger in order to make
+it preemptive (Section~\ref{sec:threading}).  Figure~\ref{fig:architecture} shows
+these components in the overall architecture.
 
 \begin{figure}
-\includegraphics[width=\columnwidth,angle=270]{figs/architecture}
+\includegraphics[height=\columnwidth,angle=270]{figs/architecture}
 \caption{Architecture of preemptible functions stack}
 \label{fig:architecture}
 \end{figure}
 
 \subsection{Shared state: \textit{libgotcha}}
 \label{sec:libgotcha}
+
+Although shared state is always a problem for preemptible functions, we classify code
+that relies on shared state depending on its location:\@ we term it \textbf{internal
+stateful code} if it is part of a project (i.e., in the same linked object file)
+that uses preemptible functions, and \textbf{external stateful code} otherwise (e.g.,
+as is the case for third-party libraries).  Recall that one of our goals is to
+support third-party libraries without needing to recompile them.
+
+We begin by briefly discussing internal stateful code.  Figure~\ref{fig:bug} shows
+a code passage with a concurrency bug:\@ because the \texttt{timed()} function does
+not use an atomic increment operation, its \texttt{launch()} invocation might be
+preempted after reading the \texttt{count} variable but before writing it, in which
+case the \texttt{resume()} will preserve the existing value of \texttt{1}, causing
+the assertion to fail.  We take the stance that internal stateful code is responsible
+for implementing its own concurrency control to fix this kind of problem, since the
+developers are aware they are using preemptible functions, and therefore (hopefully)
+are also aware of the concurrency implications.  If the internal stateful code is
+written in Rust instead of C, the compiler can statically prevent many such bugs by
+forcing the user to use atomics or locks to protect shared variables such as
+\texttt{count}.
+
+\begin{figure}
+\begin{verbatim}
+static int count = 0;
+
+static void *timed(void *ignored) {
+  ++count;
+}
+
+int main(void) {
+  struct linger res =
+    launch(timed, VERY_SHORT, NULL);
+  ++count;
+  resume(&res, LONG_ENOUGH);
+  assert(count == 2); // BUG!
+
+  return 0;
+}
+\end{verbatim}
+\caption{Concurrency bug in internal stateful code}
+\label{fig:bug}
+\end{figure}
+
+The problem we do have to handle is external stateful code, since there's no way an
+existing piece of code can be expected to know that it might be called from a
+preemptible function.  In other words, the developers of libraries such as
+\texttt{libc} should not need to know that preemptible functions exist.  On the other
+hand, we cannot restrict programs that use preemptible functions to calling only
+async-signal-safe functions.
+
+To accomplish both objectives, we slightly weaken the guarantees of either dynamic
+linking or preemption, depending on the scenario.  In the common case, we weaken the
+property that every use of a dynamically-linked function or global variable resolves
+to the same address:\@ we open multiple copies of the shared objects required by the
+application, and direct cross-library references to a separate copy for each
+preemptible function.  In this way, we ensure that inconsistent state from a library
+used by one preemptible function cannot affect uses of that same library by other
+preemptible functions or the broader application.  While this approach works for many
+libraries, it is sometimes inappropriate; for instance, using multiple copies of the
+dynamic allocator would cause them to manage the same heap with different free lists.
+In such cases, we direct all dynamic calls to the same copy of the function and defer
+preemption on that thread until the call has completed, in the style of goroutines.
+The rest of this section describes the implementation of these two approaches.  Note
+that, in principle, libgotcha functions with the unmodified GNU dynamic linker.
 
 \subsection{Case study: Establishing AS-safety}
 \label{sec:statefulness}

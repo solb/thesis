@@ -120,7 +120,8 @@ in the program's execution.  The POSIX standard defines the term async-signal-sa
 refer to a function that is safe to invoke from a signal handler
 handler~\cite{signal-safety-manpage}; the list of standard library functions required
 to exhibit this property notably excludes all heap-allocation functions such as
-\texttt{malloc()}.
+\texttt{malloc()}.  Note that async-signal-safety is a stronger requirement than
+thread safety, since the code may interrupt itself, even within a critical section!
 
 A key observation about timed functions is that, as soon as an application calls one,
 its safety properties change.  In particular, because the function might not run to
