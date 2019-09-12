@@ -156,7 +156,12 @@ existing piece of code can be expected to know that it might be called from a
 preemptible function.  In other words, the developers of libraries such as
 \texttt{libc} should not need to know that preemptible functions exist.  On the other
 hand, we cannot restrict programs that use preemptible functions to calling only
-async-signal-safe functions.
+async-signal-safe functions.  This is where libgotcha comes in:\@ it instruments the
+boundaries between relocated ELF object files (i.e., executables and dynamic shared
+objects), which we term \textbf{cross-library references} (in the case of global
+variables) and \textbf{cross-library calls} (in the case of function calls).
+
+\solb{May need to explicitly define these as a subset of dynamic .*s}
 
 To accomplish both objectives, we slightly weaken the guarantees of either dynamic
 linking or preemption, depending on the scenario.  In the common case, we weaken the
@@ -172,6 +177,42 @@ In such cases, we direct all dynamic calls to the same copy of the function and 
 preemption on that thread until the call has completed, in the style of goroutines.
 The rest of this section describes the implementation of these two approaches.  Note
 that, in principle, libgotcha functions with the unmodified GNU dynamic linker.
+
+\paragraph{GOTs and PLTs}
+
+When a dynamically-linked executable is run, the kernel first passes control to the
+dynamic linker, \texttt{ld.so}, which loads all required shared object files and
+populates their respective \textbf{global offset tables (GOTs)}\footnote{It is from
+these structures that \textit{lib\textbf{got}cha} gets its name.} with the resolved
+addresses of any referenced dynamic symbols.  Once the program is loaded, any
+dynamic references to global variables (which correspond to x86-64 instructions of
+the form \texttt{mov~\textit{symbol}@gotpcrel(\%rip),~\%\textit{dest}}) look up the
+target symbols' addresses in the GOT for the object file containing the referencing
+code.
+
+Dynamic function calls are slightly more complicated because they can resolve lazily
+the first time they are called.  For instance, the instruction
+\texttt{call~printf@plt} causes the assembler to generate a corresponding executable
+\textbf{Procedure Linkage Table (PLT)} stub function, as shown in
+Figure~\ref{fig:plt}.  The first instruction of this stub looks up the address of the
+function by checking a corresponding GOT entry; however, initially this contains the
+address of the immediately-following \texttt{pushq} instruction!  Thus, on the first
+call, the PLT stub pushes a symbol relocation identifier (here, \texttt{0x0}) onto
+the stack and calls into the dynamic linker, which resolves the symbol to the
+function's real address, memoizes the result by updating the GOT entry, and finally
+jumps into the real function.  Subsequent calls to the PLT stub then forward to the
+real function after executing only the initial \texttt{jmpq} instruction.
+
+\begin{figure}
+\begin{verbatim}
+0000000000001030 <printf@plt>:
+  1030:  jmpq   *0x2fe2(%rip) <printf>
+  1036:  pushq  $0x0
+  103b:  jmpq   1020 <.plt>
+\end{verbatim}
+\caption{Example PLT entry for call to \texttt{printf()}}
+\label{fig:plt}
+\end{figure}
 
 \subsection{Case study: Establishing AS-safety}
 \label{sec:statefulness}
