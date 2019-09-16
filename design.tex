@@ -176,7 +176,8 @@ The rest of this section describes the implementation of these two approaches.  
 that, in principle, libgotcha functions with the unmodified GNU dynamic linker.
 
 \solb{May need to define libset here, and at least need to introduce the current
-libset variable.}
+libset variable.  Should mention that the main libset will correspond to the area
+outside any timed function.}
 
 \paragraph{Dynamic linking}
 
@@ -309,17 +310,84 @@ codepath!  In order to prevent this, the constructor updates the relocation entr
 corresponding to cross-library calls to point at \textit{shadow} GOT entries.  This
 means that memoization still works, as shown in Figure~\ref{fig:override}.
 
-\paragraph{Incercepting cross-library references}
-
-\solb{Mention taking the address of a function}
-
-\solb{Mention COPY relocations and DF\_1\_NODELETE libraries}
-
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/tables}
 \caption{\texttt{procedure\_linkage\_override()}'s table lookups}
 \label{fig:override}
 \end{figure}
+
+\paragraph{Incercepting cross-library references}
+
+The reader might notice that invocation is not the only thing a program can do with a
+function:\@ it might also pass around the function's address.  In fact, after taking
+the address, it could pass it to code within a different object file, which might
+compare it.  In order for such comparisons to correctly indicate whether the same
+code will be run, the compiler loads such addresses directly from the GOT via
+instructions of the special position-independent relocation form
+\texttt{mov~\textit{symbol}@gotpcrel(\%rip),~\%\textit{dest}}, and the dynamic linker
+resolves the calls and populates their GOT entries eagerly at load time.  To avoid
+breaking pointer-comparison semantics, libgotcha makes sure to share the same PLOT
+stub between all GOT entries that symbol that are accessed using this type of
+relocation.  As long as the current libset remains the same between the time of a
+function pointer comparison and the time of its invocation, such a comparison
+guarantees that \texttt{procedure\_linkage\_override()} will use the same copy of
+that invocation.
+
+Handling references to global data besides functions is more challenging, and less
+efficient, because such accesses use the aforementioned position-independent
+relocation but don't include a PLT-style codepath through the dynamic linker.
+In order to capture (hopefully rare) cross-library references to global variables,
+we employ a special trick.  After each shadow GOT page, we allocate an inaccessible
+page with no protection bits set.  Every time the libgotcha constructor encounters a
+relocation entry corresponding to a data symbol, it migrates the contents of its GOT
+entry into an available shadow GOT entry, replacing it with an address the same
+number of bytes into the shadow GOT's corresponding inaccessible page.  Thus,
+whenever the program takes the address of a particular symbol, it gets the same fake
+address.  Any attempt to read from or write to this address results in a segmentation
+fault, which libgotcha catches; it then looks up the real address in the shadow GOT
+corresponding to the currently-selected libset, disassembles the offending
+instruction(s), and replaces the contents of the memory-address register with the
+found address.  Once the signal handler returns, the instruction executes again, this
+time with a valid memory address in its register.  Although it's possible to generate
+code sequences that are incompatible with this approach (e.g., because they perform
+in-place pointer arithmetic on a register rather than using displacement-mode
+addressing with a base address), in our experience public shared data is rare enough
+that we haven't yet encountered any cases where programs do this.
+
+\paragraph{Two workarounds}
+
+The libgotcha approach has known conflicts with two modern extensions to the
+dynamic-linking model.  Here we discuss these shortcomings and our proposed
+workarounds.
+
+When an executable directly accesses a global variable defined in a shared library,
+the assembler migrates it into the executable, allowing the main program to access it
+via static relocations instead of via the GOT.  The static linker generates a COPY
+relocation that causes the dynamic linker to copy the variable's contents from the
+shared library to the new location at load time.  Unfortunately, this approach makes
+it impossible for us to intercept cross-library references occurring within the
+executable, and causes associated dynamic references in the defining shared library
+to be erroneously treated as cross-library references.  For this reason, libgotcha
+emits a warning when it detects a COPY relocation.  Developers can avoid the problem
+by compiling any executables that use libgotcha with the C compiler's \texttt{-fpic}
+flag to skip generating such relocations.
+
+Some shared libraries are marked with a special configuration flag,
+\texttt{DF\_1\_NODELETE}, which prevents the dynamic linker from ever removing them
+once they've been loaded.  Because almost all libraries depend on libc, the presence
+of even one such library prevents us from reinitializing a libset for reuse after
+its timed function has been canceled!  The flag is mostly used on libraries that need
+to monkey-patch some other loaded library, such that the two subsequently have a
+circular dependency.  Fortunately, this is not usually a problem because when we
+unload one library from a libset, we then unload the rest, so whenever we encounter a
+\texttt{NODELETE} object file, we make a special copy with the flag cleared for
+loading into every namespace except the main one.  The one place this doesn't work is
+when a library replaces function pointers within the dynamic linker itself.  This
+requires the use of a private interface, and the only offending library to our
+knowledge is GNU libpthread, which replaces function pointers in order to cause the
+dynamic linker to take locks when performing potentially concurrent operations; we
+handle this by preventing the monkey-patching constructor code from running in our
+modified copy of the library.
 
 \subsection{Case study: Establishing AS-safety}
 \label{sec:statefulness}
