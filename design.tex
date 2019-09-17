@@ -116,7 +116,7 @@ that uses preemptible functions, and \textbf{external stateful code} otherwise (
 as is the case for third-party libraries).  Recall that one of our goals is to
 support third-party libraries without needing to recompile them.
 
-We begin by briefly discussing internal stateful code.  Figure~\ref{fig:bug} shows
+We begin by briefly discussing internal stateful code.  Figure~\ref{fig:ingerbug} shows
 a code passage with a concurrency bug:\@ because the \texttt{timed()} function does
 not use an atomic increment operation, its \texttt{launch()} invocation might be
 preempted after reading the \texttt{count} variable but before writing it, in which
@@ -148,7 +148,7 @@ int main(void) {
 }
 \end{verbatim}
 \caption{Concurrency bug in internal stateful code}
-\label{fig:bug}
+\label{fig:ingerbug}
 \end{figure}
 
 The problem we do have to handle is external stateful code, since there's no way an
@@ -417,6 +417,69 @@ modified copy of the library.
 
 \subsection{Case study: Establishing AS-safety}
 \label{sec:statefulness}
+
+The main use of libgotcha is to make library function calls async-signal safe when
+they wouldn't otherwise be.  We now pause to give a brief example of such usage,
+motivated by the buggy program in Figure~\ref{sec:handerbug}, which calls the
+async-signal-unsafe function \texttt{printf()} from its signal handler.
+Unfortunately, this function takes a lock on the \texttt{stdout} stream's associated
+file descriptor, and the signal handler eventually updates the program within
+\texttt{fflush()} while it is holding this same lock, resulting in deadlock.
+
+\begin{figure}
+\begin{verbatim}
+static void handler(int ignored) {
+  printf("in signal handler()\n");
+}
+
+int main(void) {
+  struct sigaction sa = {
+    .sa_handler = handler,
+  };
+  sigaction(SIGALRM, &sa, NULL);
+
+  struct timeval tv = {
+    .tv_sec = 1,
+  };
+  struct itimerval it = {
+    .it_interval = tv,
+    .it_value = tv,
+  };
+  setitimer(ITIMER_REAL, &it, NULL);
+
+  while(true)
+    fflush(stdout);
+}
+\end{verbatim}
+\caption{C program with a buggy signal handler}
+\label{sec:handlerbug}
+\end{figure}
+
+There are two ways to weaken the semantics of this program to prevent the deadlock
+without modifying the program's source code.  (1) We can elide the file descriptor
+lock, which in this case may occasionally allow the signal handler's output to
+interleave with any (hypothetical) output from the main program (if the signal
+handler interrupts a \texttt{write} syscall from the stream library implementation).
+(2) We can defer handling of any signal that arrives during a call to
+\texttt{fflush()} until that function returns.
+
+In 127 lines of C, we wrote a signal-handling client library, \textit{libas-safe},
+that can use libgotcha to automatically transform the program in either of these
+ways.  It injects code before \texttt{main()} to switch to a new libset, and
+provides a custom implementation of \texttt{sigaction()} that switches the current
+libset back to the main one while each signal handler is running.  This is enough to
+achieve transformation (1), since it causes \texttt{main()} and \texttt{handler()} to
+use distinct copies of the buffered \texttt{stdio} object.  One other
+\textit{libas-safe} feature enables transformation (2):\@ whenever the main libset is
+already selected when a signal handler runs, that handler is deferred (using
+libgotcha's callback mechanism) until the current shared call returns.  This
+transformation can be demonstrated for this program by whitelisting the stdio
+functions and streams.
+
+As expected, use of either transformation prevents deadlock just by virtue of linking
+the buggy program against libas-safe.  Recall that the use of a preemptible function
+imposes the restrictions of a signal handler on the rest of the program, restrictions
+that can be lifted by the use of libgotcha.
 
 \subsection{Preemptible functions: \textit{libinger}}
 \label{sec:libinger}
