@@ -354,6 +354,32 @@ in-place pointer arithmetic on a register rather than using displacement-mode
 addressing with a base address), in our experience public shared data is rare enough
 that we haven't yet encountered any cases where programs do this.
 
+\paragraph{Shared symbols}
+
+\solb{Make it clearer that the selected namespace is not the same as the running one}
+
+As aforementioned, certain systems such as the dynamic memory allocator do not work
+well when copied, and must be treated separately.  Specifically, libgotcha maintains
+a whitelist of \textbf{shared symbols} whose use is always redirected back to the
+main namespace.  Of course, this introduces our original limitation of being unable
+to preempt during such calls; as such, the whitelist should be kept small, since the
+inclusion of each function confers trust in its timely completion.
+
+It is important not to whitelist all of libc just to isolate the dynamic allocator in
+this way, as preemptible functions could easily exploit this to run forever (e.g., by
+performing their work in the \texttt{qsort()} function's comparator callback).
+Fortunately, libc uses dynamic calls when it needs to invoke the allocator
+internally, allowing us to whitelist that component alone.
+
+In order to support more complex systems, libgotcha exposes a simple API for dealing
+with shared symbols.  Whenever \texttt{procedure\_linkage\_override()} transfers
+control to the main libset, it resets the current libset so that all subsequent calls
+will remain in shared code.  Client code can check the current libset to determine
+whether it is safe to preempt.  Furthermore, libgotcha provides an interface by which
+client code can provide a callback to be invoked upon return from the shared code,
+immediately after the transition back to the original libset:\@ it can use this
+callback to perform a deferred preemption check at the earliest possible point.
+
 \paragraph{Two workarounds}
 
 The libgotcha approach has known conflicts with two modern extensions to the
