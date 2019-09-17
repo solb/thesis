@@ -312,7 +312,7 @@ modified copy of the library.
 
 The main use of libgotcha is to make library function calls async-signal safe when
 they wouldn't otherwise be.  We now pause to give a brief example of such usage,
-motivated by the buggy program in Figure~\ref{sec:handerbug}, which calls the
+motivated by the buggy program in Figure~\ref{sec:handlerbug}, which calls the
 async-signal-unsafe function \texttt{printf()} from its signal handler.
 Unfortunately, this function takes a lock on the \texttt{stdout} stream's associated
 file descriptor, and the signal handler eventually updates the program within
