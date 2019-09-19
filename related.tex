@@ -19,49 +19,43 @@ System & Unblockable & threading & In userland & Works without GC & No redesign 
 \label{tab:related}
 \end{table*}
 
-\dga{Make the word timed function more generic so we can use it for threads too.}
-
 A number of past projects (Table~\ref{tab:related}) have sought to provide
 bounded-time execution of chunks of code at a sub-process granularity.
 For the purposes of our discussion, we
-refer to the portion of the code whose execution should be bounded as a \textbf{timed
-function} (a generalization of preemptible functions); exactly what form this takes
+refer to a portion of the program whose execution should be bounded as \textbf{timed
+code} (a generalization of a preemptible function); exactly what form this takes
 depends on the system's interface.
 
 Their interfaces notwithstanding, perhaps the systems' most distinguishing
 characteristic is the mechanism by which they enforce execution bounds.  At one end
-of the spectrum are \textbf{cooperative} multitasking systems where a
-running timed function implicitly but voluntarily cedes use of the CPU to another
+of the spectrum are \textbf{cooperative} multitasking systems where
+timed code implicitly but voluntarily cedes use of the CPU to another
 task via a runtime check.  (A simple example is a system that injects code to check
-whether the timed function has expired at the beginning of every one of its function
+whether the timed code has expired at the beginning of every one of its code
 calls.)  The other extreme is filled by \textbf{preemptive} systems where the CPU
-interrupts the timed function and uses some independent code to reassign the CPU to
-another task.  (This is analogous to the clock interrupt--based scheduler provided
-by modern operating system kernels.)
+interrupts the timed function and transfers control to a scheduler routine (e.g., via
+an interrupt service routine or signal handler).
 
-\dga{Dave's stack can't handle the I/O system calls parenthetical.}
+\dga{Refined approaches \textit{was} (?) too vague}
 
-\dga{Refined approaches is too vague.}
-
-The cooperative approach has difficulty handling two types of timed functions, which
-may be able to avoid interruption:\@ (1) \textbf{blocking-call} ones that cause
-long-running traps (e.g., by making I/O system calls) transfer control to the kernel,
+The cooperative approach tends to be unable to interrupt two classes of timed code:\@
+(1) \textbf{blocking-call} code sections that cause
+long-running kernel traps (e.g., by making I/O system calls),
 thereby preventing the interruption logic from being run; and (2)
-\textbf{compute-bound} ones (e.g., tight loops), which may simply never call into the
-interruption logic.  Nonpreemptive systems may employ refined approaches to mitigate
-these problems, and in theory handle all the cases a preemptive one would be able to;
-in such a case, we classify them as \textbf{unblockable}, since they do not assume
-that the timed function is well behaved.
+\textbf{compute-bound} code (e.g., tight loops), which may simply never call into the
+interruption logic.  Although some cooperative systems refine their approach to
+tolerate some such code sections, we're not aware of any existing system that is able
+to handle both cases.
 
-One early well-known example of timed functions was the \textit{engines} feature of
+One well-known early example of timed code was the \textit{engines} feature of
 the Scheme 84 language~\cite{haynes:iucs1984}.  The feature added an \texttt{engine}
-keyword that behaved similarly to the \texttt{lambda} one, but created a "thunk"
+keyword that behaved similarly to the \texttt{lambda} one, but created a ``thunk''
 accepting as an argument the number of ticks (abstract time units) it should run for.
 In their interface, the caller also supplied a callback function to receive the
-timed function's return value upon successful completion.  Like the rest of the
+timed code's return value upon successful completion.  Like the rest of the
 Scheme language, engines were stateless:\@ whenever one ran out of computation time,
 it would return a new engine representing the new execution point.  The
-implementation of engines relied heavily on Scheme's heavyweight runtime, with ticks
+implementation of engines relied heavily on Scheme's managed runtime, with ticks
 corresponding to virtual machine instructions and cleanup handled by the garbage
 collector.  The VM dependency was not fundamental, however, as the literature notes
 that timer interrupts could have been used instead.
@@ -71,37 +65,32 @@ programs with statically-enforced timing policies~\cite{vanderwaart:cmucs2006}. 
 language's compiler tracks the possible duration of each path through the program and
 and inserts yield operations wherever its time might have expired.  Although this
 approach requires knowing the execution limit at compile time, the compiler is able
-to handle compute-bound timed functions thanks to its awareness of backward jumps.
-Blocking-call functions are a challenge, however:\@ handling them would require
+to handle compute-bound timed code thanks to its awareness of backward jumps.
+Blocking-call functions remained a challenge, however:\@ handling them would have
+required
 operating system support, reminiscent of \textit{Singularity}'s static language-based
 isolation~\cite{hunt:msr2005}.
 
-\dga{Topic sentence broken. ``Recent language support for userland threading could be
-used to provide support for timed functions.  Once such example is goroutines...}
-
-More recent language support for timed functions is provied by the Go
-language~\cite{www-golang} in the form of \textit{goroutines}.  It breaks from
-Scheme's interface by presenting such functions as separate threads of executions.
-The language's heavyweight runtime is responsible for scheduling multiple such user
+Some recent languages offer userland threading, which could be used to support timed
+code.  One such example is the Go language's~\cite{www-golang} \texttt{goroutines}.
+The language's runtime is responsible for scheduling multiple such user
 threads per kernel thread, which is performed cooperatively by conditionally yielding
 at function call points.  This has long caused problems with tight loops, with the
 traditional workaround being to manually add calls to the \texttt{runtime.Gosched()}
 yield function~\cite{www-golang-tightloop}.
 
-\mk{Just use the authors' names (e.g., M\&A-RT or just RT).}
-
-All the solutions discussed thus far rely on languages with a heavyweight, managed
-runtime that includes garbage collection.  However, some recent systems have sought
+All the solutions discussed thus far rely on languages with a heavyweight,
+garbage-collecting runtime.  However, some recent systems have sought
 to provide timed functions in a language-agnostic fashion that minimizes such
 dependencies.  One example is the userland C-language thread library for realtime
-systems developed by Mollison and Anderson~\cite{mollison:rtas2013}, which performs
+systems developed (here, ``\texttt{RT}'') by Mollison and
+Anderson~\cite{mollison:rtas2013}, which performs
 preemption using timer interrupts, as proposed in the early Scheme engines
 literature.  They install a time-based signal handler responsible for both scheduling
 tasks and migrating them between cores.  Thanks to their lightweight runtime, they
 are able to achieve average overall scheduling latencies in the tens of microseconds.
 
-\mk{It's not obvious why M\&A-RT isn't our panacea.  And I couldn't tie the idea of
-shared state back to the third-party code support column in the table.}
+\mk{It \textit{wasn't} (?) obvious why M\&A-RT isn't our panacea}
 
 \textit{Shinjuku}~\cite{Kaffes:nsdi2019} is an operating system designed to perform
 preemption at microsecond scale.  Built on the Dune framework~\cite{Belay:osdi2012},
@@ -113,52 +102,48 @@ imposed by performing them within a VT-x virtual machine, as required by Dune.  
 then implement optimizations to reduce these overheads at the expense of Shinjuku's
 isolation from the rest of the system.
 
-\dga{The FFI bit is jarring as a dependent clause.  Adding timed functions to a
-system that doesn't assume concurrency causes problems with shared state, and is only
-saved by the fact that they only support functional code.  Then talk about Go's
-specific FFI limitation separately.}
-
-Because Scheme engines and Lilt exist within a functional programming ecosystem, they
-are able to assume that timed functions will not interact with shared state.  This
-would be an onerous requirement to impose in languages such as C, where it is
-common for libraries to rely on such state for error handling (e.g., libc's
-\texttt{errno} variable), resource allocation and assignment, caching and
-memoization, and countless other purposes.  Indeed, handling shared state turns out
-to be the key challenge of providing timed functions, and one that prior work does
-not attempt to address:\@ foreign-function interface (FFI) calls to other languages
-don't work from Scheme engines or Lilt, are considered nonpreemptible when they
-occur in goroutines~\cite{www-golang-fficall}, and are not discussed by either the
-realtime threading library or Shinjuku.
-
-The fundamental problem with shared state is that interrupting nonreentrant code can
-leave its storage in an undefined state.  This implies that if we have two functions,
-\texttt{foo()} and \texttt{bar()}, that access the same state, and we inteleave at
+It is challenging to support timed code within a system that doesn't assume
+concurrency, because programs might use shared state.  Whenever we have two
+functions,
+\texttt{foo()} and \texttt{bar()}, that access the same state, and we interleave at
 runtime a call to \texttt{bar()} in the middle of the execution of \texttt{foo()},
 the result is undefined behavior.  In the C language, it's important to consider
-shared state whenever writing a signal handler, since it may be called at any point
-in the program's execution.  The POSIX standard defines the term async-signal-safe to
+shared state whenever writing a signal handler, which may be called at any point
+in the program's execution.  The POSIX standard defines the term \textbf{async-signal
+safe} to
 refer to a function that is safe to invoke from a signal
 handler~\cite{signal-safety-manpage}; the list of standard library functions required
 to exhibit this property notably excludes all heap-allocation functions such as
-\texttt{malloc()}.  Note that async-signal-safety is a stronger requirement than
-thread safety, since the code may interrupt itself, even within a critical section!
+\texttt{malloc()}.  Note that async-signal safety is a stronger requirement than
+thread safety:\@ the code may interrupt itself, and if this happens within a critical
+section, traditional approaches to thread safety will merely cause a deadlock.
+Unfortunately, shared state is a common feature of libraries written in C, which
+often rely on it for error handling (e.g., libc's \texttt{errno} variable), resource
+allocation and assignment, caching and memoization, etc.
 
-\dga{Stronger requirement point should come earlier.  Addendum: Traditional
-approaches to thread safety would result in deadlock under the self-interruption
-case.  Circumventing would require substantial interface-level (breaking API)
-changes.}
+Because eliminating shared state from most libraries requires substantial
+interface-level (breaking API) changes, the shared state issue prevents existing
+systems from calling into third-party code without rewriting it.  Scheme engines and
+Lilt skirt this issue by only supporting functional code, which cannot have shared
+state.  Because of its focus on realtime embedded systems, RT makes an assumption
+that the timed code in its threads will avoid shared state; this mostly precludes
+calls to third-party libraries, although the system supports the dynamic memory
+allocator by treating it as specifically nonpreemptible.  Rather than dealing with
+shared state itself, Shinjuku asks application authors to annotate any code with
+potential concurrency concerns in a nonpreemptible \texttt{call\_safe()} wrapper.
+Finally, although Go is able to preempt most goroutines written directly in Go, a
+goroutine that makes any foreign calls to other languages is treated as
+nonpreemptible by the runtime's scheduler~\cite{www-golang-fficall}.
 
-\dga{Note that solutions involving allowing the timed function to continue running
-are not acceptable because they give up our preemption property.  Maybe a concrete
-example?}
-
-A key observation about timed functions is that, as soon as an application calls one,
+We make the key observation that, as soon as any application calls into timed code,
 its safety properties change.  In particular, because the function might not run to
 completion, all code after the call site on that thread of execution may be thought
 of as a signal handler.  It is therefore subject to the same limitation of only being
 allowed to call async-signal-safe functions!  Needless to say, such a requirement
-would make timed functions almost impossible to use correctly, so a large portion of
-our work focuses on lifting this requirement in the common case.
+would make timed code almost impossible to use correctly, so a large portion of
+our work focuses on lifting this requirement in the common case.  Clearly, simply
+making all library calls nonpreemptible is a strawman solution because it would
+require timed code to trust the timing properties of third-party libraries.
 
 In contrast to modern approaches' thread-like model, we argue for a return to Scheme
 engines' view of timed functions as procedure calls.  However, we seek to provide
