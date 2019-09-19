@@ -1,8 +1,5 @@
 \section{Design}
 
-\solb{Change all the "it"s describing what the constructor does to "we"s to reduce
-sentence ambiguity.}
-
 Whereas recent work views user threads as a fundamental language abstraction that can
 be used to implement preemptible functions, we argue just the opposite.  As discussed
 in Section~\ref{sec:intro}, we believe there are already a number of clear use cases
@@ -72,7 +69,8 @@ theirs:  (1) We return a structured type instead of a function, since the latter
 approach would be unportable between languages.  Note that in languages with operator
 overloading, it's possible to achieve the other syntax by defining the
 \texttt{linger} type's function-call operator to call the \texttt{resume()} function.
-(2) Because the preemptible function itself may state, we make the \texttt{linger}
+(2) Because the preemptible function itself may contain state, we make the
+\texttt{linger}
 type stateful as well, allowing \texttt{resume()} to mutate it in place.
 (3) Instead of passing the preemptible function's return value to a separate callback
 function, we return it directly from \texttt{launch()}.  This decision was made
@@ -84,7 +82,7 @@ demonstrating many of these extensions.
 
 Those familiar with futures may notice their applicability to preemptible functions
 and simularity to our interface.  While each language's futures differ slightly,
-preemptible function bindings can be constructed in the following trivial manner:
+bindings can be constructed in the following trivial manner:
 To create a new preemptible future, the bindings should call \texttt{launch()} with a
 budget of 0 $\mu$s.  Each attempt to poll the future for a value should resolve to a
 call to \texttt{resume()} with the timeout passed to poll (if allowed by the

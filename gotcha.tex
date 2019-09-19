@@ -16,8 +16,8 @@ case the \texttt{resume()} will preserve the existing value of \texttt{1}, causi
 the assertion to fail.  We take the stance that internal stateful code is responsible
 for implementing its own concurrency control to fix this kind of problem, since the
 developers are aware they are using preemptible functions, and therefore (hopefully)
-are also aware of the concurrency implications.  If the internal stateful code is
-written in Rust instead of C, the compiler can statically prevent many such bugs by
+are also aware of the concurrency implications.  If the internal stateful code were
+written in Rust instead of C, the compiler would statically prevent many such bugs by
 forcing the user to use atomics or locks to protect shared variables such as
 \texttt{count}.
 
@@ -63,13 +63,23 @@ preemptible functions or the broader application.  While this approach works for
 libraries, it is sometimes inappropriate; for instance, using multiple copies of the
 dynamic allocator would cause them to manage the same heap with different free lists.
 In such cases, we direct all dynamic calls to the same copy of the function and defer
-preemption on that thread until the call has completed, in the style of goroutines.
+preemption on that kernel thread until the call has completed, in the style of
+goroutines.
 The rest of this section describes the implementation of these two approaches.  Note
 that, in principle, libgotcha functions with the unmodified GNU dynamic linker.
 
-\solb{May need to define libset here, and at least need to introduce the current
-libset variable.  Should mention that the main libset will correspond to the area
-outside any timed function.}
+\solb{Expand on (and maybe move) the comment about the unmodified dynamic linker}
+
+We refer to each independently-loaded copy of all the program's object files as a
+\textbf{libset}.  The libgotcha library exposes a per-thread attribute called the
+\textbf{current libset} that controls the libset serving all uses of library code.
+(Note that this does not determine the libset from which the current code is being
+executed.)   This attribute is set to the main libset whenever the flow of control is
+outside any preemptible function; otherwise, it is set to a value specific to that
+function.  Thus, each preemptible function's library calls are isolated from those in
+the rest of the application.  In the event that a preemptible function must be
+canceled while it is executing within its libset, the latter can be reinitialized by
+closing all its loaded objects, then reopening them to prepare it for reuse.
 
 \paragraph{Dynamic linking}
 
@@ -77,15 +87,16 @@ A key feature of shared libraries is the ability to replace them between the tim
 application is built and when it is executed.  This is enabled by dynamic linking, an
 approach by which the static linker delays the relocation of addresses associated
 with \textbf{dynamic calls} to functions and \textbf{dynamic references} to global
-variables.  Instead of resolving their addresses, the static linker includes a
+variables.  Instead of resolving their addresses directly within the output machine
+code, the static linker includes a
 \textbf{dynamic relocation table} in each output ELF object file describing the
 locations of dynamic calls and references, as well as the name of each target symbol.
 A component of the C runtime known as the dynamic linker (\texttt{ld.so}) uses this
 table to resolve dynamic symbol addresses after the application is loaded.
 
-It's important to realize that, dynamic calls and references are resolved based on
+It's important to realize that dynamic calls and references are resolved based on
 the name of a symbol, which may be ambiguous between multiple libraries; as such, the
-the library associated with each dynamic relocation is not determined until runtime.
+library associated with each dynamic relocation is not determined until runtime.
 In fact, a dynamic relocation might even resolve back to the same object file that
 contains it; this is most common when a shared library makes an internal reference to
 one of its own public interfaces (since the application might replace that public
@@ -103,14 +114,13 @@ dynamic linker, which loads all required shared object files and populates their
 respective \textbf{global offset tables (GOTs)}\footnote{It is from these structures
 that \textit{lib\textbf{got}cha} gets its name.} with the resolved addresses of any
 referenced dynamic symbols.  Once the program is loaded, any dynamic references to
-global variables (which correspond to x86-64 instructions of the form
-\texttt{mov~\textit{symbol}@gotpcrel(\%rip),~\%\textit{dest}}) look up the target
+global variables look up the target
 symbols' addresses in the GOT for the object file containing the referencing code.
 
 Dynamic function calls are slightly more complicated because they can resolve lazily
 the first time they are called.  For instance, the instruction
 \texttt{call~printf@plt} causes the assembler to generate a corresponding executable
-\textbf{Procedure Linkage Table (PLT)} stub function, as shown in
+\textbf{procedure linkage table (PLT)} stub function, as shown in
 Figure~\ref{fig:plt}.  The first instruction of this stub looks up the address of the
 function by checking a corresponding GOT entry; however, initially this contains the
 address of the immediately-following \texttt{pushq} instruction!  Thus, on the first
@@ -139,60 +149,60 @@ inject our own code when dynamic calls are made.}
 \solb{Mention the need to \texttt{mprotect()}?}
 
 The primary objective of the libgotcha library is to maintain multiple copies of each
-loaded ELF object file and seamlessly direct each use at the correct one.  The GNU
+loaded ELF object file and seamlessly direct each use at the correct one.  It does
+this by altering GOT entries to trick the PLT stubs into injecting libgotcha code at
+the beginning of each cross-library call.  The GNU
 dynamic linker includes a feature known as namespaces~\cite{dlmopen-manpage},
 inherited from Solaris, that allows loading multiple copies of the same object file
 at runtime; however, it treats each namespace as a completely independent dependency
-graph of loaded objects, with no relationship to any other namespace.  We built
+graph of loaded objects, with no relationship to any other.  We built
 libgotcha on top of namespaces, to which it adds automatic routing of function calls
-and variable references between separate namespaces.  We refer to this augmented
-namespace as a \textbf{libset}.  Specifically, libgotcha creates a fixed number of
+and variable references between separate namespaces; it is these augmented
+namespaces that we refer to as libsets.  Specifically, libgotcha creates a fixed
+number of
 libsets, each of which can be reused as long as no calls into it from the same thread
-of execution are allowed to interleave.  In the event that an operation must be
-canceled while it is executing within a libset, the namespace can be reinitialized by
-closing all its loaded objects, then reopening and reintegrating them.
+of execution are allowed to interleave.
 
 In order to use the libgotcha library, a program need only link against its shared
 library, which contains a constructor that the dynamic linker will invoke as soon as
-it has finished loading all the program's library dependencies.  In order to
-automatically transfer control between libsets, this constructor alters the program's
-GOT entries to defer to libgotcha code whenever dynamic function calls are made.
-Unfortunately, it does not want to do this for all dynamic calls because this would
+it has finished loading all the program's library dependencies.  The constructor
+does not want to instrument all dynamic calls because this would
 have inconsistent semantics in the case of object files with self-referential dynamic
 relocations, since there's no easy way to instrument static calls at runtime.
 (Consider how confusing it would be if a shared library making calls to its own
 static helper function and its own public function had those calls to different
-copies of itself!)  Because there is no easy way to instrument static calls at
-runtime, we make the decision to only switch libsets on cross-library dynamic calls.
+copies of itself!)  Instead, we make the decision to only switch libsets on
+cross-library dynamic calls.
 
-Before updating any GOT entries, the libgotcha constructor first has to identify
+Before updating any GOT entries, the we must identify
 which ones correspond to cross-library calls.  Doing this is a multi-step process:
-First, it traverses the relocation table for each loaded object file, cross
+First, we traverse the relocation table for each loaded object file, cross
 referencing each of its relocation entries against the local object file's symbol
 table.  If the symbol table doesn't contain a definition matching the relocation
-entry's target, it concludes that the relocation must correspond to a cross-library
-call.  Otherwise, it checks the address in the GOT entry corresponding to the
+entry's target, we conclude that the relocation must correspond to a cross-library
+call.  Otherwise, we check the address in the GOT entry corresponding to the
 relocation entry:  If this address is outside the bounds of the current object file,
-it is a cross-library call.  Otherwise, if the address matches the one from the
-symbol table entry, it is not a cross-library call, and should be fixed.  The last
+it is a cross-library call.  Otherwise, if this address matches the one from the
+symbol table entry, it is not a cross-library call, and should be skipped.  The last
 case is the trickiest, because the GOT entry probably still refers to the PLT stub
-because the symbol hasn't yet been resolved.  In this case, it resolve the symbol
+(because the symbol reference hasn't yet been resolved).  In this case, we resolve
+the symbol
 early, update the GOT entry, and recheck whether it resolved to the local definition
 to determine whether it is a cross-library call.
 
 Next, the constructor allocates one or more executable pages full of custom PLT-like
 stubs, which we refer to as the \textbf{procedure linkage override tables (PLOTs)}.
-Each PLOT is associated with a \textbf{shadow GOT} for each namespace:\@ when a
+Each PLOT is associated with one \textbf{shadow GOT} for each namespace:\@ when a
 particular PLOT stub is executed, it pushes an index to the stack and calls a
 function, \texttt{procedure\_linkage\_override()}, that decides which libset the call
 should target, locates the corresponding shadow GOT, and transfers control to the
 address listed at the appropriate index in that table.  (Because this function
 is injected into the "middle" of function calls, it is written in assembly to avoid
-clobbering any of the application's registers.)  The constructor sets this system up
+clobbering any of the application's registers.)  The constructor sets up this system
 by replacing each GOT entry corresponding to a cross-library call with a fresh PLOT
-entry, but storing the previous value in the shadow GOT for the main namespace.  It
+entry, storing its previous value in the shadow GOT for the main namespace.  It
 then opens another copy of each library in each namespace, redirects its
-cross-library calls at the same PLOT stubs, and creates a shadow GOT for each
+cross-library calls to the same PLOT stubs, and creates a shadow GOT for each
 namespace.
 
 The setup procedure described so far has one significant problem:\@ recall that a PLT
@@ -200,7 +210,8 @@ call memoizes the real address of its symbol by replacing the GOT entry, which s
 cause subsequent calls to skip libgotcha's \texttt{procedure\_linkage\_override()}
 codepath!  In order to prevent this, the constructor updates the relocation entries
 corresponding to cross-library calls to point at \textit{shadow} GOT entries.  This
-means that memoization still works, as shown in Figure~\ref{fig:override}.
+fools the dynamic linker into updating the shadow entry instead, meaning that
+memoization still works, as shown in Figure~\ref{fig:override}.
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/tables}
@@ -219,7 +230,7 @@ instructions of the special position-independent relocation form
 \texttt{mov~\textit{symbol}@gotpcrel(\%rip),~\%\textit{dest}}, and the dynamic linker
 resolves the calls and populates their GOT entries eagerly at load time.  To avoid
 breaking pointer-comparison semantics, libgotcha makes sure to share the same PLOT
-stub between all GOT entries that symbol that are accessed using this type of
+stub between all GOT entries to a given symbol that use this type of
 relocation.  As long as the current libset remains the same between the time of a
 function pointer comparison and the time of its invocation, such a comparison
 guarantees that \texttt{procedure\_linkage\_override()} will use the same copy of
@@ -227,18 +238,18 @@ that invocation.
 
 Handling references to global data besides functions is more challenging, and less
 efficient, because such accesses use the aforementioned position-independent
-relocation but don't include a PLT-style codepath through the dynamic linker.
+relocation but don't include a PLT-style codepath for us to co-opt.
 In order to capture (hopefully rare) cross-library references to global variables,
-we employ a special trick.  After each shadow GOT page, we allocate an inaccessible
-page with no protection bits set.  Every time the libgotcha constructor encounters a
-relocation entry corresponding to a data symbol, it migrates the contents of its GOT
+we use a different approach.  After each shadow GOT page, we allocate an inaccessible
+page with no protection bits set.  Each time the libgotcha constructor encounters a
+relocation entry corresponding to a data symbol, we migrate the contents of its GOT
 entry into an available shadow GOT entry, replacing it with an address the same
 number of bytes into the shadow GOT's corresponding inaccessible page.  Thus,
 whenever the program takes the address of a particular symbol, it gets the same fake
 address.  Any attempt to read from or write to this address results in a segmentation
-fault, which libgotcha catches; it then looks up the real address in the shadow GOT
-corresponding to the currently-selected libset, disassembles the offending
-instruction(s), and replaces the contents of the memory-address register with the
+fault, which libgotcha catches; we then look up the real address in the shadow GOT
+corresponding to the currently-selected libset, disassemble the offending
+instruction(s), and replace the contents of the memory-address register with the
 found address.  Once the signal handler returns, the instruction executes again, this
 time with a valid memory address in its register.  Although it's possible to generate
 code sequences that are incompatible with this approach (e.g., because they perform
@@ -248,12 +259,10 @@ that we haven't yet encountered any cases where programs do this.
 
 \paragraph{Shared symbols}
 
-\solb{Make it clearer that the selected namespace is not the same as the running one}
-
 As aforementioned, certain systems such as the dynamic memory allocator do not work
-well when copied, and must be treated separately.  Specifically, libgotcha maintains
+well when copied, and must be treated specially.  Specifically, libgotcha maintains
 a whitelist of \textbf{shared symbols} whose use is always redirected back to the
-main namespace.  Of course, this introduces our original limitation of being unable
+main namespace.  Of course, this introduces prior work's limitation of being unable
 to preempt during such calls; as such, the whitelist should be kept small, since the
 inclusion of each function confers trust in its timely completion.
 
@@ -266,13 +275,14 @@ internally, allowing us to whitelist that component alone.
 In order to support more complex systems, libgotcha exposes a simple API for dealing
 with shared symbols.  Whenever \texttt{procedure\_linkage\_override()} transfers
 control to the main libset, it resets the current libset so that all subsequent calls
-will remain in shared code.  Client code can check the current libset to determine
+will remain in shared code.  Client code can therefore check the current libset to
+determine
 whether it is safe to preempt.  Furthermore, libgotcha provides an interface by which
 client code can provide a callback to be invoked upon return from the shared code,
 immediately after the transition back to the original libset:\@ it can use this
 callback to perform a deferred preemption check at the earliest possible point.
 
-\paragraph{Two workarounds}
+\paragraph{Shortcomings and workarounds}
 
 The libgotcha approach has known conflicts with two modern extensions to the
 dynamic-linking model.  Here we discuss these shortcomings and our proposed
@@ -287,25 +297,26 @@ it impossible for us to intercept cross-library references occurring within the
 executable, and causes associated dynamic references in the defining shared library
 to be erroneously treated as cross-library references.  For this reason, libgotcha
 emits a warning when it detects a COPY relocation.  Developers can avoid the problem
-by compiling any executables that use libgotcha with the C compiler's \texttt{-fpic}
+by building any executables that use libgotcha with the C compiler's \texttt{-fpic}
 flag to skip generating such relocations.
 
 Some shared libraries are marked with a special configuration flag,
 \texttt{DF\_1\_NODELETE}, which prevents the dynamic linker from ever removing them
 once they've been loaded.  Because almost all libraries depend on libc, the presence
 of even one such library prevents us from reinitializing a libset for reuse after
-its timed function has been canceled!  The flag is mostly used on libraries that need
+its preemptible function has been canceled!  The flag is mostly used on libraries
+that need
 to monkey-patch some other loaded library, such that the two subsequently have a
 circular dependency.  Fortunately, this is not usually a problem because when we
 unload one library from a libset, we then unload the rest, so whenever we encounter a
 \texttt{NODELETE} object file, we make a special copy with the flag cleared for
 loading into every namespace except the main one.  The one place this doesn't work is
-when a library replaces function pointers within the dynamic linker itself.  This
+when a library monkey-patches the dynamic linker itself.  This
 requires the use of a private interface, and the only offending library to our
 knowledge is GNU libpthread, which replaces function pointers in order to cause the
 dynamic linker to take locks when performing potentially concurrent operations; we
 handle this by preventing the monkey-patching constructor code from running in our
-modified copy of the library.
+modified copy of that library.
 
 \subsection{Case study: Establishing AS-safety}
 \label{sec:statefulness}
