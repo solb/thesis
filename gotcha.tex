@@ -107,8 +107,6 @@ symbol ends up being located in a different object file than the use.
 
 \paragraph{GOTs and PLTs}
 
-\solb{Rather than perform relocations directly into the program instructions...}
-
 When a dynamically-linked executable is run, the kernel first passes control to the
 dynamic linker, which loads all required shared object files and populates their
 respective \textbf{global offset tables (GOTs)}\footnote{It is from these structures
@@ -142,9 +140,6 @@ real function after executing only the initial \texttt{jmpq} instruction.
 \end{figure}
 
 \paragraph{Intercepting cross-library calls}
-
-\solb{The fact that the PLT transfers control based on a GOT entry makes it easy to
-inject our own code when dynamic calls are made.}
 
 \solb{Mention the need to \texttt{mprotect()}?}
 
