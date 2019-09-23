@@ -48,9 +48,10 @@ long-running kernel traps (e.g., by making I/O system calls),
 thereby preventing the interruption logic from being run; and (2)
 \textbf{excessively-tight loops} whose body does not contain any yield points (e.g.,
 spin locks or long-running CPU instructions).
-Although some cooperative systems refine their approach to have developed mechanisms
-to tolerate either blocking-call code sections \solb{cite RT} or excessively-tight
-loops \solb{cite Lilt}, we're not aware of any that are capable of handling both
+Although some cooperative systems refine their approach with mechanisms
+to tolerate either blocking-call code sections~\cite{www-golang} or excessively-tight
+loops~\cite{vanderwaart:cmucs2006}, we're not aware of any that are capable of
+handling both
 cases.
 
 One well-known early example of timed code was the \textit{engines} feature of
