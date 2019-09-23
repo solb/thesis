@@ -76,7 +76,7 @@ programs with statically-enforced timing policies~\cite{vanderwaart:cmucs2006}. 
 language's compiler tracks the possible duration of each path through the program and
 and inserts yield operations wherever its time might have expired.  Although this
 approach requires knowing the execution limit at compile time, the compiler is able
-to handle excessively tight loops thanks to its awareness of backward jumps.
+to handle excessively-tight loops thanks to its awareness of backward jumps.
 Blocking-call functions remained a challenge, however:\@ handling them would have
 required
 operating system support, reminiscent of \textit{Singularity}'s static language-based
