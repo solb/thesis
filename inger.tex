@@ -81,6 +81,24 @@ parts of the code execute on each.
 \label{fig:twostacks}
 \end{figure}
 
+Whenever a preemptible function runs to successful completion, its preemption signal
+and libset are reclaimed for reuse by future \texttt{launch()} invocations.  If the
+function is canceled rather than being allowed to complete, the libset is assumed to
+be in an undefined state and must be reinitialized before reuse.  C client code is
+required to explicitly ``deallocate'' continuations upon cancellations, whereas in
+Rust the libinger cleanup is performed implicitly by the \texttt{linger} type's
+destructor.  While the current implementation performs libset reinitialization
+synchronously, given sufficient spare namespaces, this somewhat costly step could be
+deferred and handled by a separate reaper thread off the critical path.
+
+The current implementation of libinger does not automatically clean up resources
+allocated by preemptible functions that are canceled.  While this is inherently hard
+to do in C, it is possible to implement in languages such as Rust that support
+destructors.  For instance, the approach proposed by Boucher et
+al.~\cite{boucher:atc2018} could be employed to raise a panic (exception) on the
+preemptible function's stack, causing the language runtime to unwind each stack frame
+and invoke its destructors.
+
 \solb{Mention static linking against libgotcha?}
 
 \solb{Go ``also'' heap-allocates goroutine locals: \url{https://github.com/golang/go/issues/33216}}
