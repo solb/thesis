@@ -277,6 +277,11 @@ client code can provide a callback to be invoked upon return from the shared cod
 immediately after the transition back to the original libset:\@ it can use this
 callback to perform a deferred preemption check at the earliest possible point.
 
+The attentive reader will observe that, in order to track the current libset,
+libgotcha must itself contain shared state.  In order to ensure a consistent view of
+this information independent of the current libset, it treats all the symbols from
+its own shared library as shared by automatically appending them to the whitelist.
+
 \paragraph{Shortcomings and workarounds}
 
 The libgotcha approach has known conflicts with two modern extensions to the
