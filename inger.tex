@@ -99,6 +99,18 @@ al.~\cite{boucher:atc2018} could be employed to raise a panic (exception) on the
 preemptible function's stack, causing the language runtime to unwind each stack frame
 and invoke its destructors.
 
+While libinger in principle runs on top of an unmodified version of the GNU dynamic
+linker, in practice initializing more than one namespace tends to exhaust the
+statically-allocated thread-local storage area.  We currently work around this
+problem by rebuilding \texttt{ld.so} with the \texttt{TLS\_STATIC\_SURPLUS} macro set
+to a larger value.  At the same time, it is possible to work around the default limit
+of 16 linker namespaces by increasing the value of \texttt{DL\_NNS}.  With this
+change, the only remaining scaling limit is the number of kernel threads running
+timed functions, which is limited to the number of signals earmarked for preemption;
+however, this number could be increased to over 32 by using realtime
+signals~\cite{signal-manpage}, and beyond by rebuilding Linux and glibc with a larger
+\texttt{\_NSIG}.
+
 \solb{Mention static linking against libgotcha?}
 
 \solb{Go ``also'' heap-allocates goroutine locals: \url{https://github.com/golang/go/issues/33216}}
