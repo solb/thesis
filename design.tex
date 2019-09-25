@@ -42,7 +42,7 @@ completes on time, \texttt{launch()} propagates its result to the caller; otherw
 it returns an opaque continuation object that the caller may later pass to
 \texttt{resume()} to continue executing the function from wherever it was preempted.
 Figure~\ref{fig:usage} shows a basic usage example where the caller is obligated to
-perform some work after a certain amount of time (say, call a watchdog), but first
+perform some work (say, call a watchdog) after a certain amount of time, but first
 calls into some helper code with weak time bounds.  Thanks to preemptible functions,
 the caller doesn't have to trust the helper to know that the watchdog will be called
 in time.
@@ -75,8 +75,8 @@ type stateful as well, allowing \texttt{resume()} to mutate it in place.
 (3) Instead of passing the preemptible function's return value to a separate callback
 function, we return it directly from \texttt{launch()}.  This decision was made
 because many modern languages have first-class tagged union (sum) types that allow
-the compiler to enforce that the caller explicitly checks whether the function
-completed and only accesses the appropriate side of the union.  In addition to the
+the compiler to enforce that the caller explicitly checks which variant the union
+contains before accessing its contents.  In addition to the
 barebones C interface, our current implementation provides a Rust interface
 demonstrating many of these extensions.
 
@@ -93,11 +93,11 @@ stack supporting preemptible functions and fine-grained userland preemptive
 threading.  We start by discussing \textit{libgotcha} (Section~\ref{sec:libgotcha}),
 a library that seeks to automatically address many problems related to shared state
 in third-party code.  Next, we give an aside illustrating the straightforward
-application of libgotcha to provide POSIX async-signal-safety in places where it
+application of libgotcha to provide POSIX async-signal safety in places where it
 wouldn't otherwise exist (Section~\ref{sec:statefulness}).  We then cover the
 \textit{libinger} library for running preemptible functions
 (Section~\ref{sec:libinger}) and its interaction with libgotcha.  Finally, we present
-our experience with porting a userland threading library to libinger in order to make
+our experience porting a userland threading library to libinger in order to make
 it preemptive (Section~\ref{sec:threading}).  Figure~\ref{fig:architecture} shows
 these components in the overall architecture.
 

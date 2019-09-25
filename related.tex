@@ -83,7 +83,7 @@ operating system support, reminiscent of \textit{Singularity}'s static language-
 isolation~\cite{hunt:msr2005}.
 
 Some recent languages offer userland threading, which could be used to support timed
-code.  One such example is the Go language's~\cite{www-golang} \texttt{goroutines}.
+code.  One such example is the Go language's~\cite{www-golang} \textit{goroutines}.
 The language's runtime is responsible for scheduling multiple such user
 threads per kernel thread, which is performed cooperatively by conditionally yielding
 at function call points.  This has long caused problems with tight loops, with the
@@ -94,21 +94,18 @@ All the solutions discussed thus far rely on languages with a heavyweight,
 garbage-collecting runtime.  However, some recent systems have sought
 to provide timed functions in a language-agnostic fashion that minimizes such
 dependencies.  One example is the userland C-language thread library for realtime
-systems developed (here, ``\textit{RT}'') by Mollison and
+systems (here, ``\textit{RT}'') developed by Mollison and
 Anderson~\cite{mollison:rtas2013}, which performs
 preemption using timer interrupts, as proposed in the early Scheme engines
 literature.  They install a time-based signal handler responsible for both scheduling
 tasks and migrating them between cores.  Thanks to their lightweight runtime, they
 are able to achieve average overall scheduling latencies in the tens of microseconds.
-
-\mk{It \textit{wasn't} (?) obvious why M\&A-RT isn't our panacea}
-
-\dga{It still isn't.  Maybe foreshadow that we'll soon blow a hole in them.}
+However, as we'll see shortly, this comes with a huge usability cost for developers.
 
 \textit{Shinjuku}~\cite{Kaffes:nsdi2019} is an operating system designed to perform
 preemption at microsecond scale.  Built on the Dune framework~\cite{Belay:osdi2012},
 it runs tasks on a pool of worker threads controlled by a single centralized
-dispatcher thread.  The later thread polices how long each task has been running and
+dispatcher thread.  The latter polices how long each task has been running and
 sends an inter-processor interrupt (IPI) to any worker whose task has been running
 for longer than permitted.  The authors study the cost of IPIs and the overheads
 imposed by performing them within a VT-x virtual machine, as required by Dune.  They
@@ -126,8 +123,8 @@ in the program's execution.  The POSIX standard defines the term \textbf{async-s
 safe} to
 refer to a function that is safe to invoke from a signal
 handler~\cite{signal-safety-manpage}; the list of standard library functions required
-to exhibit this property notably excludes all heap-allocation functions such as
-\texttt{malloc()}.  Note that async-signal safety is a stronger requirement than
+to exhibit this property notably excludes all dynamic memory allocator functions such
+as \texttt{malloc()}.  Note that async-signal safety is a stronger requirement than
 thread safety:\@ the code may interrupt itself, and if this happens within a critical
 section, traditional approaches to thread safety will merely cause a deadlock.
 Unfortunately, shared state is a common feature of libraries written in C, which
@@ -143,7 +140,7 @@ that the timed code in its threads will avoid shared state; this mostly preclude
 calls to third-party libraries, although the system supports the dynamic memory
 allocator by treating it as specifically nonpreemptible.  Rather than dealing with
 shared state itself, Shinjuku asks application authors to annotate any code with
-potential concurrency concerns in a nonpreemptible \texttt{call\_safe()} wrapper.
+potential concurrency concerns using a nonpreemptible \texttt{call\_safe()} wrapper.
 Finally, although Go is able to preempt most goroutines written directly in Go, a
 goroutine that makes any foreign calls to other languages is treated as
 nonpreemptible by the runtime's scheduler~\cite{www-golang-fficall}.

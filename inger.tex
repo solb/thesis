@@ -60,20 +60,20 @@ well as a call into a shared symbol from within the invoked timed function.
 
 While the preemptible function is running, the POSIX timer fires periodicially,
 causing a signal handler to be invoked each time.  The handler checks whether the
-current libset is the main one, indicating that execution is within a whitelisted
-nonpreemptible library function.  In this case, it blocks the signal and immediately
-returns, deferring the signal using libgotcha's callback mechanism in a manner
+current libset is the main one, indicating that execution is within a shared symbol.
+In this case, it blocks the signal and immediately
+returns, deferring preemption using libgotcha's callback mechanism in a manner
 similar to that discussed in Section~\ref{sec:statefulness}.  Otherwise, if the
 preemptible function has exceeded its timeout, the handler swaps the contents of its
 third (POSIX context) argument~\cite{sigaction-manpage} with the checkpoint saved by
-\texttt{launch()}, which causes the subsequent return from the signal handler to jump
-back to \texttt{launch()}, which returns a \texttt{linger} structure containing the
-signal handler's original context.  A subsequent \texttt{resume()} call on this
+\texttt{launch()}; this causes the subsequent return from the signal handler to jump
+back to \texttt{launch()}, which then returns a \texttt{linger} structure containing
+the signal handler's original context.  A subsequent \texttt{resume()} call on this
 packaged continuation proceeds in much the same way as \texttt{launch()}, but
 resumes the computation on its stack by sending itself a special signal with
 \texttt{pthread\_kill()}, then swapping the saved context with the contents of the
 handler's third argument.  Figure~\ref{fig:twostacks} shows the two stacks and which
-parts of the code execute on each.
+parts of the program execute on each.
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/twostacks}
@@ -96,14 +96,14 @@ allocated by preemptible functions that are canceled.  While this is inherently 
 to do in C, it is possible to implement in languages such as Rust that support
 destructors.  For instance, the approach proposed by Boucher et
 al.~\cite{boucher:atc2018} could be employed to raise a panic (exception) on the
-preemptible function's stack, causing the language runtime to unwind each stack frame
-and invoke its destructors.
+preemptible function's stack, causing the language runtime to unwind each stack frame,
+invoking the destructor of each local variable in the process.
 
 While libinger in principle runs on top of an unmodified version of the GNU dynamic
 linker, in practice initializing more than one namespace tends to exhaust the
 statically-allocated thread-local storage area.  We currently work around this
 problem by rebuilding \texttt{ld.so} with the \texttt{TLS\_STATIC\_SURPLUS} macro set
-to a larger value.  At the same time, it is possible to work around the default limit
+to a larger value.  At the same time, it is possible to raise the default limit
 of 16 linker namespaces by increasing the value of \texttt{DL\_NNS}.  With this
 change, the only remaining scaling limit is the number of kernel threads running
 timed functions, which is limited to the number of signals earmarked for preemption;
