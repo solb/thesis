@@ -33,8 +33,8 @@ configuring a different POSIX timer with its own signal for each thread that is
 currently executing a preemptible function.  All threads use the same handler, but
 store their preemption signal in a thread-local variable.  Whenever the handler runs,
 it checks whether it was triggered by the current thread's signal.  If not, it masks
-the rogue signal and immeditely returns; in this way, the system quickly converges on
-delivering each preemption signal only to its corresponding thread.  The current
+the rogue signal and immediately returns; in this way, the system quickly converges
+on delivering each preemption signal only to its corresponding thread.  The current
 implementation sets each timer to fire at a fixed scheduling interval in the tens of
 microseconds.
 
@@ -58,7 +58,7 @@ well as a call into a shared symbol from within the invoked timed function.
 \label{fig:dispatch}
 \end{figure}
 
-While the preemptible function is running, the POSIX timer fires periodicially,
+While the preemptible function is running, the POSIX timer fires periodically,
 causing a signal handler to be invoked each time.  The handler checks whether the
 current libset is the main one, indicating that execution is within a shared symbol.
 In this case, it blocks the signal and immediately

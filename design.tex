@@ -81,7 +81,7 @@ barebones C interface, our current implementation provides a Rust interface
 demonstrating many of these extensions.
 
 Those familiar with futures may notice their applicability to preemptible functions
-and simularity to our interface.  While each language's futures differ slightly,
+and similarity to our interface.  While each language's futures differ slightly,
 bindings can be constructed in the following trivial manner:
 To create a new preemptible future, the bindings should call \texttt{launch()} with a
 budget of 0 $\mu$s.  Each attempt to poll the future for a value should resolve to a
