@@ -61,7 +61,8 @@ to the same address:\@ we open multiple copies of the shared objects required by
 application, and redirect uses of libraries' symbols to a separate copy for each
 preemptible function.  In this way, we ensure that inconsistent state from a library
 used by one preemptible function cannot affect uses of that same library by other
-preemptible functions or the broader application.  While this approach works for many
+preemptible functions or the broader application.  Although this approach works for
+many
 libraries, it is sometimes inappropriate; for instance, using multiple copies of the
 dynamic allocator would cause them to manage the same heap with different free lists.
 In such cases, we direct all dynamic calls to the same copy of the function and defer
@@ -93,7 +94,7 @@ locations of dynamic calls and references, as well as the name of each target sy
 A component of the C runtime known as the dynamic linker (\texttt{ld.so}) uses this
 table to resolve dynamic symbol addresses after the application is loaded.
 
-It's important to realize that dynamic calls and references are resolved based on
+It is important to realize that dynamic calls and references are resolved based on
 the name of a symbol, which may be ambiguous between multiple libraries; as such, the
 library associated with each dynamic relocation is not determined until runtime.
 In fact, a dynamic relocation might even resolve back to the same object file that
@@ -160,27 +161,27 @@ of execution are allowed to interleave.
 In order to use the libgotcha library, a program need only link against its shared
 library, which contains a constructor that the dynamic linker will invoke as soon as
 it has finished loading all the program's library dependencies.  The constructor
-does not want to instrument all dynamic calls because this would
+should not instrument all dynamic calls because this would
 have inconsistent semantics in the case of object files with self-referential dynamic
-relocations, since there's no easy way to instrument static calls at runtime.
+relocations, since there is no easy way to instrument static calls at runtime.
 (Consider how confusing it would be if a shared library making calls to its own
 static helper function and its own public function had those calls implicitly
 redirected to different
-copies of itself!)  Instead, we make the decision to only switch libsets on
+copies of itself.)  Instead, we make the decision to only switch libsets on
 cross-library dynamic calls.
 
 Before updating any GOT entries, we must identify
 which ones correspond to cross-library calls.  Doing this is a multi-step process:
 First, we traverse the relocation table for each loaded object file, cross
 referencing each of its relocation entries against the local object file's symbol
-table.  If the symbol table doesn't contain a definition matching the relocation
+table.  If the symbol table does not contain a definition matching the relocation
 entry's target, we conclude that the relocation must correspond to a cross-library
 call.  Otherwise, we check the address in the GOT entry corresponding to the
 relocation entry:  If this address is outside the bounds of the current object file,
 it is a cross-library call.  Otherwise, if this address matches the one from the
 symbol table entry, it is not a cross-library call, and should be skipped.  The last
 case is the trickiest, since the GOT entry probably still refers to the PLT stub
-(because the symbol reference hasn't yet been resolved).  In this case, we resolve
+(because the symbol reference has not yet been resolved).  In this case, we resolve
 the symbol
 early, update the GOT entry, and recheck whether it resolved to the local definition
 to determine whether it is a cross-library call.
@@ -203,7 +204,7 @@ namespace.
 The setup procedure described so far has one significant problem:\@ recall that a PLT
 call memoizes the real address of its symbol by replacing the GOT entry, which should
 cause subsequent calls to skip libgotcha's \texttt{procedure\_linkage\_override()}
-codepath!  In order to prevent this, the constructor updates the relocation entries
+codepath.  In order to prevent this, the constructor updates the relocation entries
 corresponding to cross-library calls to point at \textit{shadow} GOT entries.  This
 fools the dynamic linker into updating the shadow entry instead, meaning that
 memoization still works, as shown in Figure~\ref{fig:override}.

@@ -7,7 +7,7 @@ for preemptible functions in their own right, many of which are unrelated to
 parallelism and therefore have no need for the scheduler, multiple kernel threads, or
 synchronization to support a full threading abstraction.  To prove that our
 abstraction does not compromise on expressive power, we end this section by
-demonstrating how it can be trivially applied to convert an existing cooperative
+demonstrating how to convert an existing cooperative
 userland threading library to a preemptive one.
 
 \begin{figure}
@@ -23,8 +23,7 @@ struct linger {
 typedef void *(*function_t)(void *);
 
 struct linger launch(function_t func,
-  uint64_t time);
-  void *args);
+  uint64_t time, void *args);
 void resume(struct linger *timed_func,
   uint64_t time);
 \end{verbatim}
@@ -38,26 +37,25 @@ whose invocation adheres to C's standard stack discipline; there is no
 continuation-style or unstructured control flow.  Client code creates a preemptible
 function by passing an ordinary function (or closure) to the \texttt{launch()}
 function along with an execution time cap (in microseconds).  If the function
-completes on time, \texttt{launch()} propagates its result to the caller; otherwise,
+completes on time, \texttt{launch()} returns its result to the caller; otherwise,
 it returns an opaque continuation object that the caller may later pass to
 \texttt{resume()} to continue executing the function from wherever it was preempted.
 Figure~\ref{fig:usage} shows a basic usage example where the caller is obligated to
 perform some work (say, call a watchdog) after a certain amount of time, but first
-calls into some helper code with weak time bounds.  Thanks to preemptible functions,
-the caller doesn't have to trust the helper to know that the watchdog will be called
+calls into some helper code with weak time bounds.  With preemptible functions,
+the caller does not have to trust the helper to know that the watchdog will be called
 in time.
 
 \begin{figure}
 \begin{verbatim}
 res = launch(helper, TIMEOUT, NULL);
-call_watchdog(); // Won't be delayed.
+call_watchdog(); // Won't be delayed
 if(res.is_completion)
-  // We're already done.
+  // We're already done
   return res.completion;
 else
-  // Give helper() some more time.
+  // Give helper() some more time
   resume(&res, TIMEOUT);
-// ...
 \end{verbatim}
 \caption{Basic libinger usage example}
 \label{fig:usage}
@@ -67,7 +65,7 @@ Although the interface we propose bears some similarities to that of Scheme
 engines~\cite{haynes:iucs1984}, some of our design decisions deliberately differ from
 theirs:  (1) We return a structured type instead of a function, since the latter
 approach would be unportable between languages.  Note that in languages with operator
-overloading, it's possible to achieve the other syntax by defining the
+overloading, it is possible to achieve the other syntax by defining the
 \texttt{linger} type's function-call operator to call the \texttt{resume()} function.
 (2) Because the preemptible function itself may contain state, we make the
 \texttt{linger}
@@ -81,7 +79,7 @@ barebones C interface, our current implementation provides a Rust interface
 demonstrating many of these extensions.
 
 Those familiar with futures may notice their applicability to preemptible functions
-and similarity to our interface.  While each language's futures differ slightly,
+and similarity to our interface.  Although each language's futures differ slightly,
 bindings can be constructed in the following trivial manner:
 To create a new preemptible future, the bindings should call \texttt{launch()} with a
 budget of 0 $\mu$s.  Each attempt to poll the future for a value should resolve to a
