@@ -56,7 +56,8 @@
 %%%
 \usepackage[font=bf]{caption}
 \usepackage{listings}
-\lstset{captionpos=b,basicstyle=\ttfamily,language=C,numbers=left,numbersep=4pt,tabsize=2,breaklines}
+\lstdefinelanguage[C99]{C}[ANSI]{C}{morekeywords={bool,true,false,NULL},keywordsprefix=uint}
+\lstset{captionpos=b,basicstyle=\ttfamily,language=[C99]C,numbers=left,numbersep=4pt,tabsize=2,breaklines}
 %%  Space between figure and caption (assuming caption
 %%  is below figure)
 %\usepackage[font=bf,aboveskip=0pt]{caption} % SPACE
