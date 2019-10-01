@@ -8,7 +8,8 @@ that uses preemptible functions, and \textbf{external stateful code} otherwise (
 as is the case for third-party libraries).  Recall that one of our goals is to
 support third-party libraries without needing to recompile them.
 
-We begin by briefly discussing internal stateful code.  Figure~\ref{fig:ingerbug} shows
+We begin by briefly discussing internal stateful code.  Listing~\ref{lst:ingerbug}
+shows
 a code passage with a concurrency bug:\@ because the \texttt{timed()} function does
 not use an atomic increment operation, its \texttt{launch()} invocation might be
 preempted after reading the \texttt{count} variable but before writing it, in which
@@ -21,28 +22,22 @@ written in Rust instead of C, the compiler would statically prevent many such bu
 forcing the user to use atomics or locks to protect shared variables such as
 \texttt{count}.
 
-\begin{figure}
-\begin{verbatim}
+\begin{lstlisting}[label=lst:ingerbug,caption=Concurrency bug in internal stateful code]
 static int count = 0;
 
 static void *timed(void *ignored) {
-  ++count;
-  return NULL;
+	++count;
+	return NULL;
 }
 
 int main(void) {
-  struct linger res =
-    launch(timed, VERY_SHORT, NULL);
-  ++count;
-  resume(&res, LONG_ENOUGH);
-  assert(count == 2); // BUG!
-
-  return 0;
+	struct linger res = launch(timed, VERY_SHORT, NULL);
+	++count;
+	resume(&res, LONG_ENOUGH);
+	assert(count == 2); // BUG!
+	return 0;
 }
-\end{verbatim}
-\caption{Concurrency bug in internal stateful code}
-\label{fig:ingerbug}
-\end{figure}
+\end{lstlisting}
 
 The problem we do have to handle is external stateful code, since there's no way an
 existing piece of code can be expected to know that it might be called from a
@@ -119,7 +114,8 @@ Dynamic calls to functions are slightly more complicated because they can resolv
 lazily at first invocation.  For instance, the instruction
 \texttt{call~printf@plt} causes the assembler to generate a corresponding executable
 \textbf{procedure linkage table (PLT)} stub function, as shown in
-Figure~\ref{fig:plt}.  The first instruction of this stub looks up the address of the
+Listing~\ref{lst:plt}.  The first instruction of this stub looks up the address of
+the
 function by checking a corresponding GOT entry; however, initially this contains the
 address of the immediately-following \texttt{pushq} instruction!  Thus, on the first
 call, the PLT stub pushes a symbol relocation identifier (here, \texttt{0x0}) onto
@@ -128,16 +124,12 @@ function's real address, memoizes the result by updating the GOT entry, and fina
 jumps into the real function.  Subsequent calls to the PLT stub then forward to the
 real function after executing only the initial \texttt{jmpq} instruction.
 
-\begin{figure}
-\begin{verbatim}
+\begin{lstlisting}[label=lst:plt,caption=Example PLT entry for call to \texttt{printf()}]
 0000000000001030 <printf@plt>:
-  1030:  jmpq   *0x2fe2(%rip) <printf>
-  1036:  pushq  $0x0
-  103b:  jmpq   1020 <.plt>
-\end{verbatim}
-\caption{Example PLT entry for call to \texttt{printf()}}
-\label{fig:plt}
-\end{figure}
+	1030: jmpq  *0x2fe2(%rip) <printf>
+	1036: pushq $0x0
+	103b: jmpq  1020          <.plt>
+\end{lstlisting}
 
 \paragraph{Intercepting cross-library calls}
 
@@ -325,40 +317,36 @@ modified copy of that library.
 
 The main use of libgotcha is to make library function calls async-signal safe when
 they wouldn't otherwise be.  We now pause to give a brief example of such usage,
-motivated by the buggy program in Figure~\ref{sec:handlerbug}, which calls the
+motivated by the buggy program in Listing~\ref{lst:handlerbug}, which calls the
 async-signal-unsafe function \texttt{printf()} from its signal handler.
 Unfortunately, this function takes a lock on the \texttt{stdout} stream's associated
 file descriptor, and the signal handler eventually interrupts the program within
 \texttt{fflush()} while it is holding this same lock, resulting in deadlock.
 
-\begin{figure}
-\begin{verbatim}
+\begin{lstlisting}[label=lst:handlerbug,caption=C program with a buggy signal handler]
 static void handler(int ignored) {
-  printf("in signal handler()\n");
+	printf("in signal handler()\n");
 }
 
 int main(void) {
-  struct sigaction sa = {
-    .sa_handler = handler,
-  };
-  sigaction(SIGALRM, &sa, NULL);
+	struct sigaction sa = {
+		.sa_handler = handler,
+	};
+	sigaction(SIGALRM, &sa, NULL);
 
-  struct timeval tv = {
-    .tv_sec = 1,
-  };
-  struct itimerval it = {
-    .it_interval = tv,
-    .it_value = tv,
-  };
-  setitimer(ITIMER_REAL, &it, NULL);
+	struct timeval tv = {
+		.tv_sec = 1,
+	};
+	struct itimerval it = {
+		.it_interval = tv,
+		.it_value = tv,
+	};
+	setitimer(ITIMER_REAL, &it, NULL);
 
-  while(true)
-    fflush(stdout);
+	while(true)
+		fflush(stdout);
 }
-\end{verbatim}
-\caption{C program with a buggy signal handler}
-\label{sec:handlerbug}
-\end{figure}
+\end{lstlisting}
 
 There are two ways to weaken the semantics of this program to prevent the deadlock
 without modifying the program's source code.  (1) We can elide the file descriptor

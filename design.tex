@@ -1,6 +1,6 @@
 \section{Design}
 
-We propose an interface (shown in Figure~\ref{fig:interface}) for working with
+We propose an interface (shown in Listing~\ref{lst:interface}) for working with
 preemptible functions that consists of two primary functions, \texttt{launch()} and
 \texttt{resume()}, and a structured \texttt{linger} type for storing return values
 and execution state.  Client code creates a preemptible function by passing an
@@ -10,47 +10,37 @@ execution time cap (in microseconds).  If the function completes on time,
 continuation object that the caller may later pass to \texttt{resume()} to continue
 executing the function from wherever it was preempted.
 
-\begin{figure}
-\begin{verbatim}
+\begin{lstlisting}[label=lst:interface,caption=Preemptible functions C-language interface]
 struct linger {
-  bool is_completion;
-  union {
-    void *completion;
-    opaque_t continuation;
-  };
+	bool is_completion;
+	union {
+		void *completion;
+		opaque_t continuation;
+	};
 };
 
 typedef void *(*function_t)(void *);
 
-struct linger launch(function_t func,
-  uint64_t time, void *args);
-void resume(struct linger *timed_func,
-  uint64_t time);
-\end{verbatim}
-\caption{Preemptible functions (C language) interface}
-\label{fig:interface}
-\end{figure}
+struct linger launch(function_t func, uint64_t time, void *args);
+void resume(struct linger *timed_func, uint64_t time);
+\end{lstlisting}
 
-Figure~\ref{fig:usage} shows a basic usage example where the caller is obligated to
+Listing~\ref{lst:usage} shows a basic usage example where the caller is obligated to
 perform some work (say, call a watchdog) after a certain amount of time, but first
 calls into some helper code with weak time bounds.  With preemptible functions,
 the caller does not have to trust the helper to know that the watchdog will be called
 in time.
 
-\begin{figure}
-\begin{verbatim}
+\begin{lstlisting}[label=lst:usage,caption=Preemptible function usage example]
 res = launch(helper, TIMEOUT, NULL);
 call_watchdog(); // Won't be delayed
 if(res.is_completion)
-  // We're already done
-  return res.completion;
+	// We're already done
+	return res.completion;
 else
-  // Give helper() some more time
-  resume(&res, TIMEOUT);
-\end{verbatim}
-\caption{Preemptible function usage example}
-\label{fig:usage}
-\end{figure}
+	// Give helper() some more time
+	resume(&res, TIMEOUT);
+\end{lstlisting}
 
 The intentional simplicity of our API belies the complexity of its design and the
 difficulty of its implementation.  These challenges can be grouped into three
