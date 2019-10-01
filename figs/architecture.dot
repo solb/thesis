@@ -1,0 +1,33 @@
+strict graph {
+	ranksep=0.25;
+
+	{
+		node [shape=oval];
+
+		serialclient [label="Client code (serial)"];
+		parallelclient [label="Client code (parallel)"];
+	}
+
+	{
+		node [shape=box];
+
+		threadlib [label="Thread library"];
+		libinger;
+		libgotcha;
+	}
+
+	libassafe [shape=egg,label="libas-safe"];
+	rtld [shape=hexagon,label="ld-linux"];
+
+	threadlib -- libinger;
+	libinger -- libgotcha;
+	libgotcha -- rtld;
+
+	{
+		edge [style=dashed];
+
+		serialclient -- libinger;
+		parallelclient -- threadlib;
+		libassafe -- libgotcha;
+	}
+}
