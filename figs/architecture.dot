@@ -4,8 +4,8 @@ strict graph {
 	{
 		node [shape=oval];
 
-		serialclient [label="Client code (serial)"];
-		parallelclient [label="Client code (parallel)"];
+		serialclient [label="Client code\n(serial)"];
+		parallelclient [label="Client code\n(parallel)"];
 	}
 
 	{
