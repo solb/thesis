@@ -144,21 +144,3 @@ potential concurrency concerns using a nonpreemptible \texttt{call\_safe()} wrap
 Finally, although Go is able to preempt most goroutines written directly in Go, a
 goroutine that makes any foreign calls to other languages is treated as
 nonpreemptible by the runtime's scheduler~\cite{www-golang-fficall}.
-
-We make the key observation that, as soon as any application calls into timed code,
-its safety properties change.  In particular, because the function might not run to
-completion, all code after the call site on that thread of execution may be thought
-of as a signal handler.  It is therefore subject to the same limitation of only being
-allowed to call async-signal-safe functions!  Needless to say, such a requirement
-would make timed code almost impossible to use correctly, so a large portion of
-our work focuses on lifting this requirement in the common case.  Clearly, simply
-making all library calls nonpreemptible is a strawman solution because it would
-require timed code to trust the timing properties of third-party libraries.
-
-In contrast to modern approaches' thread-like model, we argue for a return to Scheme
-engines' view of timed functions as procedure calls.  However, we seek to provide
-such an abstraction in a language-agnostic manner, without relying on a managed
-runtime, virtual machine, or garbage collector.  Furthermore, we seek to support
-calls into most third-party libraries without requiring either their redesign (e.g.,
-to eliminate global variables or migrate to reentrant interfaces) or their
-recompilation (e.g., to allow a compiler to add scheduling checks).

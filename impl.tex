@@ -1,0 +1,23 @@
+\section{Implementation}
+
+This section describes the implementation of a novel open-source software
+stack supporting preemptible functions and fine-grained userland preemptive
+threading.  We start by discussing \textit{libgotcha} (Section~\ref{sec:libgotcha}),
+a library that seeks to automatically address many problems related to shared state
+in third-party code.  Next, we give an aside illustrating the straightforward
+application of libgotcha to provide POSIX async-signal safety in places where it
+wouldn't otherwise exist (Section~\ref{sec:statefulness}).  We then cover the
+\textit{libinger} library for running preemptible functions
+(Section~\ref{sec:libinger}) and its interaction with libgotcha.  Finally, we present
+our experience porting a userland threading library to libinger in order to make
+it preemptive (Section~\ref{sec:threading}).  Figure~\ref{fig:architecture} shows
+these components in the overall architecture.
+
+\begin{figure}
+\includegraphics[height=\columnwidth,angle=270]{figs/architecture}
+\caption{Architecture of preemptible functions stack}
+\label{fig:architecture}
+\end{figure}
+
+\input{gotcha}
+\input{inger}

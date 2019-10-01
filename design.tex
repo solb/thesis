@@ -1,14 +1,14 @@
 \section{Design}
 
-Whereas recent work views user threads as a fundamental language abstraction that can
-be used to implement preemptible functions, we argue just the opposite.  As discussed
-in Section~\ref{sec:intro}, we believe there are already a number of clear use cases
-for preemptible functions in their own right, many of which are unrelated to
-parallelism and therefore have no need for the scheduler, multiple kernel threads, or
-synchronization to support a full threading abstraction.  To prove that our
-abstraction does not compromise on expressive power, we end this section by
-demonstrating how to convert an existing cooperative
-userland threading library to a preemptive one.
+We propose an interface (shown in Figure~\ref{fig:interface}) for working with
+preemptible functions that consists of two primary functions, \texttt{launch()} and
+\texttt{resume()}, and a structured \texttt{linger} type for storing return values
+and execution state.  Client code creates a preemptible function by passing an
+ordinary function (or closure) to the \texttt{launch()} function along with an
+execution time cap (in microseconds).  If the function completes on time,
+\texttt{launch()} returns its result to the caller; otherwise, it returns an opaque
+continuation object that the caller may later pass to \texttt{resume()} to continue
+executing the function from wherever it was preempted.
 
 \begin{figure}
 \begin{verbatim}
@@ -27,19 +27,10 @@ struct linger launch(function_t func,
 void resume(struct linger *timed_func,
   uint64_t time);
 \end{verbatim}
-\caption{Core libinger (C language) interface}
+\caption{Preemptible functions (C language) interface}
 \label{fig:interface}
 \end{figure}
 
-We propose an interface consisting of two functions, \texttt{launch()} and
-\texttt{resume()} (Figure~\ref{fig:interface}).  Both are ordinary, structured calls
-whose invocation adheres to C's standard stack discipline; there is no
-continuation-style or unstructured control flow.  Client code creates a preemptible
-function by passing an ordinary function (or closure) to the \texttt{launch()}
-function along with an execution time cap (in microseconds).  If the function
-completes on time, \texttt{launch()} returns its result to the caller; otherwise,
-it returns an opaque continuation object that the caller may later pass to
-\texttt{resume()} to continue executing the function from wherever it was preempted.
 Figure~\ref{fig:usage} shows a basic usage example where the caller is obligated to
 perform some work (say, call a watchdog) after a certain amount of time, but first
 calls into some helper code with weak time bounds.  With preemptible functions,
@@ -57,26 +48,54 @@ else
   // Give helper() some more time
   resume(&res, TIMEOUT);
 \end{verbatim}
-\caption{Basic libinger usage example}
+\caption{Preemptible function usage example}
 \label{fig:usage}
 \end{figure}
 
+The intentional simplicity of our API belies the complexity of its design and the
+difficulty of its implementation.  These challenges can be grouped into three
+categories:
+
+\paragraph{Language independence}
 Although the interface we propose bears some similarities to that of Scheme
-engines~\cite{haynes:iucs1984}, some of our design decisions deliberately differ from
-theirs:  (1) We return a structured type instead of a function, since the latter
-approach would be unportable between languages.  Note that in languages with operator
-overloading, it is possible to achieve the other syntax by defining the
-\texttt{linger} type's function-call operator to call the \texttt{resume()} function.
-(2) Because the preemptible function itself may contain state, we make the
-\texttt{linger}
-type stateful as well, allowing \texttt{resume()} to mutate it in place.
-(3) Instead of passing the preemptible function's return value to a separate callback
-function, we return it directly from \texttt{launch()}.  This decision was made
-because many modern languages have first-class tagged union (sum) types that allow
-the compiler to enforce that the caller explicitly checks which variant the union
-contains before accessing its contents.  In addition to the
-barebones C interface, our current implementation provides a Rust interface
-demonstrating many of these extensions.
+engines~\cite{haynes:iucs1984}, our design treats language independence as a
+first-level concern, and therefore deliberately differs in a few ways:  First, we
+return a structured type instead of a function; languages with operator overloading
+may achieve the other syntax by defining the \texttt{linger} type's function-call
+operator to call the \texttt{resume()} function.  Second, because the preemptible
+function itself may contain state, we make the \texttt{linger} type stateful as well,
+allowing \texttt{resume()} to mutate it in place.  Finally, instead of passing the
+preemptible function's return value to a separate callback function, we return it
+directly from \texttt{launch()} because many modern languages have first-class tagged
+union (sum) types allowing the compiler to enforce that the caller explicitly checks
+which variant the union contains.  In addition to the barebones C interface, our
+current implementation provides a Rust interface demonstrating these extensions.
+
+\paragraph{Reasonable performance on modern hardware}
+Recent prior work models concurrency in terms of threads which must be scheduled onto
+a CPU by some combination of the language runtime and kernel scheduler.  While this
+has the obvious advantage of allowing the launched function to run on a different
+core than its caller, this comes at the cost of involving the schedulers even when
+parallelism is not desired.  Furthermore, we showed in Section~\ref{sec:intro} that
+the threading abstraction is ill-suited to support preemptible functions.  Because of
+these factors, our interface is synchronous and lends itself to executing preemptible
+functions on the same thread as the caller.  As we'll soon see, this does not render
+preemptible functions incompatible with threading; indeed, we'll demonstrate the
+straightforward application of our abstraction to implement preemptive scheduling in
+a userland thread library.
+
+\paragraph{Automatic handling of shared state}
+Because our interface executes the preemptible function on the same thread, and said
+function might be interrupted before it completes, the code following a call to
+\texttt{launch()} or \texttt{resume()} can be thought of as a signal handler.  As
+such, we would expect it to be limited to calling async-signal-safe functions, as
+discussed in Section~\ref{sec:related}.  We find such a requirement unacceptable, as
+it would make preemptible functions almost impossible to use correctly.  Our work
+keeps the interface intuitive by automatically lifting this requirement in the common
+case.  Unlike prior work, we do this without relying solely on nonpreemptible regions
+(which would severely weaken our ability to enforce timeouts):\@ in many cases, we
+are able to instead leverage the runtime dynamic linker to maintain compatibility
+with third-party code.
 
 Those familiar with futures may notice their applicability to preemptible functions
 and similarity to our interface.  Although each language's futures differ slightly,
@@ -85,25 +104,3 @@ To create a new preemptible future, the bindings should call \texttt{launch()} w
 budget of 0 $\mu$s.  Each attempt to poll the future for a value should resolve to a
 call to \texttt{resume()} with the timeout passed to poll (if allowed by the
 language's API), or else previously associated with the future by other means.
-
-The rest of this section describes the implementation of a novel open-source software
-stack supporting preemptible functions and fine-grained userland preemptive
-threading.  We start by discussing \textit{libgotcha} (Section~\ref{sec:libgotcha}),
-a library that seeks to automatically address many problems related to shared state
-in third-party code.  Next, we give an aside illustrating the straightforward
-application of libgotcha to provide POSIX async-signal safety in places where it
-wouldn't otherwise exist (Section~\ref{sec:statefulness}).  We then cover the
-\textit{libinger} library for running preemptible functions
-(Section~\ref{sec:libinger}) and its interaction with libgotcha.  Finally, we present
-our experience porting a userland threading library to libinger in order to make
-it preemptive (Section~\ref{sec:threading}).  Figure~\ref{fig:architecture} shows
-these components in the overall architecture.
-
-\begin{figure}
-\includegraphics[height=\columnwidth,angle=270]{figs/architecture}
-\caption{Architecture of preemptible functions stack}
-\label{fig:architecture}
-\end{figure}
-
-\input{gotcha}
-\input{inger}
