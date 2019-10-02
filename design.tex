@@ -46,21 +46,6 @@ The intentional simplicity of our API belies the complexity of its design and th
 difficulty of its implementation.  These challenges can be grouped into three
 categories:
 
-\paragraph{Language independence}
-Although the interface we propose bears some similarities to that of Scheme
-engines~\cite{haynes:iucs1984}, our design treats language independence as a
-first-level concern, and therefore deliberately differs in a few ways:  First, we
-return a structured type instead of a function; languages with operator overloading
-may achieve the other syntax by defining the \texttt{linger} type's function-call
-operator to call the \texttt{resume()} function.  Second, because the preemptible
-function itself may contain state, we make the \texttt{linger} type stateful as well,
-allowing \texttt{resume()} to mutate it in place.  Finally, instead of passing the
-preemptible function's return value to a separate callback function, we return it
-directly from \texttt{launch()} because many modern languages have first-class tagged
-union (sum) types allowing the compiler to enforce that the caller explicitly checks
-which variant the union contains.  In addition to the barebones C interface, our
-current implementation provides a Rust interface demonstrating these extensions.
-
 \paragraph{Reasonable performance on modern hardware}
 Recent prior work models concurrency in terms of threads which must be scheduled onto
 a CPU by some combination of the language runtime and kernel scheduler.  While this
@@ -88,6 +73,21 @@ case.  Unlike prior work, we do this without relying solely on nonpreemptible re
 (which would severely weaken our ability to enforce timeouts):\@ in many cases, we
 are able to instead leverage the runtime dynamic linker to maintain compatibility
 with third-party code.
+
+\paragraph{Language independence}
+Although the interface we propose bears some similarities to that of Scheme
+engines~\cite{haynes:iucs1984}, our design treats language independence as a
+first-level concern, and therefore deliberately differs in a few ways:  First, we
+return a structured type instead of a function; languages with operator overloading
+may achieve the other syntax by defining the \texttt{linger} type's function-call
+operator to call the \texttt{resume()} function.  Second, because the preemptible
+function itself may contain state, we make the \texttt{linger} type stateful as well,
+allowing \texttt{resume()} to mutate it in place.  Finally, instead of passing the
+preemptible function's return value to a separate callback function, we return it
+directly from \texttt{launch()} because many modern languages have first-class tagged
+union (sum) types allowing the compiler to enforce that the caller explicitly checks
+which variant the union contains.  In addition to the barebones C interface, our
+current implementation provides a Rust interface demonstrating these extensions.
 
 \vspace{\parsep}
 Those familiar with futures may notice their applicability to preemptible functions
