@@ -33,9 +33,9 @@ in time.
 
 \begin{lstlisting}[label=lst:usage,caption=Preemptible function usage example]
 res = launch(helper, TIMEOUT, NULL);
-call_watchdog(); // Won't be delayed
+call_watchdog(); // Will not be delayed
 if(res.is_completion)
-	// We're already done
+	// We are already done
 	return res.completion;
 else
 	// Give helper() some more time
@@ -69,8 +69,9 @@ core than its caller, this comes at the cost of involving the schedulers even wh
 parallelism is not desired.  Furthermore, we showed in Section~\ref{sec:intro} that
 the threading abstraction is ill-suited to support preemptible functions.  Because of
 these factors, our interface is synchronous and lends itself to executing preemptible
-functions on the same thread as the caller.  As we'll soon see, this does not render
-preemptible functions incompatible with threading; indeed, we'll demonstrate the
+functions on the same thread as the caller.  As we will soon see, this does not
+render
+preemptible functions incompatible with threading; indeed, we will demonstrate the
 straightforward application of our abstraction to implement preemptive scheduling in
 a userland thread library.
 
