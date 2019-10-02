@@ -69,11 +69,12 @@ core than its caller, this comes at the cost of involving the schedulers even wh
 parallelism is not desired.  Furthermore, we showed in Section~\ref{sec:intro} that
 the threading abstraction is ill-suited to support preemptible functions.  Because of
 these factors, our interface is synchronous and lends itself to executing preemptible
-functions on the same thread as the caller.  As we will soon see, this does not
-render
-preemptible functions incompatible with threading; indeed, we will demonstrate the
-straightforward application of our abstraction to implement preemptive scheduling in
-a userland thread library.
+functions on the same thread as the caller.  We achieve preemption by subscribing to
+a periodic timer signal; however, unlike RT and Shinjuku, we receive these signals
+directly on the thread executing the preemptible function.  As we will soon see, this
+does not render preemptible functions incompatible with threading; indeed, we will
+demonstrate the straightforward application of our abstraction to implement
+preemptive scheduling in a userland thread library.
 
 \paragraph{Automatic handling of shared state}
 Because our interface executes the preemptible function on the same thread, and said
