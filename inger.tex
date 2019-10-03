@@ -94,7 +94,10 @@ which removes its stack frame.}}
 \label{fig:twostacks}
 \end{figure}
 
-The current implementation of libinger does not automatically clean up resources
+When the caller is finished with a deallocator, it must deallocate it either
+explicitly (C) or implicitly via the \texttt{inger} type's destructor (Rust).  This
+cleans up the libinger resources allocated by \texttt{launch()}; however, the
+current implementation of libinger does not automatically clean up resources
 allocated by preemptible functions that are canceled.  While this is inherently hard
 to do in C, it is possible to implement in languages such as Rust that support
 destructors.  For instance, the approach proposed by Boucher et

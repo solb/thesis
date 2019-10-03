@@ -58,57 +58,70 @@ against existing third-party shared libraries without recompiling them.
 
 The libgotcha library employs a technique we'll refer to as \textbf{selective
 relinking} to redirect at runtime each use of a function or global variable from
-outside the current object file to one of a number of possible copies.  It opens a
-number of copies of the program's set of loaded libraries; we will refer to each of
-these as a \textbf{libset}\footnote{Technically, a libset also includes the
-executable, which is needed in case one of the application's libraries uses
-preemptible functions that use symbols from the executable file.}.  Then, it uses
-selective linking to weaken the semantics of either dynamic linking or preemption,
-depending on the symbol being accessed.  In the common case, we weaken the former by
-redirecting to a separate copy of the symbol in a ``personal'' libset, thereby
-keeping any shared state that might become inconsistent separate from the rest of the
+outside the current object file to one of a number of possible copies.  The libinger
+library leverages this functionality to weaken the semantics of either dynamic
+linking or preemption, depending on the symbol being accessed.  In the common case,
+we weaken the former by redirecting to a ``personal'' copy of the symbol, thereby
+separating any shared state that might become inconsistent from the rest of the
 program.  Although this approach works for many libraries, it is sometimes
 inappropriate for function calls; for instance, using multiple copies of the dynamic
 allocator would cause them to manage the same heap with different free lists.  In
-such cases, we instead direct the call to the main libset, and libinger defers
-preemption until the call returns.
+such cases, we instead defer preemption until the function returns.
 
-The problem we do have to handle is external stateful code, since there's no way an
-existing piece of code can be expected to know that it might be called from a
-preemptible function.  In other words, the developers of libraries such as
-\texttt{libc} should not need to know that preemptible functions exist.  On the other
-hand, we cannot restrict programs that use preemptible functions to calling only
-async-signal-safe functions.  This is where libgotcha comes in:\@ it detects possible
-external stateful code at runtime by instrumenting the
-boundaries between relocated ELF object files (i.e., executables and dynamic shared
-objects).
+Specifically, libgotcha presents an API based on something we term a \textbf{libset},
+which is a full copy of the program's set of loaded libraries\footnote{Technically, a
+libset also includes the executable, which is needed in case one of the application's
+libraries uses preemptible functions that use symbols from the executable file.}.
+This might be the \textbf{main libset} (the program itself, as originally loaded), or
+one of any number of copies that libgotcha opens.  Each thread has an attribute
+called the \textbf{current libset} that controls which libset symbol uses are
+redirected to.  This does not determine the libset from which the current code is
+being executed, but rather the libset that will be switched to upon leaving that
+code's object file.  Users of libgotcha may explicitly reinitialize a libset, closing
+all its loaded objects then reopening them to prepare for fresh use.
 
-To avoid both limitations, we slightly weaken the guarantees of either dynamic
-linking or preemption, depending on the scenario.  In the common case, we weaken the
-property that every use of a dynamically-linked function or global variable resolves
-to the same address:\@ we open multiple copies of the shared objects required by the
-application, and redirect uses of libraries' symbols to a separate copy for each
-preemptible function.  In this way, we ensure that inconsistent state from a library
-used by one preemptible function cannot affect uses of that same library by other
-preemptible functions or the broader application.  Although this approach works for
-many
-libraries, it is sometimes inappropriate; for instance, using multiple copies of the
-dynamic allocator would cause them to manage the same heap with different free lists.
-In such cases, we direct all dynamic calls to the same copy of the function and defer
-preemption on that kernel thread until the call has completed, in the style of
-goroutines.
+The final feature of libgotcha is a \textbf{whitelist} of symbols (such as the
+dynamic allocator) that should share a single definition throughout the entire
+application.  Whenever a global variable from this list is accessed, libgotcha serves
+the definition from the main libset.  Whenever a function from the list is called,
+libgotcha automatically changes the thread's current libset to the main one before
+performing the call, then restores its original value as soon as the function
+returns.  Users of libgotcha can optionally install a callback function to be
+notified whenever the latter libset switch occurs.
 
-We refer to each independently-loaded copy of all the program's object files as a
-\textbf{libset}.  The libgotcha library exposes a per-thread attribute called the
-\textbf{current libset} that controls the libset serving all uses of library code.
-(Note that this does not determine the libset from which the current code is being
-executed.)   This attribute is set to the main libset whenever the flow of control is
-outside any preemptible function; otherwise, it is set to a value specific to that
-function.  Thus, each preemptible function's library calls are isolated from those in
-the rest of the application.  In the event that a preemptible function must be
-canceled while it is executing within its libset, the latter can be reinitialized by
-closing all its loaded objects, then reopening them to prepare it for reuse.  Note
-that, in principle, libgotcha functions with an unmodified GNU dynamic linker.
+One activates the functionality of libgotcha simply by linking against it:\@ once
+loaded into the process image, it immediately instruments the boundaries between
+object files.  The libinger shared library is statically linked against
+libgotcha\footnote{The attentive reader will notice that both libgotcha and libinger
+contain shared state (the current libset and thread preemption signal, respectively).
+To handle this, libgotcha automatically adds all the symbols defined by its own
+object file to the whitelist.  By statically linking to it, libinger gains this same
+protection.} so that the latter is active in any program using preemptible functions.
+
+Use of this API by libinger is straightforward.  The \texttt{launch()} function
+allocates a new libset by either using an unused one, reusing one from a preemptible
+function that ran to completion, or reinitializing one from a preemptible function
+that was canceled prematurely\footnote{We assume that any canceled preemptible
+function has left its libset in an undefined state.  While libinger currently
+performs libset reinitialization synchronously, this somewhat costly step could be
+moved off the critical path by assigning a separate reaper thread.}.  It installs
+this as the current libset just before enabling preemption.  Right after checking
+whether the received signal was intended for the current thread, the preemption
+signal handler checks the thread's current libset; in the case of the main one, it
+blocks the preemption signal and immediately returns, effectively deferring
+preemption.  The deferral is not indefinite:\@ libinger uses libgotcha's callback
+mechanism to both call the handler and unblock the signal as soon as the function
+returns.  Figure~\ref{fig:callwhitelist} shows the effect of calling
+\texttt{launch()} on a preemptible function that calls \texttt{malloc()}.
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/calltree}
+\caption{How preemptible function dispatch works}
+\label{fig:callwhitelist}
+\end{figure}
+
+The rest of this section covers the implementation of libgotcha.  We begin with a
+brief review of dynamic linking itself.
 
 \paragraph{Dynamic linking}
 
@@ -345,16 +358,6 @@ knowledge is GNU libpthread, which replaces function pointers in order to cause 
 dynamic linker to take locks when performing potentially concurrent operations; we
 handle this by preventing the monkey-patching constructor code from running in our
 modified copy of that library.
-
-Whenever a preemptible function runs to successful completion, its preemption signal
-and libset are reclaimed for reuse by future \texttt{launch()} invocations.  If the
-function is canceled rather than being allowed to complete, the libset is assumed to
-be in an undefined state and must be reinitialized before reuse.  C client code is
-required to explicitly ``deallocate'' continuations upon cancellations, whereas in
-Rust the libinger cleanup is performed implicitly by the \texttt{linger} type's
-destructor.  While the current implementation performs libset reinitialization
-synchronously, given sufficient spare namespaces, this somewhat costly step could be
-deferred and handled by a separate reaper thread off the critical path.
 
 While libinger in principle runs on top of an unmodified version of the GNU dynamic
 linker, in practice initializing more than one namespace tends to exhaust the
