@@ -33,7 +33,7 @@ in time.
 
 \begin{lstlisting}[label=lst:usage,caption=Preemptible function usage example]
 res = launch(helper, TIMEOUT, NULL);
-call_watchdog(); // Will not be delayed
+call_watchdog(); // Will not be late
 if(res.is_completion)
 	// We are already done
 	return res.completion;
