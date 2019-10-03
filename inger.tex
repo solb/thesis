@@ -1,23 +1,34 @@
 \subsection{Preemptible functions: \textit{libinger}}
 \label{sec:libinger}
 
-We now introduce libinger, a library providing a timed function abstraction via the
-\texttt{launch()}/\texttt{resume()} interface proposed at the beginning of the
-section.  The library provides bindings for the C and Rust systems programming
-languages; while its abstraction should work in any language whose runtime supports
-stack unwinding (including any language with exceptions), we leave it to future work
-to develop bindings for other languages via their respective foreign-function
-interfaces.
+Our primary deliverable is the libinger library that exposes our interface.  In order
+to provide an API centered around familiar function calls that adhere to the standard
+stack discipline, the library hides a lot of internal unstructured control flow.
+When \texttt{launch()} and \texttt{resume()} are executing the user-provided
+function, they use a signal handler to asynchronously monitor its execution time.  If
+it exceeds its timeout, they must context switch back to the caller, returning a
+continuation that stores the preemptible function's register values.  Furthermore,
+because the continuation might later be resumed, \texttt{launch()} cannot allow the
+caller's intervening code to clobber the stack frames left behind by preemption, and
+must therefore invoke the user function on a separate execution stack.  The library
+implements all of these steps in userland.
 
-In designing their centralized preemption thread, the Shinjuku authors conducted a
-study comparing the latency of bare-metal interprocessor interrupts (IPIs) against
-that of Linux signals.  While their results show that IPIs take an average of only
-1993 cycles, compared to 4950 for signals, their sender/receiver breakdown reveals
-that between 343 and 2084 of the cycles associated with the latter overhead are
-incurred by the sender~\cite{Kaffes:nsdi2019}.  This suggests that a timer-based
-design where the client subscribes once to a repeating signal may come within 873
-cycles (about 400 ns on a 2-GHz processor) of the preemption latency possible with
-bare-metal IPIs.
+Although seeking to implement low-latency preemption without requiring a custom
+operating system, we informed our design decisions by consulting the Shinjuku
+authors' study comparing the latency of bare-metal interprocessor interrupts (IPIs)
+against that of Linux signals (measured from their request by one core to the
+invocation of the other's interrupt service routine or signal handler).  While their
+results show that IPIs take an average of only 1993 cycles, compared to 4950 for
+signals (a ratio of 1:2.5), a look at their sender/receiver breakdown of the latter
+number suggests two opportunities for measurable reductions to this overhead without
+eschewing the existing systems software stack:  First, 343 of those cycles (6.9\%)
+are spent propagating the signal between the two cores, and should largely disappear
+by initiating it on the same thread that is to be preempted.  Second, 2084 cycles
+(42\%) are incurred by the sender, of which some portion should also
+disappear~\cite{Kaffes:nsdi2019}.  We therefore expect that an optimized system based
+on intra-thread signals and built atop the existing system stack could achieve an
+average preemption latency overhead slower than that of their custom operating
+system with a dedicated watchdog core by a factor less than 2.5.
 
 We base our preemption mechanism on that employed by RT, which uses a POSIX timer to
 repeatedly trigger their \texttt{RELEASE\_SIGNAL}, whose handler forwards the
@@ -36,60 +47,52 @@ it checks whether it was triggered by the current thread's signal.  If not, it m
 the rogue signal and immediately returns; in this way, the system quickly converges
 on delivering each preemption signal only to its corresponding thread.  The current
 implementation sets each timer to fire at a fixed scheduling interval in the tens of
-microseconds.
+microseconds\footnote{The efficiency of long-running preemptible functions could be
+improved with relative ease by delaying the start of these periodic signals until
+hundreds of microseconds before the timeout was hit; in this way, most of long
+functions' execution time would run without any throughput degradation, yet their
+preemption could still be quite accurate (free of warmup effects).}.
 
-\solb{We probably want to select the quantum dynamically based on the requested
-timeout; otherwise, cite our ATC paper to justify the fixed quantum.}
-
-Because we want to support resuming preempted functions, we must run each preemptible
-function on its own stack.  As such, whenever \texttt{launch()} is called, it creates
-a \textbf{checkpoint} continuation using \texttt{getcontext()}, allocates a
-fixed-size stack and uses the POSIX \texttt{makecontext()} and \texttt{setcontext()}
-functions to switch to it.  It then allocates a preemption signal from a pool of
-rarely-used signal numbers if there isn't already one assigned to the thread,
-enables a POSIX timer via \texttt{timer\_settime()}, allocates and switches to a
-libgotcha libset, and calls the user-provided preemptible function.
-Figure~\ref{fig:dispatch} shows a high-level view of a call to \texttt{launch()}, as
-well as a call into a shared symbol from within the invoked timed function.
+Figure~\ref{fig:callsimple} shows what happens on each call to the \texttt{launch()}
+function.  We create a \textbf{checkpoint} continuation using the POSIX
+\texttt{getcontext()} function; this will be needed in the event the preemptible
+function times out.  Next, we allocate a fixed-size execution stack and switch to it
+using the \texttt{makecontext()} and \texttt{setcontext()} functions.  Then, if the
+current thread doesn't already have a preemption signal assigned, we allocate one
+from a pool of rarely-used signal numbers.  Finally, we configure a POSIX timer via
+\texttt{timer\_settime()} and call the user-provided preemptible funcion.
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/calltree}
 \caption{How preemptible function dispatch works}
-\label{fig:dispatch}
+\label{fig:callsimple}
 \end{figure}
 
 While the preemptible function is running, the POSIX timer fires periodically,
-causing a signal handler to be invoked each time.  The handler checks whether the
-current libset is the main one, indicating that execution is within a shared symbol.
-In this case, it blocks the signal and immediately
-returns, deferring preemption using libgotcha's callback mechanism in a manner
-similar to that discussed in Section~\ref{sec:statefulness}.  Otherwise, if the
-preemptible function has exceeded its timeout, the handler swaps the contents of its
-third (POSIX context) argument~\cite{sigaction-manpage} with the checkpoint saved by
-\texttt{launch()}; this causes the subsequent return from the signal handler to jump
-back to \texttt{launch()}, which then returns a \texttt{linger} structure containing
-the signal handler's original context.  A subsequent \texttt{resume()} call on this
-packaged continuation proceeds in much the same way as \texttt{launch()}, but
-resumes the computation on its stack by sending itself a special signal with
-\texttt{pthread\_kill()}, then swapping the saved context with the contents of the
-handler's third argument.  Figure~\ref{fig:twostacks} shows the two stacks and which
-parts of the program execute on each.
+causing a signal handler to be invoked each time.  Figure~\ref{fig:twostacks} shows
+the two stacks of execution present while the handler is running, as well as what
+happens to the stack frames of both if the function times out.  The handler first
+checks whether the preemption signal was intended for the current thread, as
+described earlier.  It then checks whether the preemptible function has exceeded its
+timeout; if so, it swaps the contents of the signal handler's continuation
+(accessible via the final argument to the function~\cite{sigaction-manpage}) with the
+checkpoint continuation saved by \texttt{launch()}.  This causes the subsequent
+return from the signal handler to jump back to \texttt{launch()}, which then returns
+a \texttt{linger} structure containing the signal handler's original context.  A
+subsequent \texttt{resume()} call on this packaged continuation proceeds in much the
+same way as \texttt{launch()}, but resumes the original computation by sending itself
+a special signal with \texttt{pthread\_kill()}, then swapping the saved context with
+the contents of that handler's context.
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/twostacks}
-\caption{Which code executes on which stack}
+\caption{The two stacks before and after a timeout.  \textnormal{Upon discovering
+that the preemptible function has exceeded its time bound, the handler returns to the
+checkpoint continuation within the \texttt{launch()} function, removing its own stack
+frame in the process.  Then, \texttt{launch()} returns to the original call site,
+which removes its stack frame.}}
 \label{fig:twostacks}
 \end{figure}
-
-Whenever a preemptible function runs to successful completion, its preemption signal
-and libset are reclaimed for reuse by future \texttt{launch()} invocations.  If the
-function is canceled rather than being allowed to complete, the libset is assumed to
-be in an undefined state and must be reinitialized before reuse.  C client code is
-required to explicitly ``deallocate'' continuations upon cancellations, whereas in
-Rust the libinger cleanup is performed implicitly by the \texttt{linger} type's
-destructor.  While the current implementation performs libset reinitialization
-synchronously, given sufficient spare namespaces, this somewhat costly step could be
-deferred and handled by a separate reaper thread off the critical path.
 
 The current implementation of libinger does not automatically clean up resources
 allocated by preemptible functions that are canceled.  While this is inherently hard
@@ -98,22 +101,6 @@ destructors.  For instance, the approach proposed by Boucher et
 al.~\cite{boucher:atc2018} could be employed to raise a panic (exception) on the
 preemptible function's stack, causing the language runtime to unwind each stack frame,
 invoking the destructor of each local variable in the process.
-
-While libinger in principle runs on top of an unmodified version of the GNU dynamic
-linker, in practice initializing more than one namespace tends to exhaust the
-statically-allocated thread-local storage area.  We currently work around this
-problem by rebuilding \texttt{ld.so} with the \texttt{TLS\_STATIC\_SURPLUS} macro set
-to a larger value.  At the same time, it is possible to raise the default limit
-of 16 linker namespaces by increasing the value of \texttt{DL\_NNS}.  With this
-change, the only remaining scaling limit is the number of kernel threads running
-timed functions, which is limited to the number of signals earmarked for preemption;
-however, this number could be increased to over 32 by using realtime
-signals~\cite{signal-manpage}, and beyond by rebuilding Linux and glibc with a larger
-\texttt{\_NSIG}.
-
-\solb{Mention static linking against libgotcha?}
-
-\solb{Go ``also'' heap-allocates goroutine locals: \url{https://github.com/golang/go/issues/33216}}
 
 \subsection{Case study: Userland threading}
 \label{sec:threading}

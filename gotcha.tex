@@ -312,6 +312,28 @@ dynamic linker to take locks when performing potentially concurrent operations; 
 handle this by preventing the monkey-patching constructor code from running in our
 modified copy of that library.
 
+Whenever a preemptible function runs to successful completion, its preemption signal
+and libset are reclaimed for reuse by future \texttt{launch()} invocations.  If the
+function is canceled rather than being allowed to complete, the libset is assumed to
+be in an undefined state and must be reinitialized before reuse.  C client code is
+required to explicitly ``deallocate'' continuations upon cancellations, whereas in
+Rust the libinger cleanup is performed implicitly by the \texttt{linger} type's
+destructor.  While the current implementation performs libset reinitialization
+synchronously, given sufficient spare namespaces, this somewhat costly step could be
+deferred and handled by a separate reaper thread off the critical path.
+
+While libinger in principle runs on top of an unmodified version of the GNU dynamic
+linker, in practice initializing more than one namespace tends to exhaust the
+statically-allocated thread-local storage area.  We currently work around this
+problem by rebuilding \texttt{ld.so} with the \texttt{TLS\_STATIC\_SURPLUS} macro set
+to a larger value.  At the same time, it is possible to raise the default limit
+of 16 linker namespaces by increasing the value of \texttt{DL\_NNS}.  With this
+change, the only remaining scaling limit is the number of kernel threads running
+timed functions, which is limited to the number of signals earmarked for preemption;
+however, this number could be increased to over 32 by using realtime
+signals~\cite{signal-manpage}, and beyond by rebuilding Linux and glibc with a larger
+\texttt{\_NSIG}.
+
 \subsection{Case study: Auto async-signal safety}
 \label{sec:statefulness}
 
