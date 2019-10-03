@@ -1,26 +1,29 @@
 \subsection{Shared state: \textit{libgotcha}}
 \label{sec:libgotcha}
 
-Although shared state is always a problem for preemptible functions, we classify code
-that relies on shared state depending on its location:\@ we term it \textbf{internal
-stateful code} if it is part of a project (i.e., in the same linked object file)
-that uses preemptible functions, and \textbf{external stateful code} otherwise (e.g.,
-as is the case for third-party libraries).  Recall that one of our goals is to
-support third-party libraries without needing to recompile them.
+Our discussion of libinger's implementation was complete but for one important
+detail:\@ shared state.  As described so far, the library provides an interface that
+makes it unsafe to call functions that are not async-signal safe after the
+\texttt{launch()} call site.  Fortunately, users of libinger are spared from this
+restriction because it is linked against another library, \textit{libgotcha} that
+automatically protects much of a program's shared state.
 
-We begin by briefly discussing internal stateful code.  Listing~\ref{lst:ingerbug}
-shows
+Before discussing what libgotcha does, it is useful to clarify what it does
+\textit{not} do.  Consider Listing~\ref{lst:ingerbug}, which shows
 a code passage with a concurrency bug:\@ because the \texttt{timed()} function does
 not use an atomic increment operation, its \texttt{launch()} invocation might be
 preempted after reading the \texttt{count} variable but before writing it, in which
 case the \texttt{resume()} will set the value back to \texttt{1}, causing
-the assertion to fail.  We take the stance that internal stateful code is responsible
-for implementing its own concurrency control to fix this kind of problem, since the
-developers are aware they are using preemptible functions, and therefore (hopefully)
-are also aware of the concurrency implications.  If the internal stateful code were
-written in Rust instead of C, the compiler would statically prevent many such bugs by
-forcing the user to use atomics or locks to protect shared variables such as
-\texttt{count}.
+the assertion to fail.  Note that this bug is located within a program that makes
+explicit use of preemptible functions; for this reason, we deem it to be out of
+libgotcha's scope and assign responsibility for avoiding it to the author of that
+program, or the language.  Indeed, had the code segment been written in Rust instead
+of C, this bug would not be possible:\@ libinger's Rust bindings restrict the
+preemptible function to only access access state in a thread-safe manner
+(\texttt{Send}).  As such, the compiler would force the programmer to use an atomic
+or lock to guard the counter\footnote{Of course, this means it is still possible to
+create deadlock or some other logic error, but it does protect against undefined
+behavior.}.
 
 \begin{lstlisting}[label=lst:ingerbug,caption=Concurrency bug in internal stateful code]
 static int count = 0;
@@ -38,6 +41,37 @@ int main(void) {
 	return 0;
 }
 \end{lstlisting}
+
+We instead focus our efforts on shared state occurring within an object file
+(roughly, compilation unit)\footnote{Whenever we refer to an object file, we mean
+specifically a relocated object file (i.e., executable or dynamic shared library);
+that is, one that is loaded into the process's memory image while a program is
+running.  In other words, a ``linking unit'' or ``software project.''} that does not
+use preemptible functions.  Our reasoning is that such code cannot be expected to
+even be aware of the existence of preemptible functions, and therefore should not be
+subject to systemic concurrency concerns resulting from their use.  For instance,
+using a nonreentrant libc interface such as \texttt{strtok()} from after
+\texttt{launch()} should not break it for the preemptible function.  The task of
+libgotcha is to automatically mitigate concurrency considerations between independent
+object files in order to allow applications that use preemptible functions to link
+against existing third-party shared libraries without recompiling them.
+
+The libgotcha library employs a technique we'll refer to as \textbf{selective
+relinking} to redirect at runtime each use of a function or global variable from
+outside the current object file to one of a number of possible copies.  It opens a
+number of copies of the program's set of loaded libraries; we will refer to each of
+these as a \textbf{libset}\footnote{Technically, a libset also includes the
+executable, which is needed in case one of the application's libraries uses
+preemptible functions that use symbols from the executable file.}.  Then, it uses
+selective linking to weaken the semantics of either dynamic linking or preemption,
+depending on the symbol being accessed.  In the common case, we weaken the former by
+redirecting to a separate copy of the symbol in a ``personal'' libset, thereby
+keeping any shared state that might become inconsistent separate from the rest of the
+program.  Although this approach works for many libraries, it is sometimes
+inappropriate for function calls; for instance, using multiple copies of the dynamic
+allocator would cause them to manage the same heap with different free lists.  In
+such cases, we instead direct the call to the main libset, and libinger defers
+preemption until the call returns.
 
 The problem we do have to handle is external stateful code, since there's no way an
 existing piece of code can be expected to know that it might be called from a
