@@ -125,7 +125,8 @@ brief review of dynamic linking itself.
 
 \paragraph{Dynamic linking}
 
-A key feature of shared libraries is the ability to replace them between the time an
+The key feature of shared libraries is the ability to replace them between the time
+an
 application is built and when it is executed.  This is enabled by dynamic linking, an
 approach by which the static linker delays the relocation of addresses associated
 with \textbf{dynamic calls} to functions and \textbf{dynamic references} to global
@@ -136,26 +137,41 @@ locations of dynamic calls and references, as well as the name of each target sy
 A component of the C runtime known as the dynamic linker (\texttt{ld.so}) uses this
 table to resolve dynamic symbol addresses after the application is loaded.
 
+When a dynamically-linked application is run, the kernel first passes control to the
+dynamic linker, which reads its shared library dependencies from the executable's ELF
+headers.  It then loads these libraries into the process image, repeats with
+\texttt{their} dependencies, and so on.  The linker also provides a \texttt{dlopen()}
+that can be used to load additional shared object files at runtime.  The GNU dynamic
+linker extends this interface with the Solaris concept of namespaces, each of which
+represents an independent dependency graph of loaded libraries.  It is this feature
+upon which we build the libset abstraction, which extends this notion of duplicate
+copies of a library to allow one namespace's use of a symbol to resolve to a
+definition in a different namespace.
+
 It is important to realize that dynamic calls and references are resolved based on
-the name of a symbol, which may be ambiguous between multiple libraries; as such, the
-library associated with each dynamic relocation is not determined until runtime.
-In fact, a dynamic relocation might even resolve back to the same object file that
-contains it; this is most common when a shared library makes an internal reference to
-one of its own public interfaces (since the application might replace that public
-interface with its own implementation or one from a different library).  The target
-of dynamic relocations will become important for our discussion, so we term them as
-\textbf{cross-library references} or \textbf{cross-library calls} if the target
-symbol ends up being located in a different object file than the use.
+the name of a symbol, which may be ambiguous between multiple libraries within the
+same namespace; as such, the library associated with each dynamic relocation is not
+determined until runtime.  In fact, a dynamic relocation might even resolve back to
+the same object file that contains it; this is most common when a shared library
+makes an internal reference to one of its own public interfaces (since the
+application might replace that public interface with its own implementation or one
+from a different library).  Note that other internal references within such a shared
+library are linked statically, leaving no way to locate them at runtime.  In order to
+provide consistent semantics, we only instrument \textbf{cross-library} variable
+references and function calls, where the use and definition occur in different object
+files.
 
 \paragraph{GOTs and PLTs}
 
-When a dynamically-linked executable is run, the kernel first passes control to the
-dynamic linker, which loads all required shared object files and populates their
-respective \textbf{global offset tables (GOTs)}\footnote{It is from these structures
-that \textit{lib\textbf{got}cha} gets its name.} with the resolved addresses of any
-referenced dynamic symbols.  Once program loading is complete, the GOT entries
-for any dynamic references to global variables are populated with those variables'
-true addresses.
+When the dynamic linker needs to resolve a symbol use to the address of its
+corresponding definition, it looks up the symbol name in the relocation table and
+searches the dependency graph of loaded object files for the first definition of a
+symbol with that name.  Having found the definition, it needs to store the address
+where the program can find it during execution.  Unlike the static linker, it does
+not modify the program's executable regions; instead, it places the resolved address
+into the requesting object file's \textbf{global offset table (GOT)}\footnote{It is
+from this structure that \textit{lib\textbf{got}cha} gets its name.}, a structure
+created by the static linker with a spot corresponding to each dynamic relocation.
 
 Dynamic calls to functions are slightly more complicated because they can resolve
 lazily at first invocation.  For instance, the instruction
@@ -180,34 +196,14 @@ real function after executing only the initial \texttt{jmpq} instruction.
 
 \paragraph{Intercepting cross-library calls}
 
-\solb{Mention the need to \texttt{mprotect()}?}
-
-The primary objective of the libgotcha library is to maintain multiple copies of each
-loaded ELF object file and seamlessly direct each use at the correct one.  It does
-this by altering GOT entries to trick the PLT stubs into injecting libgotcha code at
-the beginning of each cross-library call.  The GNU
-dynamic linker includes a feature known as namespaces~\cite{dlmopen-manpage},
-inherited from Solaris, that allows loading multiple copies of the same object file
-at runtime; however, it treats each namespace as a completely independent dependency
-graph of loaded objects, with no relationship to any other.  We built
-libgotcha on top of namespaces, to which it adds automatic routing of function calls
-and variable references between separate namespaces; it is these augmented
-namespaces that we refer to as libsets.  Specifically, libgotcha creates a fixed
-number of
-libsets, each of which can be reused as long as no calls into it from the same thread
-of execution are allowed to interleave.
-
-In order to use the libgotcha library, a program need only link against its shared
-library, which contains a constructor that the dynamic linker will invoke as soon as
-it has finished loading all the program's library dependencies.  The constructor
-should not instrument all dynamic calls because this would
-have inconsistent semantics in the case of object files with self-referential dynamic
-relocations, since there is no easy way to instrument static calls at runtime.
-(Consider how confusing it would be if a shared library making calls to its own
-static helper function and its own public function had those calls implicitly
-redirected to different
-copies of itself.)  Instead, we make the decision to only switch libsets on
-cross-library dynamic calls.
+The libgotcha library includes a constructor that gets invoked by the dynamic linker
+after all shared libraries have been loaded but before the call to \texttt{main()}.
+Recall that our goal is to reroute cross-library uses of symbols at runtime.  This
+means we need to instrument all use sites and inject our own code that can decide
+which libset to route to.  In the case of cross-library calls, we have a significant
+advantage:\@ each PLT entry already executes by branching to an address stored in the
+GOT, so the constructor has only to change the latter to one of its own functions,
+and any calls through that PLT entry will be sent to libgotcha instead.
 
 Before updating any GOT entries, we must identify
 which ones correspond to cross-library calls.  Doing this is a multi-step process:
