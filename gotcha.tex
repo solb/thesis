@@ -291,11 +291,11 @@ fault, which libgotcha catches; we then look up the real address in the shadow G
 corresponding to the currently-selected libset, disassemble the offending
 instruction(s), and replace the contents of the memory-address register with the
 found address.  Once the signal handler returns, the instruction executes again, this
-time with a valid memory address in its register.  Although it's possible to generate
-code sequences that are incompatible with this approach (e.g., because they perform
-in-place pointer arithmetic on a register rather than using displacement-mode
+time with a valid memory address in its register\footnote{Although it's possible to
+generate code sequences that are incompatible with this approach (e.g., because they
+perform in-place pointer arithmetic on a register rather than using displacement-mode
 addressing with a base address), in our experience public shared data is rare enough
-that we haven't yet encountered any cases where programs do this.
+that we haven't yet encountered any cases where programs do this.}.
 
 \paragraph{Shortcomings and workarounds}
 
