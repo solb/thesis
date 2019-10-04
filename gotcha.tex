@@ -275,7 +275,7 @@ copy when invoked using either pointer.
 
 Handling references to global data besides functions is more challenging, and less
 efficient, because such accesses use the aforementioned position-independent
-relocation but don't include a PLT-style codepath for us to co-opt.
+relocation but do not include a PLT-style codepath for us to co-opt.
 In order to capture (hopefully rare) cross-library references to global variables,
 we use a different approach.  After each shadow GOT page, we allocate an inaccessible
 page with no protection bits set.  Each time the libgotcha constructor encounters a
@@ -291,11 +291,11 @@ fault, which libgotcha catches; we then look up the real address in the shadow G
 corresponding to the currently-selected libset, disassemble the offending
 instruction(s), and replace the contents of the memory-address register with the
 found address.  Once the signal handler returns, the instruction executes again, this
-time with a valid memory address in its register\footnote{Although it's possible to
+time with a valid memory address in its register\footnote{Although it is possible to
 generate code sequences that are incompatible with this approach (e.g., because they
 perform in-place pointer arithmetic on a register rather than using displacement-mode
 addressing with a base address), in our experience public shared data is rare enough
-that we haven't yet encountered any cases where programs do this.}.
+that we have not yet encountered any cases where programs do this.}.
 
 \paragraph{Shortcomings and workarounds}
 
@@ -317,16 +317,16 @@ flag to skip generating such relocations.
 
 Some shared libraries are marked with a special configuration flag,
 \texttt{DF\_1\_NODELETE}, which prevents the dynamic linker from ever removing them
-once they've been loaded.  Because almost all libraries depend on libc, the presence
-of even one such library prevents us from reinitializing a libset for reuse after
-its preemptible function has been canceled!  The flag is mostly used on libraries
-that need
+once they have been loaded.  Because almost all libraries depend on libc, the
+presence of even one such library prevents us from reinitializing a libset for reuse
+after its preemptible function has been canceled!  The flag is mostly used on
+libraries that need
 to monkey-patch some other loaded library, such that the two subsequently have a
 circular dependency.  Fortunately, this is not usually a problem because when we
 unload one library from a libset, we then unload the rest, so whenever we encounter a
 \texttt{NODELETE} object file, we make a special copy with the flag cleared, for
-loading into every namespace except the main one.  The one place this doesn't work is
-when a library monkey-patches the dynamic linker itself.  This
+loading into every namespace except the main one.  The one place this does not work
+is when a library monkey-patches the dynamic linker itself.  This
 requires the use of a private interface, and the only offending library to our
 knowledge is GNU libpthread, which replaces function pointers in order to cause the
 dynamic linker to take locks when performing potentially concurrent operations; we
@@ -354,7 +354,7 @@ a simpler example that seeks to illuminate the situation.
 \label{sec:statefulness}
 
 The main use of libgotcha is to make library function calls async-signal safe when
-they wouldn't otherwise be.  To more clearly illustrate the library's usefulness, we
+they would not otherwise be.  To more clearly illustrate the library's usefulness, we
 pause to give a minimal example of such usage; specifically, we will leverage
 libgotcha to automatically fix the buggy program in Listing~\ref{lst:handlerbug},
 which calls the async-signal-unsafe function \texttt{printf()} from its signal
