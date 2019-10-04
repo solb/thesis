@@ -107,12 +107,18 @@ performs libset reinitialization synchronously, this somewhat costly step could 
 moved off the critical path by assigning a separate reaper thread.}.  It installs
 this as the current libset just before enabling preemption.  Right after checking
 whether the received signal was intended for the current thread, the preemption
-signal handler checks the thread's current libset; in the case of the main one, it
-blocks the preemption signal and immediately returns, effectively deferring
-preemption.  The deferral is not indefinite:\@ libinger uses libgotcha's callback
-mechanism to both call the handler and unblock the signal as soon as the function
-returns.  Figure~\ref{fig:callwhitelist} shows the effect of calling
-\texttt{launch()} on a preemptible function that calls \texttt{malloc()}.
+signal handler checks the thread's current libset; in the case of the main one
+(indicating the preemptible function is currently in whitelisted code), it blocks the
+preemption signal and immediately returns, effectively deferring
+preemption\footnote{When whitelisting the dynamic allocator, it is important not to
+whitelist all of libc as collateral damage, since preemptible functions could easily
+exploit this to run forever (e.g., by performing their work in the \texttt{qsort()}
+function's comparator callback).  Fortunately, libc uses dynamic calls when it needs
+to invoke the allocator internally, allowing us to whitelist that component alone.}.
+The deferral is not indefinite:\@ libinger uses libgotcha's callback mechanism to
+both call the handler and unblock the signal as soon as the function returns.
+Figure~\ref{fig:callwhitelist} shows the effect of calling \texttt{launch()} on a
+preemptible function that calls \texttt{malloc()}.
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/calltree}
@@ -231,10 +237,10 @@ address listed at the appropriate index in that table.  (Because this function
 is injected into the "middle" of function calls, it is written in assembly to avoid
 clobbering any of the application's registers.)  The constructor sets up this system
 by replacing each GOT entry corresponding to a cross-library call with a fresh PLOT
-entry, storing its previous value in the shadow GOT for the main namespace.  It
-then opens another copy of each library in each namespace, redirects its
-cross-library calls to the same PLOT stubs, and creates a shadow GOT for each
-namespace.
+entry, storing its previous value in the shadow GOT for the main namespace.  It then
+opens a fixed number of additional libsets, redirects the cross-library calls from
+each new copy of a library to the same PLOT stubs as before, and creates a shadow GOT
+for each libset.
 
 The setup procedure described so far has one significant problem:\@ recall that a PLT
 call memoizes the real address of its symbol by replacing the GOT entry, which should
@@ -255,11 +261,11 @@ memoization still works, as shown in Figure~\ref{fig:override}.
 The reader might notice that invocation is not the only thing a program can do with a
 function:\@ it might also pass around the function's address.  In fact, after taking
 the address, it could pass it to code within a different object file, which might
-compare it.  In order for such comparisons to correctly indicate whether the same
-code will be run, the compiler loads such addresses directly from the GOT via
+compare it\footnote{In order for such comparisons to correctly indicate whether the
+same code will be run, the compiler loads such addresses directly from the GOT via
 instructions of the special position-independent relocation form
 \texttt{mov~\textit{symbol}@gotpcrel(\%rip),~\%\textit{dest}}, and the dynamic linker
-resolves the calls and populates their GOT entries eagerly at load time.  To avoid
+resolves the calls and populates their GOT entries eagerly at load time.}.  To avoid
 breaking pointer-comparison semantics, libgotcha makes sure to share the same PLOT
 stub between all GOT entries to a given symbol that use this type of
 relocation.  As long as the current libset remains the same between the time of a
@@ -275,7 +281,10 @@ we use a different approach.  After each shadow GOT page, we allocate an inacces
 page with no protection bits set.  Each time the libgotcha constructor encounters a
 relocation entry corresponding to a data symbol, we migrate the contents of its GOT
 entry into an available shadow GOT entry, replacing it with an address the same
-number of bytes into the shadow GOT's corresponding inaccessible page.  Thus,
+number of bytes into the shadow GOT's corresponding inaccessible page\footnote{For
+security reasons, the dynamic linker leaves the portion of each GOT corresponding to
+eargerly-resolved symbol uses read-only.  We restore write access to these entries
+using \texttt{mprotect()}, then remove it again after updating the entries.}.  Thus,
 whenever the program takes the address of a particular symbol, it gets the same fake
 address.  Any attempt to read from or write to this address results in a segmentation
 fault, which libgotcha catches; we then look up the real address in the shadow GOT
@@ -287,37 +296,6 @@ code sequences that are incompatible with this approach (e.g., because they perf
 in-place pointer arithmetic on a register rather than using displacement-mode
 addressing with a base address), in our experience public shared data is rare enough
 that we haven't yet encountered any cases where programs do this.
-
-\paragraph{Shared symbols}
-
-As aforementioned, certain systems such as the dynamic memory allocator do not work
-well when copied, and must be treated specially.  Specifically, libgotcha maintains
-a whitelist of \textbf{shared symbols} whose use is always redirected back to the
-main namespace.  Of course, this introduces prior work's limitation of being unable
-to preempt during such calls; as such, the whitelist should be kept small, since the
-inclusion of each function confers trust in its timely completion.
-
-When whitelisting the dynamic allocator, it is important not to whitelist all of libc
-as collateral damage,
-since preemptible functions could easily exploit this to run forever (e.g., by
-performing their work in the \texttt{qsort()} function's comparator callback).
-Fortunately, libc uses dynamic calls when it needs to invoke the allocator
-internally, allowing us to whitelist that component alone.
-
-In order to support more complex systems, libgotcha exposes a simple API for dealing
-with shared symbols.  Whenever \texttt{procedure\_linkage\_override()} transfers
-control to the main libset, it resets the current libset so that all subsequent calls
-will remain in shared code.  Client code can therefore check the current libset to
-determine
-whether it is safe to preempt.  Furthermore, libgotcha provides an interface by which
-client code can provide a callback to be invoked upon return from the shared code,
-immediately after the transition back to the original libset:\@ it can use this
-callback to perform a deferred preemption check at the earliest possible point.
-
-The attentive reader will observe that, in order to track the current libset,
-libgotcha must itself contain shared state.  In order to ensure a consistent view of
-this information independent of the current libset, it treats all the symbols from
-its own shared library as shared by automatically appending them to the whitelist.
 
 \paragraph{Shortcomings and workarounds}
 
@@ -355,6 +333,7 @@ dynamic linker to take locks when performing potentially concurrent operations; 
 handle this by preventing the monkey-patching constructor code from running in our
 modified copy of that library.
 
+\vspace{\parsep}
 While libinger in principle runs on top of an unmodified version of the GNU dynamic
 linker, in practice initializing more than one namespace tends to exhaust the
 statically-allocated thread-local storage area.  We currently work around this
@@ -367,16 +346,21 @@ however, this number could be increased to over 32 by using realtime
 signals~\cite{signal-manpage}, and beyond by rebuilding Linux and glibc with a larger
 \texttt{\_NSIG}.
 
+In case the reader presently struggles to reason about the implications of libgotcha
+in the somewhat complex context of preemptible functions, the following section gives
+a simpler example that seeks to illuminate the situation.
+
 \subsection{Case study: Auto async-signal safety}
 \label{sec:statefulness}
 
 The main use of libgotcha is to make library function calls async-signal safe when
-they wouldn't otherwise be.  We now pause to give a brief example of such usage,
-motivated by the buggy program in Listing~\ref{lst:handlerbug}, which calls the
-async-signal-unsafe function \texttt{printf()} from its signal handler.
-Unfortunately, this function takes a lock on the \texttt{stdout} stream's associated
-file descriptor, and the signal handler eventually interrupts the program within
-\texttt{fflush()} while it is holding this same lock, resulting in deadlock.
+they wouldn't otherwise be.  To more clearly illustrate the library's usefulness, we
+pause to give a minimal example of such usage; specifically, we will leverage
+libgotcha to automatically fix the buggy program in Listing~\ref{lst:handlerbug},
+which calls the async-signal-unsafe function \texttt{printf()} from its signal
+handler.  Unfortunately, this function takes a lock on the \texttt{stdout} stream's
+associated file descriptor, and the signal handler eventually interrupts the program
+within \texttt{fflush()} while it is holding this same lock, resulting in deadlock.
 
 \begin{lstlisting}[label=lst:handlerbug,caption=C program with a buggy signal handler]
 static void handler(int ignored) {
@@ -413,18 +397,25 @@ handler interrupts a \texttt{write} syscall from the stream library implementati
 
 In 127 lines of C, we wrote a signal-handling client library, \textit{libas-safe},
 that can use libgotcha to automatically transform the program in either of these
-ways.  It injects code before \texttt{main()} to switch to a new libset, and
-provides a custom implementation of \texttt{sigaction()} that switches the current
-libset back to the main one while each signal handler is running.  This is enough to
-achieve transformation (1), since it causes \texttt{main()} and \texttt{handler()} to
-use distinct copies of the buffered \texttt{stdio} object.  One other
-\textit{libas-safe} feature enables transformation (2):\@ whenever the main libset is
-already selected when a signal handler runs, that handler is deferred (using
-libgotcha's callback mechanism) until the current shared call returns.  This
-transformation can be demonstrated for this program by whitelisting the stdio
-functions and streams.
+ways\footnote{While libas-safe reestablishes async-signal safety, it would also be
+possible to write a libgotcha client library that did the same for what POSIX calls
+async-cancellation safety.  The obvious application of this would be supporting
+asynchronous thread cancellation (in the common case where whitelisted code was not
+currently executing):\@ as we saw in Section~\ref{sec:intro}, today's POSIX and
+Windows interfaces for this are broken to the point of practical uselessness.}.  It
+injects code before \texttt{main()} to switch to a new libset, and provides a custom
+implementation of \texttt{sigaction()} that switches the current libset back to the
+main one while each signal handler is running.  This is enough to achieve
+transformation (1), since it causes \texttt{main()} and \texttt{handler()} to use
+distinct copies of the buffered \texttt{stdio} object.  One other \textit{libas-safe}
+feature enables transformation (2):\@ whenever the main libset is already selected
+when a signal handler runs, that handler is deferred (using libgotcha's callback
+mechanism) until the current whitelisted call returns.  This transformation can be
+demonstrated for this program by whitelisting the stdio functions and streams.
 
 As expected, use of either transformation prevents deadlock just by virtue of linking
-the buggy program against libas-safe.  Recall that the use of a preemptible function
-imposes the restrictions of a signal handler on the rest of the program, restrictions
-that can be lifted by the use of libgotcha.
+the buggy program against libas-safe\footnote{Interestingly, libas-safe represents a
+significant step in the direction of supporting safe signal handling in Rust,
+something the language has been missing since its initial release.}.  Recall that the
+use of a preemptible function imposes the restrictions of a signal handler on the
+rest of the program, restrictions that can be lifted by the use of libgotcha.
