@@ -56,7 +56,7 @@ libgotcha is to automatically mitigate concurrency considerations between indepe
 object files in order to allow applications that use preemptible functions to link
 against existing third-party shared libraries without recompiling them.
 
-The libgotcha library employs a technique we'll refer to as \textbf{selective
+The libgotcha library employs a technique we call \textbf{selective
 relinking} to redirect at runtime each use of a function or global variable from
 outside the current object file to one of a number of possible copies.  The libinger
 library leverages this functionality to weaken the semantics of either dynamic
