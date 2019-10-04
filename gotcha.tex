@@ -25,6 +25,7 @@ or lock to guard the counter\footnote{Of course, this means it is still possible
 create deadlock or some other logic error, but it does protect against undefined
 behavior.}.
 
+\begin{figure}
 \begin{lstlisting}[label=lst:ingerbug,caption=Concurrency bug in internal stateful code]
 static int count = 0;
 
@@ -41,6 +42,7 @@ int main(void) {
 	return 0;
 }
 \end{lstlisting}
+\end{figure}
 
 We instead focus our efforts on shared state occurring within an object file
 (roughly, compilation unit)\footnote{Whenever we refer to an object file, we mean
@@ -193,12 +195,14 @@ function's real address, memoizes the result by updating the GOT entry, and fina
 jumps into the real function.  Subsequent calls to the PLT stub then forward to the
 real function after executing only the initial \texttt{jmpq} instruction.
 
+\begin{figure}
 \begin{lstlisting}[label=lst:plt,caption=Example PLT entry for call to \texttt{printf()}]
 0000000000001030 <printf@plt>:
 	1030: jmpq  *0x2fe2(%rip) <printf>
 	1036: pushq $0x0
 	103b: jmpq  1020          <.plt>
 \end{lstlisting}
+\end{figure}
 
 \paragraph{Intercepting cross-library calls}
 
@@ -362,6 +366,7 @@ handler.  Unfortunately, this function takes a lock on the \texttt{stdout} strea
 associated file descriptor, and the signal handler eventually interrupts the program
 within \texttt{fflush()} while it is holding this same lock, resulting in deadlock.
 
+\begin{figure}
 \begin{lstlisting}[label=lst:handlerbug,caption=C program with a buggy signal handler]
 static void handler(int ignored) {
 	printf("in signal handler()\n");
@@ -386,6 +391,7 @@ int main(void) {
 		fflush(stdout);
 }
 \end{lstlisting}
+\end{figure}
 
 There are two ways to weaken the semantics of this program to prevent the deadlock
 without modifying the program's source code.  (1) We can elide the file descriptor

@@ -10,6 +10,7 @@ execution time cap (in microseconds).  If the function completes on time,
 continuation object that the caller may later pass to \texttt{resume()} to continue
 executing the function from wherever it was preempted.
 
+\begin{figure}
 \begin{lstlisting}[label=lst:interface,caption=Preemptible functions C-language interface]
 struct linger {
 	bool is_completion;
@@ -24,6 +25,7 @@ typedef void *(*function_t)(void *);
 struct linger launch(function_t func, uint64_t time, void *args);
 void resume(struct linger *timed_func, uint64_t time);
 \end{lstlisting}
+\end{figure}
 
 Listing~\ref{lst:usage} shows a basic usage example where the caller is obligated to
 perform some work (say, call a watchdog) after a certain amount of time, but first
@@ -31,6 +33,7 @@ calls into some helper code with weak time bounds.  With preemptible functions,
 the caller does not have to trust the helper to know that the watchdog will be called
 in time.
 
+\begin{figure}
 \begin{lstlisting}[label=lst:usage,caption=Preemptible function usage example]
 res = launch(helper, TIMEOUT, NULL);
 call_watchdog(); // Will not be late
@@ -41,6 +44,7 @@ else
 	// Give helper() some more time
 	resume(&res, TIMEOUT);
 \end{lstlisting}
+\end{figure}
 
 The intentional simplicity of our API belies the complexity of its design and the
 difficulty of its implementation.  These challenges can be grouped into three
