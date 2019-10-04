@@ -20,10 +20,10 @@ libgotcha's scope and assign responsibility for avoiding it to the author of tha
 program, or the language.  Indeed, had the code segment been written in Rust instead
 of C, this bug would not be possible:\@ libinger's Rust bindings restrict the
 preemptible function to only access access state in a thread-safe manner
-(\texttt{Send}).  As such, the compiler would force the programmer to use an atomic
-or lock to guard the counter\footnote{Of course, this means it is still possible to
-create deadlock or some other logic error, but it does protect against undefined
-behavior.}.
+(by marking it \texttt{Send}~\cite{www-rustlang-conc}).  As such, the compiler would
+force the programmer to use an atomic or lock to guard the counter\footnote{Of
+course, this means it is still possible to create deadlock or some other logic error,
+but it does protect against undefined behavior~\cite{www-rustlang-nu}.}.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:ingerbug,caption=Concurrency bug in internal stateful code]
@@ -151,10 +151,10 @@ headers.  It then loads these libraries into the process image, repeats with
 \texttt{their} dependencies, and so on.  The linker also provides a \texttt{dlopen()}
 that can be used to load additional shared object files at runtime.  The GNU dynamic
 linker extends this interface with the Solaris concept of namespaces, each of which
-represents an independent dependency graph of loaded libraries.  It is this feature
-upon which we build the libset abstraction, which extends this notion of duplicate
-copies of a library to allow one namespace's use of a symbol to resolve to a
-definition in a different namespace.
+represents an independent dependency graph of loaded
+libraries~\cite{dlmopen-manpage}.  It is this feature upon which we build the libset
+abstraction, which extends this notion of duplicate copies of a library to allow one
+namespace's use of a symbol to resolve to a definition in a different namespace.
 
 It is important to realize that dynamic calls and references are resolved based on
 the name of a symbol, which may be ambiguous between multiple libraries within the
