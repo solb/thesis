@@ -1,11 +1,11 @@
 \section{Design}
 
-We propose an interface (shown in Listing~\ref{lst:interface}) for working with
-preemptible functions that consists of two primary functions, \texttt{launch()} and
+Our interface (shown in Listing~\ref{lst:interface}) for working with
+preemptible functions consists of two primary functions, \texttt{launch()} and
 \texttt{resume()}, and a structured \texttt{linger} type for storing return values
 and execution state.  Client code creates a preemptible function by passing an
 ordinary function (or closure) to the \texttt{launch()} function along with an
-execution time cap (in microseconds).  If the function completes on time,
+execution time cap.  If the function completes on time,
 \texttt{launch()} returns its result to the caller; otherwise, it returns an opaque
 continuation object that the caller may later pass to \texttt{resume()} to continue
 executing the function from wherever it was preempted.
@@ -22,43 +22,44 @@ struct linger {
 
 typedef void *(*function_t)(void *);
 
-struct linger launch(function_t func, uint64_t time, void *args);
-void resume(struct linger *timed_func, uint64_t time);
+struct linger launch(function_t func, uint64_t time_us, void *args);
+void resume(struct linger *timed_func, uint64_t time_us);
 \end{lstlisting}
 \end{figure}
 
-Listing~\ref{lst:usage} shows a basic usage example where the caller is obligated to
-perform some work (say, call a watchdog) after a certain amount of time, but first
+Listing~\ref{lst:usage} shows a usage example where the caller must
+perform some work (say, call a watchdog) by a certain deadline, but first
 calls into some helper code with weak time bounds.  With preemptible functions,
-the caller does not have to trust the helper to know that the watchdog will be called
+the caller does not have to trust the helper's timing properties to know that the
+watchdog will be called
 in time.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:usage,caption=Preemptible function usage example]
-res = launch(helper, TIMEOUT, NULL);
+res = launch(helper, TIMEOUT, no_args);
 call_watchdog(); // Will not be late
 if(res.is_completion)
 	// We are already done
 	return res.completion;
 else
-	// Give helper() some more time
+	// Give helper() more time
 	resume(&res, TIMEOUT);
 \end{lstlisting}
 \end{figure}
 
-The intentional simplicity of our API belies the complexity of its design and the
-difficulty of its implementation.  These challenges can be grouped into three
-categories:
+The intentional simplicity of our API masks the implementation effort required to
+hide three categories of challenges:
 
-\paragraph{Reasonable performance on modern hardware}
-Recent prior work models concurrency in terms of threads which must be scheduled onto
+\paragraph{Decent performance on contemporary systems stack}
+Most prior work models concurrency in terms of threads that must be scheduled onto
 a CPU by some combination of the language runtime and kernel scheduler.  While this
 has the obvious advantage of allowing the launched function to run on a different
-core than its caller, this comes at the cost of involving the schedulers even when
-parallelism is not desired.  Furthermore, we showed in Section~\ref{sec:intro} that
-the threading abstraction is ill-suited to support preemptible functions.  Because of
-these factors, our interface is synchronous and lends itself to executing preemptible
-functions on the same thread as the caller.  We achieve preemption by subscribing to
+core than its caller, it comes at the cost of involving the schedulers even when
+parallelism is not desired.  Furthermore, recall from Section~\ref{sec:intro} that
+conventional thread-based software stacks only support cancellation at process
+granularity.  To efficiently support the common case of running and cancelling
+preemptible functions on the same thread as the caller,
+our interface is synchronous.  We achieve preemption by subscribing to
 a periodic timer signal; however, unlike RT and Shinjuku, we receive these signals
 directly on the thread executing the preemptible function.  As we will soon see, this
 does not render preemptible functions incompatible with threading; indeed, we will
@@ -66,37 +67,49 @@ demonstrate the straightforward application of our abstraction to implement
 preemptive scheduling in a userland thread library.
 
 \paragraph{Automatic handling of shared state}
+Recall that one of our goals is to allow the use of most third-party libraries
+without modifying or recompiling them.
 Because our interface executes the preemptible function on the same thread, and said
 function might be interrupted before it completes, the code following a call to
-\texttt{launch()} or \texttt{resume()} can be thought of as a signal handler.  As
+\texttt{launch()} or \texttt{resume()} shares certain attributes with a signal
+handler.  As
 such, we would expect it to be limited to calling async-signal-safe functions, as
 discussed in Section~\ref{sec:related}.  We find such a requirement unacceptable, as
 it would make preemptible functions almost impossible to use correctly.  Our work
-keeps the interface intuitive by automatically lifting this requirement in the common
-case.  Unlike prior work, we do this without relying solely on nonpreemptible regions
+lifts this requirement in the common case by automatically creating copies of
+libraries to isolate their shared state.
+Unlike prior work, we do this without relying solely on nonpreemptible regions
 (which would severely weaken our ability to enforce timeouts):\@ in many cases, we
 are able to instead leverage the runtime dynamic linker to maintain compatibility
 with third-party code.
 
 \paragraph{Language independence}
-Although the interface we propose bears some similarities to that of Scheme
-engines~\cite{haynes:iucs1984}, our design treats language independence as a
-first-level concern, and therefore deliberately differs in a few ways:  First, we
-return a structured type instead of a function; languages with operator overloading
-may achieve the other syntax by defining the \texttt{linger} type's function-call
-operator to call the \texttt{resume()} function.  Second, because the preemptible
-function itself may contain state, we make the \texttt{linger} type stateful as well,
-allowing \texttt{resume()} to mutate it in place.  Finally, instead of passing the
+Our interface is inpired by that of Scheme engines~\cite{haynes:iucs1984}; however,
+since we seek language independence, our design differs substantially from theirs.
+Most notably, the Scheme language's functional nature meant that engines did not have
+to handle shared state.  Our API differences from Scheme engines are as follows:
+First, because the preemptible function itself may contain state, we make the
+\texttt{linger} type stateful as well, allowing \texttt{resume()} to mutate it in
+place.  Second, to support languages without closures, we
+return a structured type instead of a function\footnote{Languages with operator
+overloading may achieve the other syntax by defining the \texttt{linger} type's
+function-call operator to call the \texttt{resume()} function.}
+Finally, instead of passing the
 preemptible function's return value to a separate callback function, we return it
-directly from \texttt{launch()} because many modern languages have first-class tagged
-union (sum) types allowing the compiler to enforce that the caller explicitly checks
-which variant the union contains.  In addition to the barebones C interface, our
-current implementation provides a Rust interface demonstrating these extensions.
+directly from \texttt{launch()}.  This core API is amenable to good language-specific
+integration; for instance, in addition to the barebones C interface, our current
+implementation exposes a Rust interface that uses a first-class tagged union (sum
+type) to ensure at compile time that the caller has checked which variant a
+\texttt{linger} contains before using it.
 
 \vspace{\parsep}
-Those familiar with futures may notice their applicability to preemptible functions
-and similarity to our interface.  Although each language's futures differ slightly,
-bindings can be constructed in the following trivial manner:
+Our discussion may remind some readers of the futures (promises) interface now
+present in many programming languages.  The futures programming model's main
+contribution is the ability to express a parallel computation as a dataflow graph.
+Contemporary futures runtimes do not support asynchronous preemption, but it is
+possible to encapsulate preemptible functions inside futures to achieve this.
+Although each language's futures differ slightly,
+language bindings can be constructed in the following trivial manner:
 To create a new preemptible future, the bindings should call \texttt{launch()} with a
 budget of 0 $\mu$s.  Each attempt to poll the future for a value should resolve to a
 call to \texttt{resume()} with the timeout passed to poll (if allowed by the

@@ -6,6 +6,7 @@ strict graph {
 
 		serialclient [label="Client code\n(serial)"];
 		parallelclient [label="Client code\n(parallel)"];
+		libassafe [label="Client libraries\n(e.g., libas-safe)"];
 	}
 
 	{
@@ -16,7 +17,6 @@ strict graph {
 		libgotcha;
 	}
 
-	libassafe [shape=egg,label="libas-safe"];
 	rtld [shape=hexagon,label="ld-linux"];
 
 	threadlib -- libinger;
