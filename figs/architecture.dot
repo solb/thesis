@@ -17,7 +17,7 @@ strict graph {
 		libgotcha;
 	}
 
-	rtld [shape=hexagon,label="ld-linux"];
+	rtld [shape=hexagon,label="Dynamic linker"];
 
 	threadlib -- libinger;
 	libinger -- libgotcha;

@@ -1,6 +1,6 @@
 \section{Design}
 
-Our interface (shown in Listing~\ref{lst:interface}) for working with
+Our interface (shown in Listing~\ref{lst:ingerapi}) for working with
 preemptible functions consists of two primary functions, \texttt{launch()} and
 \texttt{resume()}, and a structured \texttt{linger} type for storing return values
 and execution state.  Client code creates a preemptible function by passing an
@@ -11,7 +11,7 @@ continuation object that the caller may later pass to \texttt{resume()} to conti
 executing the function from wherever it was preempted.
 
 \begin{figure}
-\begin{lstlisting}[label=lst:interface,caption=Preemptible functions C-language interface]
+\begin{lstlisting}[label=lst:ingerapi,caption=Preemptible functions C-language interface]
 struct linger {
 	bool is_completion;
 	union {
