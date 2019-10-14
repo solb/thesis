@@ -69,7 +69,7 @@ some programs.}.  Finally, we configure a POSIX timer via
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/calltree}
-\caption{How preemptible function dispatch works}
+\caption{Preemptible function dispatch}
 \label{fig:callsimple}
 \end{figure}
 
@@ -94,7 +94,7 @@ this case~\cite{getcontext-manpage}.}.
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/twostacks}
-\caption{The two stacks before and after a timeout.  \textnormal{Upon discovering
+\caption{The stacks before and after a timeout.  \textnormal{Upon discovering
 that the preemptible function has exceeded its time bound, the handler returns to the
 checkpoint continuation within the \texttt{launch()} function, removing its own stack
 frame in the process.  Then, \texttt{launch()} returns to the original call site,
