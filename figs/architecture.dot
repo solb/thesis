@@ -1,5 +1,8 @@
 strict graph {
-	ranksep=0.25;
+	margin=0;
+	ranksep=0;
+
+	node [fontsize=10,margin=0.05];
 
 	{
 		node [shape=oval];
@@ -12,7 +15,7 @@ strict graph {
 	{
 		node [shape=box];
 
-		threadlib [label="Thread library"];
+		threadlib [label="New preemptive\nthread library"];
 		libinger;
 		libgotcha;
 	}
