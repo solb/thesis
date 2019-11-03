@@ -192,9 +192,9 @@ real function after executing only the initial \texttt{jmpq} instruction.
 \begin{figure}
 \begin{lstlisting}[label=lst:plt,caption=Example PLT entry for call to \texttt{printf()}]
 0000000000001030 <printf@plt>:
-	1030: jmpq  *0x2fe2(%rip) <printf>
-	1036: pushq $0x0
-	103b: jmpq  1020          <.plt>
+  1030: jmpq  *0x2fe2(%rip) <printf>
+  1036: pushq $0x0
+  103b: jmpq  1020          <.plt>
 \end{lstlisting}
 \end{figure}
 
@@ -396,26 +396,26 @@ within \texttt{fflush()} while it is holding this same lock, resulting in deadlo
 \begin{figure}
 \begin{lstlisting}[label=lst:handlerbug,caption=C program with a buggy signal handler]
 static void handler(int ignored) {
-	printf("in signal handler()\n");
+  printf("In signal handler\n");
 }
 
 int main(void) {
-	struct sigaction sa = {
-		.sa_handler = handler,
-	};
-	sigaction(SIGALRM, &sa, NULL);
+  struct sigaction sa = {
+    .sa_handler = handler,
+  };
+  sigaction(SIGALRM, &sa, NULL);
 
-	struct timeval tv = {
-		.tv_sec = 1,
-	};
-	struct itimerval it = {
-		.it_interval = tv,
-		.it_value = tv,
-	};
-	setitimer(ITIMER_REAL, &it, NULL);
+  struct timeval tv = {
+    .tv_sec = 1,
+  };
+  struct itimerval it = {
+    .it_interval = tv,
+    .it_value = tv,
+  };
+  setitimer(ITIMER_REAL, &it, NULL);
 
-	while(true)
-		fflush(stdout);
+  while(true)
+    fflush(stdout);
 }
 \end{lstlisting}
 \end{figure}

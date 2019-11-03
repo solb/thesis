@@ -13,11 +13,11 @@ executing the function from wherever it was preempted.
 \begin{figure}
 \begin{lstlisting}[label=lst:ingerapi,caption=Preemptible functions C-language interface]
 struct linger {
-	bool is_completion;
-	union {
-		void *completion;
-		opaque_t continuation;
-	};
+  bool is_completion;
+  union {
+    void *completion;
+    opaque_t continuation;
+  };
 };
 
 typedef void *(*function_t)(void *);
@@ -38,12 +38,13 @@ in time.
 \begin{lstlisting}[label=lst:usage,caption=Preemptible function usage example]
 res = launch(helper, TIMEOUT, no_args);
 call_watchdog(); // Will not be late
-if(res.is_completion)
-	// We are already done
-	return res.completion;
-else
-	// Give helper() more time
-	resume(&res, TIMEOUT);
+if(res.is_completion) {
+  // We are already done
+  return res.completion;
+} else {
+  // Give helper() more time
+  resume(&res, TIMEOUT);
+}
 \end{lstlisting}
 \end{figure}
 
