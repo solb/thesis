@@ -30,28 +30,31 @@ void resume(struct linger *timed_func, uint64_t time_us);
 Listing~\ref{lst:usage} shows a usage example where the caller must
 perform some work (say, call a watchdog) by a certain deadline, but first
 calls into some helper code with weak time bounds.  With preemptible functions,
-the caller does not have to trust the helper's timing properties to know that the
+the caller does not have to trust the task's timing properties to know that the
 watchdog will be called
 in time.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:usage,caption=Preemptible function usage example]
-res = launch(helper, TIMEOUT, no_args);
-call_watchdog(); // Will not be late
+res = launch(task, TIMEOUT, no_args);
+watchdog(); // Will not be late
 if(res.is_completion) {
   // We are aready done
   return res.completion;
 } else {
-  // Give helper() more time
+  // Give task() more time
   resume(&res, TIMEOUT);
 }
 \end{lstlisting}
 \end{figure}
 
 The intentional simplicity of our API masks the implementation effort required to
-hide three categories of challenges:
+achieve three main design goals:
 
 \paragraph{Performance on contemporary systems stacks}
+\dga{Start something like this instead: ``Unlike prior work, we run on top of the
+existing OS.  An obvious design to achieve our goals would be to use a thread or
+process, the existing concurrency mechanisms provided by the OS.}
 It is traditional to conceptualize concurrency as threads that must be scheduled onto
 a CPU by some combination of the language runtime and kernel scheduler.  While this
 has the obvious advantage of allowing the launched function to run on a different
@@ -64,7 +67,7 @@ preemptible functions on the same thread as the caller, our interface is synchro
 existing systems stack by subscribing to a periodic timer signal.
 
 \paragraph{Automatic handling of shared state}
-One of our goals is to allow the use of third-party libraries
+We aim to support third-party libraries
 without modifying or recompiling them.
 Because our interface executes the preemptible function on the same thread, the
 function might be interrupted before it completes, so the code following a call to
