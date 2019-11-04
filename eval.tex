@@ -1,15 +1,16 @@
 \section{Evaluation}
 
-\begin{table}
+\begin{table*}
+\begin{center}
 \begin{tabular}{c | c c}
-& \multicolumn{2}{c}{symbol resolution scheme} \\
-& eager (load time) & lazy (runtime) \\
+Symbol resolution scheme & Time without libgotcha ($\mu{s}$) & Time with libgotcha ($\mu{s}$) \\
 \hline
-without libgotcha & $2 \pm 0$ & $102 \pm 1$ \\
-with libgotcha & $14 \pm 0$ & $125 \pm 0$
+eager (load time) & $2 \pm 0$ & $14 \pm 0$ \\
+lazy (runtime) & $102 \pm 1$ & $125 \pm 0$
 \end{tabular}
+\end{center}
 \caption{Overhead of making a dynamic function call, with and without libgotcha}
-\end{table}
+\end{table*}
 
 \solb{Rerun microbenchmarks with ToT on cerberus.}
 \solb{For libinger microbenchmarks, do we want to include the entry/exit breakdown?}
