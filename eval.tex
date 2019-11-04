@@ -1,5 +1,28 @@
 \section{Evaluation}
 
-TODO
+\begin{table}
+\begin{tabular}{c | c c}
+& \multicolumn{2}{c}{symbol resolution scheme} \\
+& eager (load time) & lazy (runtime) \\
+\hline
+without libgotcha & $2 \pm 0$ & $102 \pm 1$ \\
+with libgotcha & $14 \pm 0$ & $125 \pm 0$
+\end{tabular}
+\caption{Overhead of making a dynamic function call, with and without libgotcha}
+\end{table}
 
-\solb{Mention zygote processes when we discuss initialization cost?}
+\solb{Rerun microbenchmarks with ToT on cerberus.}
+\solb{For libinger microbenchmarks, do we want to include the entry/exit breakdown?}
+
+\begin{table}
+\begin{center}
+\begin{tabular}{c | c}
+Operation & Duration ($\mu{s}$) \\
+\hline
+\texttt{launch()} & $43.9 \pm 0.6$ \\
+\texttt{resume()} & $3.7 \pm 0.2$ \\
+cancellation & $4440.8 \pm 1412.3$
+\end{tabular}
+\end{center}
+\caption{Cost of using preemptible functions}
+\end{table}
