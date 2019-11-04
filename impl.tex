@@ -1,30 +1,7 @@
-\section{Implementation}
-\label{sec:impl}
-
-\mk{Move most or all of this paragraph into the figure's caption.}
-Figure~\ref{fig:architecture} shows a dependency graph of the software
-components that implement preemptible functions (rectangular boxes), their
-relationship to the existing
-runtime environment (hexagonal box), and the points at which third-party code can use
-our abstractions (ovals).
-
-\begin{figure}
-\begin{center}
-\includegraphics[width=0.75\columnwidth]{figs/architecture}
-\end{center}
-\caption{The preemptible functions stack}
-\label{fig:architecture}
-\end{figure}
-
-The rest of this section describes the components in detail.  We start by discussing
-\textit{libinger}, a library that provides the preemptible function abstraction
-(Section~\ref{sec:libinger}).  Next, we present our experience porting a userland
-threading library to libinger in order to make its scheduler preemptive
-(Section~\ref{sec:threading}).  We then explain \textit{libgotcha}, a supporting
-library that automatically addresses many problems related to shared state in
-third-party code (Section~\ref{sec:libgotcha}).  Finally, we illustrate the
-significance of libgotcha by demonstrating its ability to provide POSIX async-signal
-safety in places where it would not otherwise exist (Section~\ref{sec:statefulness}).
-
-\input{inger}
-\input{gotcha}
+%\section{Implementation}
+%\label{sec:impl}
+%
+%\mk{Move most or all of this paragraph into the figure's caption.}
+%
+%\input{inger}
+%\input{gotcha}
