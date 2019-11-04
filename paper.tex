@@ -60,15 +60,13 @@
 \definecolor{commentgreen}{RGB}{2,112,10}
 \usepackage{listings}
 \lstset{language=C++,
-        basicstyle=\ttfamily,
+        basicstyle=\small\ttfamily,
         keywordstyle=\color{blue}\ttfamily,
         breaklines=true,
         commentstyle=\color{commentgreen}\ttfamily
 }
 
-\lstset{emph = {string, u8, u64, Msg, Func, Context, Request, Response,
-                RequestHandlerCb, Cont, EventType, ErrorType,
-                TxDesc, size_t, pkthdr_t},
+\lstset{emph = {linger_t, u64, cont_t},
         emphstyle = {\color{blue}}}
 
 %%  Space between figure and caption (assuming caption
@@ -189,6 +187,8 @@ bookmarksopen = {true}
 \soulregister\cite7
 \soulregister\ref7
 \soulregister\pageref7
+
+\newcommand{\libinger}{\texttt{libinter}}
 
 %\setlength{\parindent}{0pt}
 %\setlength{\parskip}{\baselineskip}

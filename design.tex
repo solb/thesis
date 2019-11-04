@@ -1,114 +1,119 @@
-\section{Design}
-
-Our interface (shown in Listing~\ref{lst:ingerapi}) for working with
-preemptible functions consists of two primary functions, \texttt{launch()} and
-\texttt{resume()}, and a structured \texttt{linger} type for storing return values
-and execution state.  Client code creates a preemptible function by passing an
-ordinary function (or closure) to the \texttt{launch()} function along with an
-execution time cap.  If the function completes on time,
-\texttt{launch()} returns its result to the caller; otherwise, it returns an opaque
-continuation object that the caller may later pass to \texttt{resume()} to continue
-executing the function from wherever it was preempted.
+\section{Libinger interface and design}
 
 \begin{figure}
-\begin{lstlisting}[label=lst:ingerapi,caption=Preemptible functions C-language interface]
-struct linger {
-  bool is_completion;
-  union {
-    void *completion;
-    opaque_t continuation;
-  };
+\begin{lstlisting}[label=lst:ingerapi,caption=Preemptible functions interface,captionpos=b]
+struct linger_t {
+  bool is_complete;
+  cont_t continuation;
 };
 
-typedef void *(*function_t)(void *);
+linger_t launch(Function func,
+    u64 time_us, void *args);
 
-struct linger launch(function_t func, uint64_t time_us, void *args);
-void resume(struct linger *timed_func, uint64_t time_us);
+void resume(cont_t *cont, u64 time_us);
 \end{lstlisting}
 \end{figure}
 
-Listing~\ref{lst:usage} shows a usage example where the caller must
-perform some work (say, call a watchdog) by a certain deadline, but first
-calls into some helper code with weak time bounds.  With preemptible functions,
-the caller does not have to trust the task's timing properties to know that the
-watchdog will be called
-in time.
+Libinger provides two API calls (Listing~\ref{lst:ingerapi}): \texttt{launch()}
+invokes an ordinary function $\mathcal{F}$ with an execution time cap of T
+microseconds. \texttt{launch()} returns control to the caller when F completes,
+or after approximately T microseconds if $\mathcal{F}$ does not complete in the
+allotted time. In the latter case, \texttt{libinger} returns an opaque
+continuation object that may be used to \texttt{resume()} $\mathcal{F}$ at a
+later time. Listing~\ref{lst:usage} shows an example usage of \texttt{libinger}
+in a task queue manager designed to prevent blocking tasks behind long-running
+tasks. The caller invokes a task with a timeout. If the task does not complete
+within the allotted time, the caller saves its continuation in task queue,
+proceeds to handling other tasks, and later resumes the first task. 
 
 \begin{figure}
-\begin{lstlisting}[label=lst:usage,caption=Preemptible function usage example]
-res = launch(task, TIMEOUT, no_args);
-watchdog(); // Will not be late
-if(res.is_completion) {
-  // We are aready done
-  return res.completion;
-} else {
-  // Give task() more time
-  resume(&res, TIMEOUT);
+\begin{lstlisting}[label=lst:usage, caption=Preemptible function usage example,captionpos=b]
+
+linger = launch(task, TIMEOUT, null);
+if (!linger.is_complete) {
+  // Save @linger to a task queue to
+  // resume later
+  task_queue.push(linger);
 }
+
+// Handle other tasks
+...
+// Resume @task at some later point
+resume(&linger.continuation, TIMEOUT);
+
 \end{lstlisting}
 \end{figure}
 
-The intentional simplicity of our API masks the implementation effort required to
-achieve three main design goals:
+We next discuss three design decisions we made for \texttt{libinger}, and the
+rationale for these decisions.
 
-\paragraph{Performance on contemporary systems stacks}
-\dga{Start something like this instead: ``Unlike prior work, we run on top of the
-existing OS.  An obvious design to achieve our goals would be to use a thread or
-process, the existing concurrency mechanisms provided by the OS.}
-It is traditional to conceptualize concurrency as threads that must be scheduled onto
-a CPU by some combination of the language runtime and kernel scheduler.  While this
-has the obvious advantage of allowing the launched function to run on a different
-core than its caller, it comes at the cost of involving the schedulers even when
-parallelism is not desired.  Furthermore, recall from Section~\ref{sec:intro} that
-conventional thread-based software stacks only support cancellation at process
-granularity.  To efficiently support the common case of running and cancelling
-preemptible functions on the same thread as the caller, our interface is synchronous
-(but still compatible with threaded execution).  We achieve preemption on top of the
-existing systems stack by subscribing to a periodic timer signal.
+\subsection{Automatic handling of shared state}
 
-\paragraph{Automatic handling of shared state}
-We aim to support third-party libraries
-without modifying or recompiling them.
-Because our interface executes the preemptible function on the same thread, the
-function might be interrupted before it completes, so the code following a call to
-\texttt{launch()} or \texttt{resume()} shares certain attributes with a signal
-handler.  As
-such, it ought to be limited to calling async-signal-safe functions, as
-discussed in Section~\ref{sec:related}.  Such a requirement is unacceptable, as
-it would make preemptible functions almost impossible to use correctly.  Our work
-lifts this requirement in the common case by automatically creating copies of
-libraries to isolate their shared state.
-Unlike prior work, we do this without relying solely on nonpreemptible regions
-(which would severely weaken our ability to enforce timeouts):\@ in many cases, we
-can instead use the runtime dynamic linker to maintain compatibility
-with third-party code.
+As discussed in Section~\ref{sec:intro}, we wish to design a preemptible
+functions library that supports calling third-party libraries without
+modification or recompilation. Requiring users to modify such libraries to make
+them amenable for \libinger{} would greatly limit the usability and convenience
+of \libinger{}. The central challenge for \libinger{} is the \emph{shared
+state} problem: Suppose a timed function $\mathcal{F_1}$ calls a stateful
+routine in a third-party library $\mathcal{L}$. $\mathcal{F_1}$ times out, and
+is preempted by \libinger{}. Later the user invokes another timed function
+$\mathcal{F_2}$, which also calls a stateful routine in $\mathcal{L}$. The
+challenge for us then is to hide state modifications in $\mathcal{L}$ by
+$\mathcal{F_1}$ from the execution of $\mathcal{F_2}$.
 
-\paragraph{Language independence}
-Our interface is inspired by that of Scheme engines~\cite{haynes:iucs1984}; however,
-since we seek language independence, there are some fundamental differences.  Most
-notably, our preemptible functions may contain state\footnote{In addition to lifting
-a restriction on timed code, this difference led us to make the \texttt{linger} type
-stateful as well, and allow the \texttt{resume()} function to mutate it in place
-rather than constructing a copy.  In another move to improve portability, we chose to
-make \texttt{linger} a structured type instead of a function, thereby avoiding
-dependence on languages supporting closures.  In languages with operator
-overloading, the preemptible function bindings may define a function-call operator
-that calls \texttt{resume()} to achieve Scheme-style surface syntax.}, something not
-handled by Scheme due to the functional nature of the language.  We simplify
-their API by returning the preemptible function's return value in the \texttt{linger}
-union rather than passing it to a success callback.  Our goal was to create a core
-API amenable to language-specific integration
-integration; for instance, in addition to the barebones C interface, our current
-implementation exposes a Rust interface that uses a first-class tagged union (sum
-type) to ensure at compile time that the caller has checked which variant a
-\texttt{linger} contains before using it.
+One non-solution to this problem is to limit functions invocable from
+\libinger{} to async-signal-safe functions (Section~\ref{sec:related}), because
+doing so severely limits the usability of \libinger{}. Our solution to this
+problem is to automatically and dynamically create copies of $\mathcal{L}$ to
+isolate state from different timed functions. Doing so while running on
+existing systems software (a requirement discussed next) requires solving many
+design and implementation challenges, which we discuss in
+Section~\ref{sec:impl}.
 
-\vspace{\parsep}
-Many programming languages now include a futures (promises) interface for expressing
-the dependencies between asynchronous computations.  When a program needs to use an
-asynchronously-computed result, it polls on the future to block until the
-corresponding computation completes.  Most languages allow the poller to specify a
-timeout, but this does not mean the computation is executed preemptively:\@ even
-after its future times out, a computation containing an infinite loop will continue
-to run, tying up a worker thread for the rest of the process lifecycle.  By wrapping
-a preemptible function in a future, truly preemptive polling could be achieved.
+
+\subsection{Performance on unmodified system stacks}
+
+Unlike prior work on low-latency preemptive scheduling such as
+Shinjuku~\cite{Kaffes:nsdi2019}, \texttt{libinger} runs on top of the existing
+OS. An obvious design to achieve this goal would be to use a thread or process,
+the existing concurrency mechanisms provided by the OS, but these mechanisms
+are too slow. We choose a middle ground between the very fast but specialized
+approaches like Shinjuku, and slow but fully-general OS approaches.
+
+Our goal was to create a core \libinger{} API that can be integrated in many
+systems languages. We currently provide the \libinger{} API to C and Rust code.
+
+
+%It is traditional to conceptualize concurrency as threads that must be
+%scheduled onto a CPU by some combination of the language runtime and kernel
+%scheduler. While this has the obvious advantage of allowing the launched
+%function to run on a different core than its caller, it comes at the cost of
+%involving the schedulers even when parallelism is not desired.  Furthermore,
+%recall from Section~\ref{sec:intro} that conventional thread-based software
+%stacks only support cancellation at process granularity. To efficiently support
+%the common case of running and cancelling preemptible functions on the same
+%thread as the caller, our interface is synchronous (but still compatible with
+%threaded execution).  We achieve preemption on top of the existing systems
+%stack by subscribing to a periodic timer signal.
+
+%\subsection{Language independence}
+%
+%Our interface is inspired by that of Scheme engines~\cite{haynes:iucs1984};
+%however, since we seek language independence, there are some fundamental
+%differences.  Most notably, our preemptible functions may contain
+%state\footnote{In addition to lifting a restriction on timed code, this
+%difference led us to make the \texttt{linger} type stateful as well, and allow
+%the \texttt{resume()} function to mutate it in place rather than constructing a
+%copy.  In another move to improve portability, we chose to make \texttt{linger}
+%a structured type instead of a function, thereby avoiding dependence on
+%languages supporting closures.  In languages with operator overloading, the
+%preemptible function bindings may define a function-call operator that calls
+%\texttt{resume()} to achieve Scheme-style surface syntax.}, something not
+%handled by Scheme due to the functional nature of the language.  We simplify
+%their API by returning the preemptible function's return value in the
+%\texttt{linger} union rather than passing it to a success callback.  Our goal
+%was to create a core API amenable to language-specific integration integration;
+%for instance, in addition to the barebones C interface, our current
+%implementation exposes a Rust interface that uses a first-class tagged union
+%(sum type) to ensure at compile time that the caller has checked which variant
+%a \texttt{linger} contains before using it.
