@@ -13,7 +13,8 @@ lazy (runtime) & $102 \pm 1$ & $125 \pm 0$
 \end{table*}
 
 \solb{Rerun microbenchmarks with ToT on cerberus.}
-\solb{For libinger microbenchmarks, do we want to include the entry/exit breakdown?}
+\dga{Redo using rdtsc.}
+\dge{Show \texttt{gettimeofday()} and \texttt{getpid} syscall for comparison.}
 
 \begin{table}
 \begin{center}
@@ -27,3 +28,10 @@ cancellation & $4440.8 \pm 1412.3$
 \end{center}
 \caption{Cost of using preemptible functions}
 \end{table}
+
+\solb{For libinger microbenchmarks, do we want to include the entry/exit breakdown?}
+\dga{Comparison against \texttt{pthread\_create()} and \texttt{fork()}
+
+\dga{Try long requests e.g., 10-ms}
+\dga{Label x axis with request ratio, not number of cores}
+\dga{Try a DDoS situation, where attacker sends a low-rate barrage of 1-s malicious requests}
