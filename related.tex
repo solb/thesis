@@ -115,28 +115,10 @@ imposed by performing them within a VT-x virtual machine, as required by Dune.  
 then implement optimizations to reduce these overheads at the expense of Shinjuku's
 isolation from the rest of the system.
 
-It is challenging to support timed code within a system that doesn't assume
-concurrency, because programs might use shared state.  Whenever we have two
-functions,
-\texttt{foo()} and \texttt{bar()}, that access the same state, and we interleave at
-runtime a call to \texttt{bar()} in the middle of the execution of \texttt{foo()},
-the result is undefined behavior.  In the C language, it's important to consider
-shared state whenever writing a signal handler, which may be called at any point
-in the program's execution.  The POSIX standard defines the term \textbf{async-signal
-safe} to
-refer to a function that is safe to invoke from a signal
-handler~\cite{signal-safety-manpage}; the list of standard library functions required
-to exhibit this property notably excludes all dynamic memory allocator functions such
-as \texttt{malloc()}.  Note that async-signal safety is a stronger requirement than
-thread safety:\@ the code may interrupt itself, and if this happens within a critical
-section, traditional approaches to thread safety will merely cause a deadlock.
-Unfortunately, shared state is a common feature of libraries written in C, which
-often rely on it for error handling (e.g., libc's \texttt{errno} variable), resource
-allocation and assignment, caching and memoization, etc.
-
-Because eliminating shared state from most libraries requires substantial
-interface-level (breaking API) changes, the shared state issue prevents existing
-systems from calling into third-party code without rewriting it.  Scheme engines and
+As we found in Section~\ref{sec:intro}, nonreentrant interfaces are fundamentally
+incompatible with externally-imposed time limits.  Because such interfaces are
+prolific in popular dependencies, state-of-the-art solutions do not permit timed code
+to call into third-party libraries.  Scheme engines and
 Lilt skirt this issue by only supporting functional code, which cannot have shared
 state.  Because of its focus on realtime embedded systems, RT makes an assumption
 that the timed code in its threads will avoid shared state; this mostly precludes
@@ -147,3 +129,6 @@ potential concurrency concerns using a nonpreemptible \texttt{call\_safe()} wrap
 Finally, although Go is able to preempt most goroutines written directly in Go, a
 goroutine that makes any foreign calls to other languages is treated as
 nonpreemptible by the runtime's scheduler~\cite{www-golang-fficall}.
+
+\solb{Either introduce \textbf{async-signal safety}~\cite{signal-safety-manpage}
+later or replace uses of the term with reentrancy.}
