@@ -1,60 +1,67 @@
 \section{Introduction}
 \label{sec:intro}
 
-\dga{Punt the intro until we've done the related work, design, and so forth.}
+After years of struggling to gain adoption, the coroutine has finally become a
+mainstream abstraction for cooperatively scheduling function invocations.  Languages
+as diverse as C\#, JavaScript, Kotlin, Python, and Rust now support so-called ``async
+functions,'' each of which expresses its dependencies by ``awaiting'' a
+\textbf{future} (or promise); rather than polling, the language translates this to a
+yield if the result is not yet available.
 
-\dga{Use the phrase ``resource container'' to generalize, and note that processes
-are the simplest abstraction that provides this.  Threads give you some, but have
-significant limitations.}
+Key to the popularity of this concurrency abstraction is the ease and seamlessness of
+parallelizing it.  Underlying every major futures runtime is a green threading
+library that performs scheduling in userland, usually by assigning each running task
+to any of a fixed pool of physical worker threads.  Note that without uncommon kernel
+support (e.g., scheduler activations~\cite{anderson:sosp1991}), this logical
+threading model means that the operating system is unaware of the tasks.  Thus,
+context switches are purely cooperative.
 
-\dga{Don't mention \texttt{setrlimit}.}
+This leads us to an abstraction that is \textit{not} available in modern languages:\@
+an easy way of \textit{preemptively} scheduling functions (e.g., calling a function
+with a timeout).  An implementation of such \textbf{preemptible functions} based on
+kernel threads suggests itself, where the function would run on a new thread that
+could be cancelled upon timeout.  Unfortunately, the existence of nonreentrant
+functions makes cancelling a thread a nontrivial problem.  UNIX's pthreads provide
+asynchronous cancelability, but according to the Linux documentation, it ``is rarely
+useful.  Since the thread could be cancelled at \textit{any} time, it cannot safely
+reserve resources (e.g.  allocating memory with \texttt{malloc()}), acquire mutexes,
+semaphores, or locks, and so on... some internal data structures (e.g., the linked
+list of free blocks managed by the \texttt{malloc()} family of functions) may be left
+in an inconsistent state if cancellation occurs in the middle of the function
+call''~\cite{pthreadsetcanceltype-manpage}.  The same is true on Windows, whose API
+documentation warns that asynchronously terminating a thread ``can result in the
+following problems: If the target thread owns a critical section, the critical
+section will not be released.  If the target thread is allocating memory from the
+heap, the heap lock will not be released...'' and goes on from
+there~\cite{www-microsoft-terminatethread}.
 
-\dga{Don't tie unstructured control flow to \texttt{fork()}; instead, further
-emphasize ``subsequent memory sharing difficult'' and the thread difficulties.}
+One might instead seek to implement preemptible functions via the UNIX
+\texttt{fork()} function.  This would require careful configuration of shared memory
+to ensure that objects created outside the function were accessible inside.
+Furthermore, the inverse is equally desirable and potentially trickier because the
+allocations would need to outlive a return from the function.  And all this is
+without addressing the difficulty of even calling \texttt{fork()} in a multithreaded
+program:\@ because doing so effectively cancels all threads in the child process
+except the calling one, that process can experience the same problems as with our
+first approach~\cite{baumann:hotos2019}.
 
-\solb{Cite \textit{fork() in the road}.}
+These na\"ive implementations also suffer from another shortcoming:\@ by reducing
+preemptible functions to a problem of parallelism, they incur unnecessary overhead
+and hurt the composability of the abstraction.  Indeed, when calling a function with
+a timeout, only concurrency is fundamental, as the function has no notion of
+dependencies that would aid a parallel scheduler:\@ unlike futures, it never requests
+an asynchronous resource, and unlike coroutines, it does not know a priori when or
+what it will ``return.''
 
-\mk{Motivate with thread library and microservices.}
+In this paper, we propose lightweight preemptible functions, a userland abstraction
+for making function calls with a timeout that differs significantly from the state of
+the art:  (1) Unlike threading abstractions such as coroutines, it \textit{runs
+functions synchronously on the caller's thread}.  (2) It supports \textit{preemption
+at granularities in the 10s of microseconds}, orders of magnitude finer than
+contemporary OS schedulers' millisecond scale.  (3) It is \textit{language agnostic},
+not relying on support from any particular compiler or managed runtime.
 
-\mk{Look at the Windoze APIs.}
-
-\solb{This section should introduce the failed pthread cancellation API.}
-
-As with other aspects of isolation, operating systems traditionally enforce resource
-limits at the process level (e.g., via the kernel's preemptive process scheduler and
-mechanisms such as the \texttt{setrlimit} system call~\cite{setrlimit-manpage}).
-However, such an abstraction has two fundamental implications for application
-programmers who want to apply it to only a portion of their program's code:  The
-first is \textbf{ease of use}, because the unstructured control flow associated with
-process creation requires potentially involved code changes\footnote{The problem is
-worse than just the need to restructure the control flow:\@ as we'll see, any
-granular preemption is susceptible to concurrency problems, including conflicts
-involving POSIX's notion of \textit{async-safety}.}, and can make subsequent
-memory sharing difficult.  Equally problematic is the \textbf{performance}, because
-process creation incurs unwanted overheads in the virtual memory subsystem and
-necessarily involves repeated trips through the kernel's scheduler and
-context-switching codepaths, even in the case of a single-threaded program.
-
-We propose an abstraction that differs in several significant ways from this state of
-the art:  (1) To avoid unnecessarily involving the OS scheduler, it \textit{runs
-timed functions on the} caller's \textit{kernel thread}.  (2) Its \textit{preemption
-supports granularities in the 10s of microseconds}, orders of magnitude finer than
-contemporary OS schedulers (e.g., Linux traditionally defaulted to a 4-ms scheduling
-quantum\footnote{With the advent of the Completely Fair Scheduler, this interval has
-gone from fixed to floating, but it still only sinks as low as 1.5 ms.
-\solb{citation(s) needed: Probably the kernel docs}}).  (3) Its \textit{API avoids
-unstructured control flow}, minimizing both the design implications for application
-programmers and the code changes necessary to port existing software.
-
-\solb{``10s of microseconds'': Still need to benchmark this}
-
-\dga{Be careful about how soon (actually, just how) you broach the topic of Rust.
-You've provided a core functionality that allows the preemption of well-behaved
-functions.  To harden those guarantees, we have a Rust interface allowing you to
-combine that core with Rust-based language safety.}
-
-\mk{The first time you mention Rust, be sure to say it's not fundamental.}
-
+\solb{Move this to a later section.}
 In order to demonstrate the feasibility of such an abstraction, we have developed a
 prototype implementation in the form of \textit{libinger}\footnote{In the style of
 GNU's \textit{libiberty}, our library's name comes from the linker option used when
@@ -65,13 +72,3 @@ The rest of the paper proceeds as follows:  We discuss related work and contrast
 other approaches to supporting timed function calls.  Next, we discuss the design of
 libinger.  Then we address its runtime costs, and present and benchmark sample use
 cases.  We address possible areas of future work.  Finally, we conclude.
-
-\dga{We're going to need an architecture diagram.  Maybe only in the design section,
-but if so it shouldn't appear to contradict what we say here.}
-
-\mk{Make it clear from the flow which of Design people should skip if they don't want
-to know about libgotcha's internals.}
-
-\solb{Section headings seem slightly mismatched to this flow.}
-
-\solb{Do we want to list our primary contributions here?}
