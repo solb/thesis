@@ -1,4 +1,4 @@
-\subsection{Shared state: \textit{libgotcha}}
+\section{Shared state: \textit{libgotcha}}
 \label{sec:libgotcha}
 
 Our discussion of libinger's implementation was complete but for one important
@@ -9,7 +9,7 @@ from this
 restriction because libgotcha uses another library, \textit{libgotcha}, that
 automatically protects much of a program's shared state.
 
-\subsubsection{Principle}
+\subsection{Principle}
 
 There are two cases where shared state arises:\@ in code that uses preemptible
 functions, and in code that doesn't.  This distinction is important because we want
@@ -138,7 +138,7 @@ preemptible function that calls \texttt{malloc()}.
 \label{fig:callwhitelist}
 \end{figure}
 
-\subsubsection{Mechanics}
+\subsection{Mechanics}
 
 The rest of this section covers the implementation of libgotcha, which isolates
 shared state at the granularity of object files by intercepting many dynamic function
