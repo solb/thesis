@@ -133,10 +133,10 @@ reusable stacks the first time it is used.
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/twostacks}
 \caption{The stacks before and after a timeout.  \textnormal{Upon discovering
-that the preemptible function has exceeded its time bound, the handler returns to the
-checkpoint continuation within the \texttt{launch()} function, removing its own stack
-frame in the process.  Then, \texttt{launch()} returns to the original call site,
-which removes its stack frame.}}
+that the preemptible function has exceeded its time bound, the handler jumps into the
+\texttt{launch()} function.  Then, \texttt{launch()} returns to the original call
+site, removing its stack frame in the process.}}
+\solb{Remove the continuations from this diagram and add the handler's stack frame.}
 \label{fig:twostacks}
 \end{figure}
 
@@ -152,24 +152,16 @@ Figure~\ref{fig:twostacks} shows the two stacks of execution, belonging to the
 \textit{libinger} caller and the preemptible function, that are present while the
 signal handler is running.
 
+A subsequent \texttt{resume()} call restores the registers from the stored
+continuation, thereby jumping back into the signal handler.  The handler then
+returns, resuming the preemptible function from the instruction that was executing
+when the signal that caused preemption arrived.
+
 \solb{THESIS: Removed discussion of our signal pool trick for notifying specific
 POSIX threads.}
 
-The handler's logic is as follows:  It checks whether
-the preemptible function has exceeded its timeout; if so, it swaps the contents
-of the signal handler's continuation (accessible via the final argument to the
-function~\cite{sigaction-manpage}) with a checkpoint continuation saved by
-\texttt{launch()}.  This causes the subsequent return from the signal handler
-to jump back to \texttt{launch()}, which then returns a \texttt{linger}
-structure containing the signal handler's original context.  A subsequent
-\texttt{resume()} call on this packaged continuation proceeds in much the same
-way as \texttt{launch()}, but resumes the original computation by sending
-itself a special signal with \texttt{pthread\_kill()}, then swapping the saved
-context with the contents of that handler's context\footnote{This is necessary
-because POSIX left the semantics of calling \texttt{setcontext()} on the
-continuation saved by a signal handler invocation unspecified, leading
-implementations such as GNU not to handle this
-case~\cite{getcontext-manpage}.}.
+\solb{THESIS: Removed discussion of our self-signaling trick for restoring a signal
+handler's POSIX context without using \texttt{setcontext()}.}
 
 
 \subsection{Cancellation}
