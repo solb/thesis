@@ -64,7 +64,7 @@ accepting as an argument the number of ticks (abstract time units) it should run
 In their interface, the caller also supplied a callback function to receive the
 timed code's return value upon successful completion.  Like the rest of the
 Scheme language, engines were stateless:\@ whenever one ran out of computation time,
-it would return a new engine representing the new execution point.  The
+it would return a new engine representing the point of interruption.  The
 implementation of engines relied heavily on Scheme's managed runtime, with ticks
 corresponding to virtual machine instructions and cleanup handled by the garbage
 collector.  The VM dependency was not fundamental, however, as the literature notes
@@ -126,7 +126,8 @@ calls to third-party libraries, although the system supports the dynamic memory
 allocator by treating it as specifically nonpreemptible.  Rather than dealing with
 shared state itself, Shinjuku asks application authors to annotate any code with
 potential concurrency concerns using a nonpreemptible \texttt{call\_safe()} wrapper.
-Finally, although Go is able to preempt most goroutines written directly in Go, a
+Finally, although Go is able to preempt most goroutines written in the language
+itself, a
 goroutine that makes any foreign calls to other languages is treated as
 nonpreemptible by the runtime's scheduler~\cite{www-golang-fficall}.
 
