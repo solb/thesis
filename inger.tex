@@ -140,22 +140,23 @@ which removes its stack frame.}}
 \label{fig:twostacks}
 \end{figure}
 
-While \textit{libinger} is executing a executing the user-provided function, we
-enable fine-grained timer interrupts to periodically run our signal handlers
-that monitor the execution of the preemptible functions. While a preemptible
-function is running, the timer interrupt fires periodically, causing the signal
-handler to be invoked each time. If a function exceeds its timeout, \textit{libinger}
-jumps back to the caller, returning a continuation that stores the preemptible
-function's register values.
-
+While \textit{libinger} is executing the user-provided function, we
+enable fine-grained timer interrupts to periodically run a signal handler
+that monitors the function's elapsed running time.  The timer interrupt fires
+periodically while a preemptible function is running, causing the signal
+handler to be invoked each time.  If the function exceeds its timeout,
+our handler saves a continuation by dumping the machine's registers.  It then
+performs an unstructured jump out of the signal handler and back into the
+\texttt{launch()} or \texttt{resume()} function, switching stacks as it does so.
 Figure~\ref{fig:twostacks} shows the two stacks of execution, belonging to the
-\textit{libinger} user and the preemptible function, present while the signal handler
-is running. It also shows what happens to the stack frames of both if the
-function times out. The handler first checks whether the preemption signal was
+\textit{libinger} caller and the preemptible function, that are present while the
+signal handler is running.
+
+The handler's logic is as follows:  It first checks whether the preemption signal was
 intended for the current thread, as described earlier.  It then checks whether
 the preemptible function has exceeded its timeout; if so, it swaps the contents
 of the signal handler's continuation (accessible via the final argument to the
-function~\cite{sigaction-manpage}) with the checkpoint continuation saved by
+function~\cite{sigaction-manpage}) with a checkpoint continuation saved by
 \texttt{launch()}.  This causes the subsequent return from the signal handler
 to jump back to \texttt{launch()}, which then returns a \texttt{linger}
 structure containing the signal handler's original context.  A subsequent
