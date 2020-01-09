@@ -188,26 +188,37 @@ the process.
 
 Unlike prior work on low-latency preemptive scheduling such as
 Shinjuku~\cite{Kaffes:nsdi2019}, \textit{libinger} runs on top of the existing
-OS. An obvious design to achieve this goal would be to use a thread or process,
-the existing concurrency mechanisms provided by the OS, but these mechanisms
-are too slow. We choose a middle ground between the very fast but specialized
-approaches like Shinjuku, and slow but fully-general OS approaches.
+OS.  An obvious design to achieve this goal would be to use a thread or a process,
+and although we argued in Section~\ref{sec:intro} that such an implementation would
+still be far from trivial, our avoidance of these mechanisms has as much to do with
+speed.  On Linux, simply spawning a thread incurs an order of magnitude more latency
+than our \texttt{launch()} and \texttt{resume()} functions, and forking a process
+costs an additional order of magnitude (Section~\ref{sec:eval}).
 
-Although seeking to implement low-latency preemption without requiring a custom
-operating system, we sought a design that could operate with performance
-comparable to Shinjuku's.  Our prototype is not yet optimized to this extent,
-but we provide a back of the envelope calculation of its minimum possible
-preemption latency based on Shinjuku's comparison of the latency of bare-metal
-interprocessor interrupts (IPIs) versus Linux signals (measured from their
-request by one core to the invocation of the other's interrupt service routine
-or signal handler).  While IPIs take an average of only 1993 cycles, compared
-to 4950 for signals (a ratio of 1:2.5), a look at their sender/receiver
-breakdown of the latter number suggests two opportunities to reduce this
-overhead without abandoning the existing systems software stack:  First, 343 of
-those cycles (6.9\%) are spent propagating the signal between the two cores,
-and should largely disappear by initiating it on the same thread that is to be
-preempted.  Second, 2084 cycles (42\%) are incurred by the sender, of which
-some portion should also disappear~\cite{Kaffes:nsdi2019}.  We therefore expect
-that an optimized system based on intra-thread signals built atop the existing
-system stack could achieve an average preemption latency within 2.5x of that of
-their custom operating system with a dedicated watchdog core.
+Recognizing that the asynchrony of interrupting a preemptible function does not imply
+inherent asynchrony in accessing its result led us to develop a synchronous
+abstraction, thereby obviating the need for the aforementioned spawn operations on
+the critical path.  But we deliberately diverged from the design of Shinjuku and RT
+in another way as well:\@ unlike these systems, we make each thread responsible for
+its own preemption rather than serving preemption signals from a shared watchdog
+thread.  This decision was informed by back-of-the-envelope calculations based on
+Shinjuku's comparison of the end-to-end latency of bare-metal interprocessor
+interrupts (IPIs) versus Linux signals.
+
+While Shinjuku reports that IPIs take an average of only 1,993 cycles, compared to
+4,950 for signals (roughly 1:2.5), their sender/receiver breakdown of the latter
+number suggests significant latency savings by avoiding cross-core signaling:
+First, 343 of those cycles (6.9\%) are spent propagating the signal between the two
+cores; we expect this delay to be nearly absent for a timer interrupt originating at
+its destination core's own local interrupt controller.  Second, 2,084 cycles (42\%)
+are incurred by the sending core; assuming the interrupt controller supports
+periodic timer interrupts at the necessary frequency, this cost does not need to be
+paid between each interrupt, suggesting measurable savings here too.  Although
+our prototype is not yet optimized to this extent, we expect it is possible for a
+system built on intra-thread Linux signals to achieve an average preemption latency
+within 2x that of Shinjuku's custom operating system.
+
+Of course, in our design, increasing the accuracy of preemption is a tradeoff:\@ more
+frequent timer signals mean a tighter bound on timeout detection, but also a lower
+throughput of useful work.  The correct balance certainly depends at least on the
+timeout value and size of the function, and merits further study.
