@@ -11,7 +11,7 @@ linger_t launch(Function func,
                 u64 time_us,
                 void *args);
 
-void resume(cont_t *cont, u64 time_us);
+void resume(linger_t *cont, u64 time_us);
 \end{lstlisting}
 \end{figure}
 
@@ -41,7 +41,7 @@ if (!linger.is_complete) {
 // Handle other tasks
 ...
 // Resume @task at some later point
-resume(&linger.continuation, TIMEOUT);
+resume(&linger, TIMEOUT);
 
 \end{lstlisting}
 \end{figure}
