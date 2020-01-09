@@ -37,7 +37,7 @@ in a task queue manager designed to prevent latency-critical tasks from blocking
 behind longer-running
 ones. The caller invokes a task with a timeout. If the task does not complete
 within the allotted time, the caller saves its continuation in the task queue,
-proceeds to handling other tasks, and later resumes the first task. 
+proceeds to handling other tasks, and later resumes the first task.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:usage, caption=Preemptible function usage example]
