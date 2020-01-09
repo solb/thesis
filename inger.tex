@@ -105,42 +105,9 @@ calling into third-party code (Section~\ref{sec:related}), because doing so woul
 severely limit their usefulness.  Instead, our approach
 is to automatically and dynamically create copies of $\mathcal{L}$ to
 isolate state from different timed functions. Doing so while running on
-existing systems software (a requirement discussed next) requires solving many
+existing systems software requires solving many
 design and implementation challenges, which we cover in our discussion of
 \textit{libgotcha} in Section~\ref{sec:libgotcha}.
-
-
-\subsection{Performance on unmodified system stacks}
-
-Unlike prior work on low-latency preemptive scheduling such as
-Shinjuku~\cite{Kaffes:nsdi2019}, \textit{libinger} runs on top of the existing
-OS. An obvious design to achieve this goal would be to use a thread or process,
-the existing concurrency mechanisms provided by the OS, but these mechanisms
-are too slow. We choose a middle ground between the very fast but specialized
-approaches like Shinjuku, and slow but fully-general OS approaches.
-
-
-%\subsection{Language independence}
-%
-%Our interface is inspired by that of Scheme engines~\cite{haynes:iucs1984};
-%however, since we seek language independence, there are some fundamental
-%differences.  Most notably, our preemptible functions may contain
-%state\footnote{In addition to lifting a restriction on timed code, this
-%difference led us to make the \texttt{linger} type stateful as well, and allow
-%the \texttt{resume()} function to mutate it in place rather than constructing a
-%copy.  In another move to improve portability, we chose to make \texttt{linger}
-%a structured type instead of a function, thereby avoiding dependence on
-%languages supporting closures.  In languages with operator overloading, the
-%preemptible function bindings may define a function-call operator that calls
-%\texttt{resume()} to achieve Scheme-style surface syntax.}, something not
-%handled by Scheme due to the functional nature of the language.  We simplify
-%their API by returning the preemptible function's return value in the
-%\texttt{linger} union rather than passing it to a success callback.  Our goal
-%was to create a core API amenable to language-specific integration integration;
-%for instance, in addition to the barebones C interface, our current
-%implementation exposes a Rust interface that uses a first-class tagged union
-%(sum type) to ensure at compile time that the caller has checked which variant
-%a \texttt{linger} contains before using it.
 
 
 \subsection{Execution stacks}
@@ -210,6 +177,13 @@ the process.
 
 
 \subsection{Performance goals}
+
+Unlike prior work on low-latency preemptive scheduling such as
+Shinjuku~\cite{Kaffes:nsdi2019}, \textit{libinger} runs on top of the existing
+OS. An obvious design to achieve this goal would be to use a thread or process,
+the existing concurrency mechanisms provided by the OS, but these mechanisms
+are too slow. We choose a middle ground between the very fast but specialized
+approaches like Shinjuku, and slow but fully-general OS approaches.
 
 Although seeking to implement low-latency preemption without requiring a custom
 operating system, we sought a design that could operate with performance
