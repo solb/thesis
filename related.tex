@@ -85,7 +85,8 @@ required
 operating system support, reminiscent of \textit{Singularity}'s static language-based
 isolation~\cite{hunt:msr2005}.
 
-Some recent languages offer userland threading, which could be used to support timed
+Some recent languages offer explicit userland threading, which could be used to
+support timed
 code.  One such example is the Go language's~\cite{www-golang} \textit{goroutines}.
 The language's runtime is responsible for scheduling multiple such user
 threads per kernel thread, which is performed cooperatively by conditionally yielding
