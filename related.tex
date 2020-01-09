@@ -93,16 +93,6 @@ at function call points.  This has long caused problems with tight loops, with t
 traditional workaround being to manually add calls to the \texttt{runtime.Gosched()}
 yield function~\cite{www-golang-tightloop}.
 
-Many programming languages now include a futures (promises) interface for
-expressing the dependencies between asynchronous computations.  When a program
-needs to use an asynchronously-computed result, it polls on the future to block
-until the corresponding computation completes.  Most languages allow the poller
-to specify a timeout, but this does not mean the computation is executed
-preemptively:\@ even after its future times out, a computation containing an
-infinite loop will continue to run, tying up a worker thread for the rest of
-the process lifecycle.  By wrapping a preemptible function in a future, truly
-preemptive polling could be achieved.
-
 All the solutions discussed thus far rely on languages with a heavyweight,
 garbage-collecting runtime.  However, some recent systems have sought
 to provide timed functions in a language-agnostic fashion that minimizes such
