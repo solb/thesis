@@ -15,13 +15,13 @@ void resume(cont_t *cont, u64 time_us);
 \end{lstlisting}
 \end{figure}
 
-Libinger provides two API calls (Listing~\ref{lst:ingerapi}): \texttt{launch()}
+\textit{libinger} provides two API calls (Listing~\ref{lst:ingerapi}): \texttt{launch()}
 invokes an ordinary function $\mathcal{F}$ with an execution time cap of T
 microseconds. \texttt{launch()} returns control to the caller when F completes,
 or after approximately T microseconds if $\mathcal{F}$ does not complete in the
-allotted time. In the latter case, \texttt{libinger} returns an opaque
+allotted time. In the latter case, \textit{libinger} returns an opaque
 continuation object that may be used to \texttt{resume()} $\mathcal{F}$ at a
-later time. Listing~\ref{lst:usage} shows an example usage of \texttt{libinger}
+later time. Listing~\ref{lst:usage} shows an example usage of \textit{libinger}
 in a task queue manager designed to prevent blocking tasks behind long-running
 tasks. The caller invokes a task with a timeout. If the task does not complete
 within the allotted time, the caller saves its continuation in task queue,
@@ -45,7 +45,7 @@ resume(&linger.continuation, TIMEOUT);
 \end{lstlisting}
 \end{figure}
 
-We next discuss three design decisions we made for \texttt{libinger}, and the
+We next discuss three design decisions we made for \textit{libinger}, and the
 rationale for these decisions.
 
 \subsection{Automatic handling of shared state}
@@ -53,18 +53,18 @@ rationale for these decisions.
 As discussed in Section~\ref{sec:intro}, we wish to design a preemptible
 functions library that supports calling third-party libraries without
 modification or recompilation. Requiring users to modify such libraries to make
-them amenable for \libinger{} would greatly limit the usability and convenience
-of \libinger{}. The central challenge for \libinger{} is the \emph{shared
+them amenable for \textit{libinger} would greatly limit the usability and convenience
+of \textit{libinger}. The central challenge for \textit{libinger} is the \emph{shared
 state} problem: Suppose a timed function $\mathcal{F_1}$ calls a stateful
 routine in a third-party library $\mathcal{L}$. $\mathcal{F_1}$ times out, and
-is preempted by \libinger{}. Later the user invokes another timed function
+is preempted by \textit{libinger}. Later the user invokes another timed function
 $\mathcal{F_2}$, which also calls a stateful routine in $\mathcal{L}$. The
 challenge for us then is to hide state modifications in $\mathcal{L}$ by
 $\mathcal{F_1}$ from the execution of $\mathcal{F_2}$.
 
 One non-solution to this problem is to limit functions invocable from
-\libinger{} to async-signal-safe functions (Section~\ref{sec:related}), because
-doing so severely limits the usability of \libinger{}. Our solution to this
+\textit{libinger} to async-signal-safe functions (Section~\ref{sec:related}), because
+doing so severely limits the usability of \textit{libinger}. Our solution to this
 problem is to automatically and dynamically create copies of $\mathcal{L}$ to
 isolate state from different timed functions. Doing so while running on
 existing systems software (a requirement discussed next) requires solving many
@@ -75,14 +75,14 @@ Section~\ref{sec:libinger}.
 \subsection{Performance on unmodified system stacks}
 
 Unlike prior work on low-latency preemptive scheduling such as
-Shinjuku~\cite{Kaffes:nsdi2019}, \texttt{libinger} runs on top of the existing
+Shinjuku~\cite{Kaffes:nsdi2019}, \textit{libinger} runs on top of the existing
 OS. An obvious design to achieve this goal would be to use a thread or process,
 the existing concurrency mechanisms provided by the OS, but these mechanisms
 are too slow. We choose a middle ground between the very fast but specialized
 approaches like Shinjuku, and slow but fully-general OS approaches.
 
-Our goal was to create a core \libinger{} API that can be integrated in many
-systems languages. We currently provide the \libinger{} API to C and Rust code.
+Our goal was to create a core \textit{libinger} API that can be integrated in many
+systems languages. We currently provide the \textit{libinger} API to C and Rust code.
 
 
 %It is traditional to conceptualize concurrency as threads that must be

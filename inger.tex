@@ -26,10 +26,10 @@
 %\label{fig:architecture}
 %\end{figure}
 
-The \libinger{} library implements the preemptible function interface. Although
+The \textit{libinger} library implements the preemptible function interface. Although
 it provides users with the familiar function call interface, internally,
-\libinger{} uses a combination of unstructured control flow in the form of
-multiple stack regions and signal handlers. \libinger{} runs each timed
+\textit{libinger} uses a combination of unstructured control flow in the form of
+multiple stack regions and signal handlers. \textit{libinger} runs each timed
 function on a separate stack, different from the user's own stack. This is
 necessary to prevent different functions or the user from clobbering each
 other's stack when some timed functions have been preempted.
@@ -47,16 +47,16 @@ which removes its stack frame.}}
 \label{fig:twostacks}
 \end{figure}
 
-While \libinger{} is executing a executing the user-provided function, we
+While \textit{libinger} is executing a executing the user-provided function, we
 enable fine-grained timer interrupts to periodically run our signal handlers
 that monitor the execution of the preemptible functions. While a preemptible
 function is running, the timer interrupt fires periodically, causing the signal
-handler to be invoked each time. If a function exceeds its timeout, \libinger{}
+handler to be invoked each time. If a function exceeds its timeout, \textit{libinger}
 jumps back to the caller, returning a continuation that stores the preemptible
 function's register values.
 
 Figure~\ref{fig:twostacks} shows the two stacks of execution, belonging to the
-\libinger{} user and the preemptible function, present while the signal handler
+\textit{libinger} user and the preemptible function, present while the signal handler
 is running. It also shows what happens to the stack frames of both if the
 function times out. The handler first checks whether the preemption signal was
 intended for the current thread, as described earlier.  It then checks whether
@@ -77,9 +77,10 @@ case~\cite{getcontext-manpage}.}.
 
 When the caller is finished with a preemptible function, it must deallocate it
 either explicitly (C) or implicitly via the \texttt{inger} type's destructor
-(Rust).  This cleans up the libinger resources allocated by \texttt{launch()};
+(Rust).  This cleans up the \textit{libinger} resources allocated by
+\texttt{launch()};
 however, if the call constitutes a cancellation, the current implementation of
-libinger does not automatically clean up resources already allocated by the
+\textit{libinger} does not automatically clean up resources already allocated by the
 preemptible function itself.  While the lack of a standard deinitialization API
 makes this inherently hard to do in C, it is possible to implement in languages
 such as Rust that support destructors.  For instance, the approach proposed by
