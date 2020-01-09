@@ -34,7 +34,7 @@ depends on the system's interface.
 Their interfaces notwithstanding, perhaps the systems' most distinguishing
 characteristic is the mechanism by which they enforce execution bounds.  At one end
 of the spectrum are \textbf{cooperative} multitasking systems where
-timed code voluntarily cedes such use of the CPU to another
+timed code voluntarily cedes the CPU to another
 task via a runtime check.  (This is often done implicitly, a simple example being a
 system that injects code to check
 whether the timed code has expired at the beginning of every one of its function
@@ -87,10 +87,9 @@ isolation~\cite{hunt:msr2005}.
 
 Some recent languages offer explicit userland threading, which could be used to
 support timed
-code.  One such example is the Go language's~\cite{www-golang} \textit{goroutines}.
-The language's runtime is responsible for scheduling multiple such user
-threads per kernel thread, which is performed cooperatively by conditionally yielding
-at function call points.  This has long caused problems with tight loops, with the
+code.  One example is the Go language's~\cite{www-golang} \textit{goroutines}.
+The language's runtime includes a cooperative scheduler that conditionally yields
+at function call sites.  This has long caused problems with tight loops, with the
 traditional workaround being to manually add calls to the \texttt{runtime.Gosched()}
 yield function~\cite{www-golang-tightloop}.
 
@@ -101,17 +100,17 @@ dependencies.  One example is the userland C-language thread library for realtim
 systems (here, ``\textit{RT}'') developed by Mollison and
 Anderson~\cite{mollison:rtas2013}, which performs
 preemption using timer interrupts, as proposed in the early Scheme engines
-literature.  They install a time-based signal handler responsible for both scheduling
-tasks and migrating them between cores.  Thanks to their lightweight runtime, they
-are able to achieve average overall scheduling latencies in the tens of microseconds.
+literature.  They install a time-based signal handler responsible for scheduling
+tasks and migrating them between cores.  Their lightweight runtime
+achieves average overall scheduling latencies in the tens of microseconds.
 However, as we'll see shortly, this comes with a huge usability cost for developers.
 
 \textit{Shinjuku}~\cite{Kaffes:nsdi2019} is an operating system designed to perform
 preemption at microsecond scale.  Built on the Dune framework~\cite{Belay:osdi2012},
 it runs tasks on a pool of worker threads controlled by a single centralized
 dispatcher thread.  The latter polices how long each task has been running and
-sends an inter-processor interrupt (IPI) to any worker whose task has been running
-for longer than permitted.  The authors study the cost of IPIs and the overheads
+sends an inter-processor interrupt (IPI) to any worker whose task has timed out.
+The authors study the cost of IPIs and the overheads
 imposed by performing them within a VT-x virtual machine, as required by Dune.  They
 then implement optimizations to reduce these overheads at the expense of Shinjuku's
 isolation from the rest of the system.
