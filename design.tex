@@ -63,11 +63,23 @@ of the preemptible function abstraction, we have also created \textit{libturquoi
 a preemptive userland thread library, by porting an existing futures-based thread
 pool to \textit{libinger}.  We discuss this system in Section~\ref{sec:libturquoise}.
 
-The \textit{libinger} library itself is implemented in approximately 2,500 lines of
-Rust.  To support calls to nonreentrant functions, it depends on another library,
-\textit{libgotcha}, which comprises an additional 3,000 lines of C, Rust, and x86-64
-assembly.  We now describe the implementation of \textit{libinger}, beginning with
-this shared state handling.
+Figure~\ref{fig:architecture} shows a dependency graph of the software components
+comprising the preemptible functions stack.  The \textit{libinger} library itself is
+implemented in approximately 2,500 lines of Rust.  To support calls to nonreentrant
+functions, it depends on another library, \textit{libgotcha}, which consists of
+another 3,000 lines of C, Rust, and x86-64 assembly.  We now describe the
+implementation of \textit{libinger}, beginning with this shared state handling.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.75\columnwidth]{figs/architecture}
+\end{center}
+\caption{The preemptible functions software stack.  \textnormal{Rectangular boxes
+represent components implementing the preemptible functions abstraction.  Ovals
+represent components built on top of these.  Hexagonal boxes show the
+required runtime environment.}}
+\label{fig:architecture}
+\end{figure}
 
 
 \subsection{Automatic handling of shared state}
