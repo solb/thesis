@@ -15,14 +15,14 @@ strict graph {
 	{
 		node [shape=box];
 
-		threadlib [label="New preemptive\nthread library"];
+		libturquoise;
 		libinger;
 		libgotcha;
 	}
 
 	rtld [shape=hexagon,label="Dynamic linker"];
 
-	threadlib -- libinger;
+	libturquoise -- libinger;
 	libinger -- libgotcha;
 	libgotcha -- rtld;
 
@@ -30,7 +30,7 @@ strict graph {
 		edge [style=dashed];
 
 		serialclient -- libinger;
-		parallelclient -- threadlib;
+		parallelclient -- libturquoise;
 		libassafe -- libgotcha;
 	}
 }
