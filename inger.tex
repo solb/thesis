@@ -112,13 +112,20 @@ design and implementation challenges, which we cover in our discussion of
 
 \subsection{Execution stacks}
 
-The \textit{libinger} library implements the preemptible function interface. Although
-it provides users with the familiar function call interface, internally,
-\textit{libinger} uses a combination of unstructured control flow in the form of
-multiple stack regions and signal handlers. \textit{libinger} runs each timed
-function on a separate stack, different from the user's own stack. This is
-necessary to prevent different functions or the user from clobbering each
-other's stack when some timed functions have been preempted.
+Recall that, when a preemptible function times out, \textit{libinger} returns a
+continuation object.  The caller might pass this object around the program, which
+could later call \texttt{resume()} from a different stack frame.  Thus, the
+continuation must contain not only the register context, but also the stack
+frames belonging to the preemptible function and its callees.  The \texttt{launch()}
+function enables this by switching to a new, dedicated stack just before invoking the
+user-provided function.
+
+Because of the infeasibility of moving these stacks after a function has started
+executing, \textit{libinger} currently heap-allocates large 2-MB stacks so it can
+treat them as having fixed size.  The latency of performing these large allocations
+was once responsible for an order of magnitude increase in the time overhead of the
+\texttt{launch()} operation, so \textit{libinger} now preallocates a large pool of
+reusable stacks the first time it is used.
 
 
 \subsection{Timer interrupts}
