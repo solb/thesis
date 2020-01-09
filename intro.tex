@@ -60,15 +60,3 @@ functions synchronously on the caller's thread}.  (2) It supports \textit{preemp
 at granularities in the 10s of microseconds}, orders of magnitude finer than
 contemporary OS schedulers' millisecond scale.  (3) It is \textit{language agnostic},
 not relying on support from any particular compiler or managed runtime.
-
-\solb{Move this to a later section.}
-In order to demonstrate the feasibility of such an abstraction, we have developed a
-prototype implementation in the form of \textit{libinger}\footnote{In the style of
-GNU's \textit{libiberty}, our library's name comes from the linker option used when
-building your application against it:\@ as the proverb goes, ``If you don't want your
-calls to linger, link with \texttt{-linger}.''}, an open-source shared library
-implemented in a combination of C, Rust~\cite{www-rustlang}, and x86-64 assembly.
-The rest of the paper proceeds as follows:  We discuss related work and contrast with
-other approaches to supporting timed function calls.  Next, we discuss the design of
-libinger.  Then we address its runtime costs, and present and benchmark sample use
-cases.  We address possible areas of future work.  Finally, we conclude.
