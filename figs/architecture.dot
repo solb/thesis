@@ -9,15 +9,15 @@ strict graph {
 
 		serialclient [label="Client code\n(serial)"];
 		parallelclient [label="Client code\n(parallel)"];
-		libassafe [label="Client libraries\n(e.g., libas-safe)"];
+		libassafe [label=<Client libraries<br/>(e.g., <i>libas-safe</i>)>];
 	}
 
 	{
 		node [shape=box];
 
-		libturquoise;
-		libinger;
-		libgotcha;
+		libturquoise [label=<<i>libturquoise</i>>];
+		libinger [label=<<i>libinger</i>>];
+		libgotcha [label=<<i>libgotcha</i>>];
 	}
 
 	rtld [shape=hexagon,label="Dynamic linker"];
