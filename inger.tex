@@ -186,6 +186,8 @@ the process.
 
 \subsection{Performance goals}
 
+\solb{Does any of this section belong in the Evaluation, Future Work, or Conclusion?}
+
 Unlike prior work on low-latency preemptive scheduling such as
 Shinjuku~\cite{Kaffes:nsdi2019}, \textit{libinger} runs on top of the existing
 OS.  An obvious design to achieve this goal would be to use a thread or a process,
@@ -222,3 +224,7 @@ Of course, in our design, increasing the accuracy of preemption is a tradeoff:\@
 frequent timer signals mean a tighter bound on timeout detection, but also a lower
 throughput of useful work.  The correct balance certainly depends at least on the
 timeout value and size of the function, and merits further study.
+
+\solb{THESIS: Could try to confirm these predicted measurements.}
+
+\solb{THESIS: Could explore strategies for choosing POSIX timer intervals.}
