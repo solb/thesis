@@ -39,7 +39,7 @@ task via a runtime check.  (This is often done implicitly, a simple example bein
 system that injects code to check
 whether the timed code has expired at the beginning of every one of its function
 calls.)  The other extreme is filled by \textbf{preemptive} systems where the CPU
-interrupts the timed function and transfers control to a scheduler routine (e.g., via
+interrupts the timed code and transfers control to a scheduler routine (e.g., via
 an interrupt service routine or signal handler, possibly within the language's VM).
 
 \dga{May want to cut long-running CPU instructions unless we can come up with a
@@ -96,7 +96,7 @@ yield function~\cite{www-golang-tightloop}.
 
 All the solutions discussed thus far rely on languages with a heavyweight,
 garbage-collecting runtime.  However, some recent systems have sought
-to provide timed functions in a language-agnostic fashion that minimizes such
+to support timed code in a language-agnostic fashion that minimizes such
 dependencies.  One example is the userland C-language thread library for realtime
 systems (here, ``\textit{RT}'') developed by Mollison and
 Anderson~\cite{mollison:rtas2013}, which performs
