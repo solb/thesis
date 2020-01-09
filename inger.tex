@@ -168,13 +168,19 @@ continuation saved by a signal handler invocation unspecified, leading
 implementations such as GNU not to handle this
 case~\cite{getcontext-manpage}.}.
 
-When the caller is finished with a preemptible function, it must deallocate it
-either explicitly (C) or implicitly via the \texttt{inger} type's destructor
-(Rust).  This cleans up the \textit{libinger} resources allocated by
+
+\subsection{Cancellation}
+
+Should a caller decide not to finish running a timed-out preemptible function, it
+must deallocate it.  In Rust this happens implicitly via the \texttt{linger\_t}
+type's destructor, but users of the C interface are responsible for explicitly
+calling \textit{libinger}'s \texttt{cancel()} function in this case.
+
+Cancellation cleans up the \textit{libinger} resources allocated by
 \texttt{launch()};
-however, if the call constitutes a cancellation, the current implementation of
-\textit{libinger} does not automatically clean up resources already allocated by the
-preemptible function itself.  While the lack of a standard deinitialization API
+however, the current implementation
+does not automatically clean up resources already allocated by the
+preemptible function itself.  While the lack of a standard resource deallocation API
 makes this inherently hard to do in C, it is possible to implement in languages
 such as Rust that support destructors.  For instance, the approach proposed by
 Boucher et al.~\cite{boucher:atc2018} could be employed to raise a panic
