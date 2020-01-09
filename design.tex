@@ -17,7 +17,8 @@ void resume(cont_t *cont, u64 time_us);
 
 \textit{libinger} provides two API calls (Listing~\ref{lst:ingerapi}): \texttt{launch()}
 invokes an ordinary function $\mathcal{F}$ with an execution time cap of T
-microseconds. \texttt{launch()} returns control to the caller when F completes,
+microseconds. \texttt{launch()} returns control to the caller when $\mathcal{F}$
+completes,
 or after approximately T microseconds if $\mathcal{F}$ does not complete in the
 allotted time. In the latter case, \textit{libinger} returns an opaque
 continuation object that may be used to \texttt{resume()} $\mathcal{F}$ at a
