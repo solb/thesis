@@ -130,6 +130,3 @@ Finally, although Go is able to preempt most goroutines written in the language
 itself, a
 goroutine that makes any foreign calls to other languages is treated as
 nonpreemptible by the runtime's scheduler~\cite{www-golang-fficall}.
-
-\solb{Either introduce \textbf{async-signal safety}~\cite{signal-safety-manpage}
-later or replace uses of the term with reentrancy.}

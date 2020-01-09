@@ -84,26 +84,29 @@ required runtime environment.}}
 
 \subsection{Automatic handling of shared state}
 
-As discussed in Section~\ref{sec:intro}, we wish to design a preemptible
-functions library that supports calling third-party libraries without
-modification or recompilation. Requiring users to modify such libraries to make
-them amenable for \textit{libinger} would greatly limit the usability and convenience
-of \textit{libinger}. The central challenge for \textit{libinger} is the \emph{shared
-state} problem: Suppose a timed function $\mathcal{F_1}$ calls a stateful
-routine in a third-party library $\mathcal{L}$. $\mathcal{F_1}$ times out, and
-is preempted by \textit{libinger}. Later the user invokes another timed function
-$\mathcal{F_2}$, which also calls a stateful routine in $\mathcal{L}$. The
-challenge for us then is to hide state modifications in $\mathcal{L}$ by
-$\mathcal{F_1}$ from the execution of $\mathcal{F_2}$.
+As we found in Section~\ref{sec:intro}, a key design challenge facing
+\textit{libinger} is the shared state problem:  Suppose a preemptible function
+$\mathcal{F}_0$ calls a stateful routine in a third-party library $\mathcal{L}$, and
+that $\mathcal{F}_0$ times out and is preempted by \textit{libinger}.  Later, the
+user invokes another timed function $\mathcal{F}_0'$, which also calls a stateful
+routine in $\mathcal{L}$.  This constituting a concurrency violation,
+\textit{libinger} must hide state modifications in $\mathcal{L}$ by $\mathcal{F}_0$
+from the execution of $\mathcal{F}_0'$ to avoid undefined behavior.
 
-One non-solution to this problem is to limit functions invocable from
-\textit{libinger} to async-signal-safe functions (Section~\ref{sec:related}), because
-doing so severely limits the usability of \textit{libinger}. Our solution to this
-problem is to automatically and dynamically create copies of $\mathcal{L}$ to
+The problem is actually even worse.  Those familiar with POSIX signals may notice
+that, upon a function's timeout, its caller interrupts it.  \textit{The rest of the
+program} can therefore be viewed as a signal handler, and would normally be expected
+to restrict itself to calling async-signal-safe (roughly, nonreentrant)
+functions~\cite{signal-safety-manpage}.
+
+One non-solution to this problem is to instead prevent preemptible functions from
+calling into third-party code (Section~\ref{sec:related}), because doing so would
+severely limit their usefulness.  Instead, our approach
+is to automatically and dynamically create copies of $\mathcal{L}$ to
 isolate state from different timed functions. Doing so while running on
 existing systems software (a requirement discussed next) requires solving many
-design and implementation challenges, which we discuss in
-Section~\ref{sec:libinger}.
+design and implementation challenges, which we cover in our discussion of
+\textit{libgotcha} in Section~\ref{sec:libgotcha}.
 
 
 \subsection{Performance on unmodified system stacks}
