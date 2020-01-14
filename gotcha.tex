@@ -90,14 +90,10 @@ function's comparator callback).  Fortunately, libc uses dynamic calls when it n
 to invoke the allocator internally, allowing us to whitelist that component alone.}.
 The deferral is not indefinite:\@ libinger uses libgotcha's callback mechanism to
 both call the handler and unblock the signal as soon as the function returns.
-Figure~\ref{fig:callwhitelist} shows the effect of calling \texttt{launch()} on a
-preemptible function that calls \texttt{malloc()}.
 
-\begin{figure}
-\includegraphics[width=\columnwidth]{figs/calltree}
-\caption{Whitelisted library function dispatch}
-\label{fig:callwhitelist}
-\end{figure}
+\solb{THESIS: Draw a figure depicting what happens w.r.t. the current libset,
+preemptibility, and the notification callbacks when a preemptible function calls
+an uninterruptible function (say, malloc()).}
 
 \subsection{Mechanics}
 
