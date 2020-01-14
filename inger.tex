@@ -20,7 +20,7 @@ executing it from the point last reached.
 \end{itemize}
 
 \begin{figure}
-\begin{lstlisting}[label=lst:ingerapi,caption=Preemptible functions interface]
+\begin{lstlisting}[label=lst:ingerapi,caption=Preemptible functions core interface]
 struct linger_t {
   bool is_complete;
   cont_t continuation;
@@ -100,12 +100,12 @@ to restrict itself to calling async-signal-safe (roughly, nonreentrant)
 functions~\cite{signal-safety-manpage}.
 
 One non-solution to this problem is to instead prevent preemptible functions from
-calling into third-party code (Section~\ref{sec:related}), because doing so would
+calling into third-party code (Section~\ref{sec:related}), but doing so would
 severely limit their usefulness.  Instead, our approach
 is to automatically and dynamically create copies of $\mathcal{L}$ to
-isolate state from different timed functions. Doing so while running on
-existing systems software requires solving many
-design and implementation challenges, which we cover in our discussion of
+isolate state from different timed functions.  Making this work on top of
+existing systems software required solving many
+design and implementation challenges, which we cover when we introduce
 \textit{libgotcha} in Section~\ref{sec:libgotcha}.
 
 \solb{Mention the concurrency implications of the API, and their relation to Rust's
@@ -142,27 +142,28 @@ site, removing its stack frame in the process.}}
 \label{fig:twostacks}
 \end{figure}
 
-While \textit{libinger} is executing the user-provided function, we
-enable fine-grained timer interrupts to periodically run a signal handler
-that monitors the function's elapsed running time.  The timer interrupt fires
-periodically while a preemptible function is running, causing the signal
+Whenever \textit{libinger} is executing a user-provided function, we
+enable fine-grained timer interrupts to
+monitor that function's elapsed running time.  A timer interrupt fires
+periodically, causing our signal
 handler to be invoked each time.  If the function exceeds its timeout,
-our handler saves a continuation by dumping the machine's registers.  It then
+this handler saves a continuation by dumping the machine's registers.  It then
 performs an unstructured jump out of the signal handler and back into the
 \texttt{launch()} or \texttt{resume()} function, switching stacks as it does so.
-Figure~\ref{fig:twostacks} shows the two stacks of execution, belonging to the
-\textit{libinger} caller and the preemptible function, that are present while the
+Figure~\ref{fig:twostacks} shows the two stacks of execution
+that are present while the
 signal handler is running.
 
 A subsequent \texttt{resume()} call restores the registers from the stored
-continuation, thereby jumping back into the signal handler.  The handler then
+continuation, thereby jumping back into the signal handler.  The handler
 returns, resuming the preemptible function from the instruction that was executing
-when the signal that caused preemption arrived.
+when the preemption signal arrived.
 
-For simplicity, we currently use a fixed signal frequency for all preemptible
+For simplicity, we use a fixed signal frequency for all preemptible
 functions, but this is not fundamental to the design.  In the future, we plan to
-adjust it based on each function's timeout, and to delay the first signal until
-closer to the time limit for longer-running functions.
+adjust each function's frequency based on its timeout, and to delay the first signal
+until
+shortly before the time limit (in the case of longer-running functions).
 
 \solb{THESIS: Removed discussion of our signal pool trick for notifying specific
 POSIX threads.}
@@ -175,19 +176,20 @@ handler's POSIX context without using \texttt{setcontext()}.}
 
 Should a caller decide not to finish running a timed-out preemptible function, it
 must deallocate it.  In Rust this happens implicitly via the \texttt{linger\_t}
-type's destructor, but users of the C interface are responsible for explicitly
-calling \textit{libinger}'s \texttt{cancel()} function in this case.
+type's destructor, whereas users of the C interface are responsible for explicitly
+calling the \textit{libinger} \texttt{cancel()} function.
 
 Cancellation cleans up the \textit{libinger} resources allocated by
 \texttt{launch()};
 however, the current implementation
-does not automatically clean up resources already allocated by the
+does not automatically release resources already claimed by the
 preemptible function itself.  While the lack of a standard resource deallocation API
-makes this inherently hard to do in C, it is possible to implement in languages
+makes this inherently hard to do in C, it is possible in languages
 such as Rust that support destructors.  For instance, the approach proposed by
 Boucher et al.~\cite{boucher:atc2018} could be employed to raise a panic
-(exception) on the preemptible function's stack, causing the language runtime
-to unwind each stack frame, invoking the destructor of each local variable in
+(exception) on the preemptible function's stack.  This in turn would cause the
+language runtime
+to unwind each stack frame, invoking local variables' destructors in
 the process.
 
 
