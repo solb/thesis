@@ -289,42 +289,6 @@ a simpler example that seeks to illuminate the situation.
 \subsection{Case study: Auto async-signal safety}
 \label{sec:statefulness}
 
-The main use of libgotcha is to make library function calls async-signal safe when
-they would not otherwise be.  To more clearly illustrate the library's usefulness, we
-pause to give a minimal example of such usage; specifically, we will leverage
-libgotcha to automatically fix the buggy program in Listing~\ref{lst:handlerbug},
-which calls the async-signal-unsafe function \texttt{printf()} from its signal
-handler.  Unfortunately, this function takes a lock on the \texttt{stdout} stream's
-associated file descriptor, and the signal handler eventually interrupts the program
-within \texttt{fflush()} while it is holding this same lock, resulting in deadlock.
-
-\begin{figure}
-\begin{lstlisting}[label=lst:handlerbug,caption=C program with a buggy signal handler]
-static void handler(int ignored) {
-  printf("In signal handler\n");
-}
-
-int main(void) {
-  struct sigaction sa = {
-    .sa_handler = handler,
-  };
-  sigaction(SIGALRM, &sa, NULL);
-
-  struct timeval tv = {
-    .tv_sec = 1,
-  };
-  struct itimerval it = {
-    .it_interval = tv,
-    .it_value = tv,
-  };
-  setitimer(ITIMER_REAL, &it, NULL);
-
-  while(true)
-    fflush(stdout);
-}
-\end{lstlisting}
-\end{figure}
-
 There are two ways to weaken the semantics of this program to prevent the deadlock
 without modifying the program's source code.  (1) We can elide the file descriptor
 lock, which in this case may occasionally allow the signal handler's output to
@@ -350,6 +314,9 @@ feature enables transformation (2):\@ whenever the main libset is already select
 when a signal handler runs, that handler is deferred (using libgotcha's callback
 mechanism) until the current whitelisted call returns.  This transformation can be
 demonstrated for this program by whitelisting the stdio functions and streams.
+
+\solb{THESIS: Walk through example(s) of programs that are automatically repaired by
+\textit{libas-safe}.}
 
 \solb{THESIS: Use \textit{libas-safe} to prototype a library that enables safe signal
 handling in Rust.}
