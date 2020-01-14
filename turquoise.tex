@@ -14,9 +14,10 @@ preemptive threading.  To demonstrate this, we have created a
 proof-of-concept library, \textit{libturquoise}\footnote{so called because it
 implements ``green threading with a twist''}, by modifying the
 \textit{tokio-threadpool}~\cite{www-tokio-threadpool} work-stealing scheduler from
-the Rust ecosystem to wrap each future in a preemptible function.  We did this by
-adding just 120 lines of code, 50 of them to version 0.1.16 of the thread library and
-70 extending \textit{libinger}'s Rust API with a reusable \textbf{preemptible
+the Rust ecosystem to wrap each future in a preemptible function.  We did this in
+just 120 new lines of Rust, 50 of them added to version 0.1.16 of the thread library
+and
+70 spent augmenting \textit{libinger}'s Rust API with a reusable \textbf{preemptible
 futures} adapter.
 
 Currently, \textit{libturquoise} assigns each future it launches or resumes the same
