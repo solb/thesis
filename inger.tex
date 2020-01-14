@@ -221,22 +221,11 @@ the process.
 
 \subsection{Performance goals}
 
-\solb{Does any of this section belong in the Evaluation, Future Work, or Conclusion?}
+\solb{Move this entire section to Future Work?}
 
-Unlike prior work on low-latency preemptive scheduling such as
-Shinjuku~\cite{Kaffes:nsdi2019}, \textit{libinger} runs on top of the existing
-OS.  An obvious design to achieve this goal would be to use a thread or a process,
-and although we argued in Section~\ref{sec:intro} that such an implementation would
-still be far from trivial, our avoidance of these mechanisms has as much to do with
-speed.  On Linux, simply spawning a thread incurs an order of magnitude more latency
-than our \texttt{launch()} and \texttt{resume()} functions, and forking a process
-costs an additional order of magnitude (Section~\ref{sec:eval}).
-
-Recognizing that the asynchrony of interrupting a preemptible function does not imply
-inherent asynchrony in accessing its result led us to develop a synchronous
-abstraction, thereby obviating the need for the aforementioned spawn operations on
-the critical path.  But we deliberately diverged from the design of Shinjuku and RT
-in another way as well:\@ unlike these systems, we make each thread responsible for
+Beyond not making parallelism a necessary condition for preemption, we deliberately
+diverged from the design of Shinjuku and RT
+in another way:\@ unlike these systems, we make each thread responsible for
 its own preemption rather than serving preemption signals from a shared watchdog
 thread.  This decision was informed by back-of-the-envelope calculations based on
 Shinjuku's comparison of the end-to-end latency of bare-metal interprocessor
