@@ -157,6 +157,11 @@ continuation, thereby jumping back into the signal handler.  The handler then
 returns, resuming the preemptible function from the instruction that was executing
 when the signal that caused preemption arrived.
 
+For simplicity, we currently use a fixed signal frequency for all preemptible
+functions, but this is not fundamental to the design.  In the future, we plan to
+adjust it based on each function's timeout, and to delay the first signal until
+closer to the time limit for longer-running functions.
+
 \solb{THESIS: Removed discussion of our signal pool trick for notifying specific
 POSIX threads.}
 
