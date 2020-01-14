@@ -139,21 +139,8 @@ provide consistent semantics, we only instrument cross-library variable
 references and function calls, where the use and definition occur in different object
 files.
 
-Identifying which GOT entries correspond to cross-library symbol uses
-is is a multi-step process:
-First, we traverse the relocation table for each loaded object file, cross
-referencing each of its relocation entries against the local object file's symbol
-table.  If the symbol table does not contain a definition matching the relocation
-entry's target, we conclude that the relocation must correspond to a cross-library
-call.  Otherwise, we check the address in the GOT entry corresponding to the
-relocation entry:  If this address is outside the bounds of the current object file,
-it is a cross-library call.  Otherwise, if this address matches the one from the
-symbol table entry, it is not a cross-library call, and should be skipped.  The last
-case is the trickiest, since the GOT entry probably still refers to the PLT stub
-(because the symbol reference has not yet been resolved).  In this case, we resolve
-the symbol
-early, update the GOT entry, and recheck whether it resolved to the local definition
-to determine whether it is a cross-library call.
+\solb{THESIS: Cover the algorithm for identifying GOT entries that correspond to
+cross-library symbols.}
 
 \paragraph{Intercepting cross-library calls}
 
