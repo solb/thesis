@@ -99,17 +99,43 @@ program} can therefore be viewed as a signal handler, and would normally be expe
 to restrict itself to calling async-signal-safe (roughly, nonreentrant)
 functions~\cite{signal-safety-manpage}.
 
-One non-solution to this problem is to instead prevent preemptible functions from
-calling into third-party code (Section~\ref{sec:related}), but doing so would
-severely limit their usefulness.  Instead, our approach
-is to automatically and dynamically create copies of $\mathcal{L}$ to
+One non-solution to this problem is to instead prevent \textit{preemptible functions}
+from
+calling into third-party code, but doing so would
+severely limit their usefulness (Section~\ref{sec:related}).  We opt instead
+to automatically and dynamically create copies of $\mathcal{L}$ to
 isolate state from different timed functions.  Making this work on top of
 existing systems software required solving many
 design and implementation challenges, which we cover when we introduce
 \textit{libgotcha} in Section~\ref{sec:libgotcha}.
 
-\solb{Mention the concurrency implications of the API, and their relation to Rust's
-safety guarantees.}
+
+\subsection{Safe concurrency}
+
+Automatically handling shared state arising from nonreentrant library interfaces is
+\textit{only} necessary because the implicit dependency hides the underlying data,
+preventing the programmer from applying normal concurrency controls.  Note that a
+different problem arises when a programmer explicitly shares state between a
+preemptible function and any other part of the program.  Unlike third-party library
+authors, this programmer is aware that they are using preemptible functions, a
+concurrency mechanism; therefore, the programmer bears responsibility for writing
+race-free code (e.g., by using atomics and mutexes wherever necessary).
+
+Using the C interface, one can accidentally introduce a data race that causes
+undefined behavior.  The \textit{libinger} Rust API, however, leverages the
+language's first-class concurrency support to prevent such mistakes from compiling:\@
+\texttt{launch()}'s signature requires the wrapped function to be \texttt{Send} safe
+(only reference state in a thread-safe manner)~\cite{www-rustlang-conc}.
+
+While the compiler rejects such broken Rust code, it is still possible to introduce
+correctness bugs such as deadlock.  One way to do this is to block on a mutex held by
+the preemptible function's caller (recall that invocation is synchronous, so blocking
+in a preemptible function does not cause it to yield!).  It is sometimes necessary to
+acquire such a mutex, so \textit{libinger} provides a way to do it:  The API has one
+last function, \texttt{pause()}, that is a rough analog of yield.  After performing a
+try-lock operation, a preemptible function can call this function to immediately
+return to its caller as if it had timed out.  The caller can detect this by checking
+a flag on the continuation.
 
 
 \subsection{Execution stacks}
