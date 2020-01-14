@@ -116,29 +116,6 @@ interposing is already active by the time control is transferred to the applicat
 \solb{Define GOT\footnote{It is this structure that gives \textit{lib\textbf{got}cha}
 its name.}}
 
-Dynamic calls to functions are slightly more complicated because they can resolve
-lazily at first invocation.  For instance, the instruction
-\texttt{call~printf@plt} causes the assembler to generate a corresponding executable
-\textbf{procedure linkage table (PLT)} stub function, as shown in
-Listing~\ref{lst:plt}.  The first instruction of this stub looks up the address of
-the
-function by checking a corresponding GOT entry; however, initially this contains the
-address of the immediately-following \texttt{pushq} instruction!  Thus, on the first
-call, the PLT stub pushes a symbol relocation identifier (here, \texttt{0x0}) onto
-the stack and calls into the dynamic linker, which resolves the symbol to the
-function's real address, memoizes the result by updating the GOT entry, and finally
-jumps into the real function.  Subsequent calls to the PLT stub then forward to the
-real function after executing only the initial \texttt{jmpq} instruction.
-
-\begin{figure}
-\begin{lstlisting}[label=lst:plt,caption=Example PLT entry for call to \texttt{printf()}]
-0000000000001030 <printf@plt>:
-  1030: jmpq  *0x2fe2(%rip) <printf>
-  1036: pushq $0x0
-  103b: jmpq  1020          <.plt>
-\end{lstlisting}
-\end{figure}
-
 \paragraph{Implementing libsets}
 
 When a dynamically-linked application is run, the kernel first passes control to the
@@ -207,19 +184,10 @@ opens a fixed number of additional libsets, redirects the cross-library calls fr
 each new copy of a library to the same PLOT stubs as before, and creates a shadow GOT
 for each libset.
 
-The setup procedure described so far has one significant problem:\@ recall that a PLT
-call memoizes the real address of its symbol by replacing the GOT entry, which should
-cause subsequent calls to skip libgotcha's \texttt{procedure\_linkage\_override()}
-codepath.  In order to prevent this, the constructor updates the relocation entries
-corresponding to cross-library calls to point at \textit{shadow} GOT entries.  This
-fools the dynamic linker into updating the shadow entry instead, meaning that
-memoization still works, as shown in Figure~\ref{fig:override}.
+\solb{THESIS: Cover trick for defeating lazy PLT relocations' memoization.}
 
-\begin{figure}
-\includegraphics[width=\columnwidth]{figs/tables}
-\caption{\texttt{procedure\_linkage\_override()} tables}
-\label{fig:override}
-\end{figure}
+\solb{THESIS: Draw a diagram explaining our custom tables and the series of lookups
+performed by \texttt{procedure\_linkage\_override()}.}
 
 \paragraph{Preserving equality comparisons}
 
