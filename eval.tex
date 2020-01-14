@@ -170,3 +170,59 @@ modest 4.5\% median latency overhead (with no long requests).
 
 \solb{Is it worth trying to get this running with HTTPS to increase dependence on
 dynamic libraries?}
+
+
+\subsection{Image decompression}
+
+While the Web benchmark showed preemptive scheduling at scale, it did not exercise
+preemptible function cancellation.  To demonstrate this feature, we consider
+decompression bombs, files that expand exponentially when decoded, consuming enormous
+computation time in addition to their large memory footprint.  As compressed image
+data, PNG files are vulnerable to such an attack, and although \textit{libpng} now
+supports some mitigations~\cite{www-libpng-bombs}, one cannot always expect (or
+trust) such functionality from a third-party codec.
+
+We benchmarked the use of \textit{libpng}'s ``simple API'' to decode an in-memory PNG
+file.  We then compared against synchronous isolation using preemptible functions, as
+well as the na\"ive alternative mitigations proposed in Section~\ref{sec:intro}.  For
+preemptible functions, we wrapped all uses of the \textit{libpng} in a call to
+\texttt{launch()} and used a dedicated (but blocking) reaper thread to remove the
+cost of cancellation from the critical path; for threads, we used
+\texttt{pthread\_create()} followed by \texttt{pthread\_timedjoin\_np()} and a
+conditional \texttt{pthread\_cancel()} (with asynchronous cancelability enabled); and
+for processes, we used \texttt{fork()} followed by \texttt{sigtimedwait()}, a
+conditional \texttt{kill()}, then a \texttt{waitpid()} to reap the child.  We used a
+timeout of 10 ms in all cases.
+
+\begin{figure*}
+	\begin{minipage}{\columnwidth}
+	\includegraphics[width=\textwidth]{figs/cerberus_nns16_surplus256k_mirjam}
+	\caption{\texttt{openclipart-png} image}
+	\label{fig:libpng:benign}
+	\end{minipage}
+%
+	\begin{minipage}{\columnwidth}
+	\includegraphics[width=\textwidth]{figs/cerberus_nns16_surplus256k_10K}
+	\caption{\texttt{bomb.codes} image}
+	\label{fig:libpng:bomb}
+	\end{minipage}
+\caption{\textit{libpng} in-memory decode times for two different images}
+\end{figure*}
+
+Running on the benign RGB image \texttt{mirjam\_meijer\_mirjam\_mei.png} from version
+\texttt{1:0.18+dfsg-15} of Debian's \texttt{openclipart-png} package showed
+\texttt{launch()} to be both faster and lower-variance than the other approaches,
+adding just 154 $\mu$s or 2.2\% (Figure~\ref{fig:libpng:benign}).  Although the cost
+of \texttt{fork()} was significantly higher when run with \textit{libgotcha}, we
+consider this a positive result:\@ it is a reminder that the cost of \texttt{fork()}
+is proportional to the number of pages the process has mapped.
+
+Next, we tried a similarly-sized RGB decompression bomb from revision
+\texttt{b726584} of \url{https://bomb.codes} (Figure~\ref{fig:libpng:bomb}):  We omit
+the unmitigated measurement (to keep the graph scale from growing by an order of
+magnitude), and could not obtain results for \texttt{pthread\_create()} (due to
+recurring segfaults).  Here, \texttt{launch()} exceeded the deadline by just 100
+$\mu$s, a figure that includes deviation due to the 100-$\mu$s preemption interval in
+addition to \textit{libinger}'s own overhead.  It again had the lowest variance.
+
+\solb{Should I have run the baseline and thread cases without \textit{libgotcha}?}
