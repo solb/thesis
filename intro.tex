@@ -10,16 +10,16 @@ yield if the result is not yet available.
 
 Key to the popularity of this concurrency abstraction is the ease and seamlessness of
 parallelizing it.  Underlying every major futures runtime is a green threading
-library that performs scheduling in userland, usually by assigning each running task
-to any of a fixed pool of physical worker threads.  Note that without uncommon kernel
+library, typically consisting of a scheduler that distributes work to a pool of
+OS-managed worker threads.  Note that without uncommon kernel
 support (e.g., scheduler activations~\cite{anderson:sosp1991}), this logical
-threading model means that the operating system is unaware of the tasks.  Thus,
+threading model renders the operating system unaware of individual tasks, meaning
 context switches are purely cooperative.
 
 This leads us to an abstraction that is \textit{not} available in modern languages:\@
 an easy way of \textit{preemptively} scheduling functions (e.g., calling a function
 with a timeout).  An implementation of such \textbf{preemptible functions} based on
-kernel threads suggests itself, where the function would run on a new thread that
+OS threads suggests itself, where the function would run on a new thread that
 could be cancelled upon timeout.  Unfortunately, the existence of nonreentrant
 functions makes cancelling a thread a nontrivial problem.  UNIX's pthreads provide
 asynchronous cancelability, but according to the Linux documentation, it ``is rarely
@@ -45,13 +45,11 @@ program:\@ because doing so effectively cancels all threads in the child process
 except the calling one, that process can experience the same problems as with our
 first approach~\cite{baumann:hotos2019}.
 
-These na\"ive implementations also suffer from another shortcoming:\@ by reducing
-preemptible functions to a problem of parallelism, they incur unnecessary overhead
-and hurt the composability of the abstraction.  Indeed, when calling a function with
-a timeout, only concurrency is fundamental, as the function has no notion of
-dependencies that would aid a parallel scheduler:\@ unlike futures, it never requests
-an asynchronous resource, and unlike coroutines, it does not know a priori when or
-what it will ``return.''
+These na\"ive designs share another shortcoming:\@ in reducing
+preemptible functions to a problem of parallelism, they hurt performance by placing
+thread creation on the critical path and limit composability by increasing the
+abstraction's complexity.  We observe that, when calling a function with
+a timeout, it is concurrency alone---and not parallelism---that is fundamental.
 
 In this paper, we propose lightweight preemptible functions, a userland abstraction
 for making function calls with a timeout that differs significantly from the state of

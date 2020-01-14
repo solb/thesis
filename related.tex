@@ -25,21 +25,21 @@ System & Preemptive & threading & In userland & Works without GC & No redesign &
 \end{table*}
 
 A number of past projects (Table~\ref{tab:related}) have sought to provide
-bounded-time execution of chunks of code at a sub-process granularity.
-For the purposes of our discussion, we
+bounded-time execution of chunks of code at sub-process granularity.
+For the purpose of our discussion, we
 refer to a portion of the program whose execution should be bounded as \textbf{timed
 code} (a generalization of a preemptible function); exactly what form this takes
 depends on the system's interface.
 
-Their interfaces notwithstanding, perhaps the systems' most distinguishing
+Interface notwithstanding, the systems' most distinguishing
 characteristic is the mechanism by which they enforce execution bounds.  At one end
 of the spectrum are \textbf{cooperative} multitasking systems where
 timed code voluntarily cedes the CPU to another
-task via a runtime check.  (This is often done implicitly, a simple example being a
-system that injects code to check
-whether the timed code has expired at the beginning of every one of its function
-calls.)  The other extreme is filled by \textbf{preemptive} systems where the CPU
-interrupts the timed code and transfers control to a scheduler routine (e.g., via
+task via a runtime check.  (This is often done implicitly; a simple example is a
+compiler that injects a conditional branch
+at the beginning of any function call from timed code.)
+Occupying the other extreme are \textbf{preemptive} systems that externally
+pause timed code and transfer control to a scheduler routine (e.g., via
 an interrupt service routine or signal handler, possibly within the language's VM).
 
 \dga{May want to cut long-running CPU instructions unless we can come up with a
@@ -57,29 +57,29 @@ loops~\cite{vanderwaart:cmucs2006}, we're not aware of any that are capable of
 handling both
 cases.
 
-One well-known early example of timed code was the \textit{engines} feature of
-the Scheme 84 language~\cite{haynes:iucs1984}.  The feature added an \texttt{engine}
-keyword that behaved similarly to the \texttt{lambda} one, but created a ``thunk''
+One early instance of timed code support was the \textit{engines} feature of
+the Scheme 84 language~\cite{haynes:iucs1984}.  This added a new \texttt{engine}
+keyword that behaved similarly to \texttt{lambda}, but created a special ``thunk''
 accepting as an argument the number of ticks (abstract time units) it should run for.
-In their interface, the caller also supplied a callback function to receive the
+The caller also supplied a callback function to receive the
 timed code's return value upon successful completion.  Like the rest of the
 Scheme language, engines were stateless:\@ whenever one ran out of computation time,
-it would return a new engine representing the point of interruption.  The
-implementation of engines relied heavily on Scheme's managed runtime, with ticks
+it would return a replacement engine recording the point of interruption.  Engines'
+implementation relied heavily on Scheme's managed runtime, with ticks
 corresponding to virtual machine instructions and cleanup handled by the garbage
-collector.  The VM dependency was not fundamental, however, as the literature notes
-that timer interrupts could have been used instead.
+collector.  Although the literature suggests using timer interrupts as an
+alternative, this was apparently never tried.
 
 \dga{In the early days of green threading, runtimes (e.g., libasync) would use
 complex and fragile handling of blocking calls, proxying them to \texttt{select()}
 or similar.  Might be a good footnote to pacify the old, crotchety reviewer.}
 
 In 2006, C.\@ Joseph Vanderwaart introduced a language, \textit{Lilt}, for writing
-programs with statically-enforced timing policies~\cite{vanderwaart:cmucs2006}.  The
-language's compiler tracks the possible duration of each path through the program and
-and inserts yield operations wherever its time might have expired.  Although this
-approach requires knowing the execution limit at compile time, the compiler is able
-to handle excessively-tight loops thanks to its awareness of backward jumps.
+programs with statically-enforced timing policies~\cite{vanderwaart:cmucs2006}.
+Its compiler tracks the possible duration of each path through a program and
+inserts yield operations wherever a timeout could possibly occur.  Although this
+approach requires assigning the execution limit at compile time, the compiler is able
+to handle excessively-tight loops by instrumenting backward jumps.
 Blocking-call functions remained a challenge, however:\@ handling them would have
 required
 operating system support, reminiscent of \textit{Singularity}'s static language-based
@@ -93,17 +93,17 @@ at function call sites.  This has long caused problems with tight loops, with th
 traditional workaround being to manually add calls to the \texttt{runtime.Gosched()}
 yield function~\cite{www-golang-tightloop}.
 
-All the solutions discussed thus far rely on languages with a heavyweight,
-garbage-collecting runtime.  However, some recent systems have sought
-to support timed code in a language-agnostic fashion that minimizes such
+The solutions described thus far all assume languages with a heavyweight,
+garbage-collected runtime.  However, some recent systems seek
+to support timed code with fewer
 dependencies.  One example is the userland C-language thread library for realtime
 systems (here, ``\textit{RT}'') developed by Mollison and
 Anderson~\cite{mollison:rtas2013}, which performs
 preemption using timer interrupts, as proposed in the early Scheme engines
-literature.  They install a time-based signal handler responsible for scheduling
-tasks and migrating them between cores.  Their lightweight runtime
-achieves average overall scheduling latencies in the tens of microseconds.
-However, as we'll see shortly, this comes with a huge usability cost for developers.
+literature.  They install a periodic signal handler responsible for scheduling
+tasks and migrating them between cores.  This lightweight runtime
+achieves average overall scheduling latencies in the tens of microseconds;
+however, we'll soon see that this comes with poor developer usability.
 
 \textit{Shinjuku}~\cite{Kaffes:nsdi2019} is an operating system designed to perform
 preemption at microsecond scale.  Built on the Dune framework~\cite{Belay:osdi2012},
@@ -115,18 +115,18 @@ imposed by performing them within a VT-x virtual machine, as required by Dune.  
 then implement optimizations to reduce these overheads at the expense of Shinjuku's
 isolation from the rest of the system.
 
-As we found in Section~\ref{sec:intro}, nonreentrant interfaces are fundamentally
+As seen in in Section~\ref{sec:intro}, nonreentrant interfaces are fundamentally
 incompatible with externally-imposed time limits.  Because such interfaces are
 prolific in popular dependencies, state-of-the-art solutions do not permit timed code
 to call into third-party libraries.  Scheme engines and
 Lilt skirt this issue by only supporting functional code, which cannot have shared
-state.  Because of its focus on realtime embedded systems, RT makes an assumption
+state.  Due to its focus on realtime embedded systems, RT assumes
 that the timed code in its threads will avoid shared state; this mostly precludes
-calls to third-party libraries, although the system supports the dynamic memory
+calls to third-party libraries, though the system supports the dynamic memory
 allocator by treating it as specifically nonpreemptible.  Rather than dealing with
 shared state itself, Shinjuku asks application authors to annotate any code with
 potential concurrency concerns using a nonpreemptible \texttt{call\_safe()} wrapper.
-Finally, although Go is able to preempt most goroutines written in the language
+And although Go is able to preempt goroutines written in the language
 itself, a
 goroutine that makes any foreign calls to other languages is treated as
 nonpreemptible by the runtime's scheduler~\cite{www-golang-fficall}.
