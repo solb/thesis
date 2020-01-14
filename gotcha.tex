@@ -74,10 +74,7 @@ requested via libgotcha's API.
 Use of this API by libinger is straightforward.  The \texttt{launch()} function
 allocates a new libset by either using an unused one, reusing one from a preemptible
 function that ran to completion, or reinitializing one from a preemptible function
-that was canceled prematurely\footnote{We assume that any canceled preemptible
-function has left its libset in an undefined state.  While libinger currently
-performs libset reinitialization synchronously, this somewhat costly step could be
-moved off the critical path by assigning a separate reaper thread.}.  It installs
+that was canceled prematurely.  It installs
 this as the current libset just before enabling preemption.  Right after checking
 whether the received signal was intended for the current thread, the preemption
 signal handler checks the thread's current libset; in the case of the main one
