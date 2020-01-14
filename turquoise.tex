@@ -1,2 +1,61 @@
 \section{Thread library: \textit{libturquoise}}
 \label{sec:libturquoise}
+
+\textit{Shinjuku} observes that ``there have been several efforts to implement
+efficient, user-space thread libraries.  They all focus on cooperative
+scheduling''~\cite{Kaffes:nsdi2019}.  We agree that such libraries are rare, and
+attribute this to a lack of natural abstractions to support them.  (While \textit{RT}
+from Section~\ref{sec:related} is a counterexample to their claim, its lack of
+nonreentrancy support renders it far from general purpose.)
+
+While preemptible functions are a fundamentally synchronous abstraction, its
+simplicity makes it readily composable.  To demonstrate this, we have developed a
+preemptive thread library, \textit{libturquoise}\footnote{so called because it
+implements ``green threading with a twist''}, by modifying the
+\textit{tokio-threadpool}~\cite{www-tokio-threadpool} work-stealing scheduler from
+the Rust ecosystem to wrap each future in a preemptible function.  We did this by
+adding just 120 lines of code, 50 of them to version 0.1.16 of the thread library and
+70 extending \textit{libinger}'s Rust API with a reusable preemptible futures
+adapter.
+
+Every time it launches or resumes a future, \textit{libturquoise} currently gives it
+a common fixed time budget, although this design could be extended to support
+multiple job priorities.  Whenever a task times out, the scheduler pops it from the
+worker thread's job queue and pushes it onto the incoming work queue.
+
+
+\subsection{Preemptible futures}
+
+To enable easy integration of preemptible futures into the futures ecosystem, we
+added a preemptible future wrapper around the core \textit{libinger} API.  Because
+of differences in languages' future implementations, this is not portable like the
+\texttt{launch()}/\texttt{resume()} API; however, we believe that replicating it for
+other languages would be straightforward.
+
+Our implementation relies on one last \textit{libinger} API call that we have not yet
+discussed:\@ the \texttt{pause()} function.  A rough analog to yield, this allows a
+preemptive function to cooperatively return control to its caller as if it had timed
+out.  The caller can learn this has happened by checking a flag on the continuation.
+An algorithm mapping from the futures interface to the preemptible functions one is
+shown in Listing~\ref{lst:future}.
+
+\begin{figure}
+\begin{lstlisting}[label=lst:future,caption=Making and polling preemptible futures]
+function wrap(Future fut, Num timeout):
+  function adapt():
+    while poll(fut) == NotReady:
+      pause()
+  fut.linger = launch(adapt, 0)
+  fut.timeout = timeout
+  return fut
+
+function poll(PreemptibleFuture fut):
+  resume(fut.linger, fut.timeout);
+  if has_finished(fut.linger):
+    return Ready
+  else
+    if called_pause(fut.linger):
+      notify_unblocked(fut.subscribers)
+    return NotReady
+\end{lstlisting}
+\end{figure}
