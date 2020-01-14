@@ -1,23 +1,14 @@
 \begin{abstract}
 
-\dga{Don't make it cloudy for EuroSys!  Instead discuss the traditional tradeoff
-between heavyweightness/lightweightness and cooperativity/preemptiveness.}
-
-\mk{We provide the very first (weaken this) preemptible functions.  And on this, we
-build the first blah blah preemptive userland thread library.}
-    
-In a world where programs increasingly execute on rented datacenter computing
-resources, CPU time is money.  Both application developers and cloud providers would
-benefit from an easy abstraction for enforcing execution time limits at sub-process
-granularity.  We propose one such abstraction that is \textbf{lightweight} with
-respect to the OS and scheduler, \textbf{preemptive} to guard against tight
-computation loops, and uses an interface featuring structured control flow centered
-around familiar \textbf{functions}.  We present \textit{libinger}, a
-language-independent prototype implemented entirely in userland that functions atop
-the existing system stack with no major changes, and requires only light runtime
-support.  We then assess the overheads of this runtime support.  Finally, we present
-a few case studies demonstrating possible uses of the abstraction and discuss its
-end-to-end performance.  In particular, we show how lightweight preemptible functions
-can be trivially applied to implement a preemptive thread library in userland.
+Lamenting the lack of a natural userland abstraction for preemptive interruption and
+asynchronous cancellation, we propose lightweight preemptible functions, a mechanism
+for \textit{synchronously} performing a function call with a \textit{precise timeout}
+that is lightweight, efficient, and composable, all while being \textit{portable
+between programming languages}.  We present the design of \textit{libinger}, the
+library that provides this abstraction, on top of which we build
+\textit{libturquoise}, arguably the first general-purpose preemptive thread library
+implemented entirely in userland.  Finally, we demonstrate the applicability to and
+performance of this software stack on the problems of combatting head-of-line
+blocking and denial-of-service attacks on existing systems.
 
 \end{abstract}
