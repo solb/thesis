@@ -220,37 +220,4 @@ language runtime
 to unwind each stack frame, invoking local variables' destructors in
 the process.
 
-
-\subsection{Performance goals}
-
-\solb{Move this entire section to Future Work?}
-
-Beyond not making parallelism a necessary condition for preemption, we deliberately
-diverged from the design of Shinjuku and RT
-in another way:\@ unlike these systems, we make each thread responsible for
-its own preemption rather than serving preemption signals from a shared watchdog
-thread.  This decision was informed by back-of-the-envelope calculations based on
-Shinjuku's comparison of the end-to-end latency of bare-metal interprocessor
-interrupts (IPIs) versus Linux signals.
-
-While Shinjuku reports that IPIs take an average of only 1,993 cycles, compared to
-4,950 for signals (roughly 1:2.5), their sender/receiver breakdown of the latter
-number suggests significant latency savings by avoiding cross-core signaling:
-First, 343 of those cycles (6.9\%) are spent propagating the signal between the two
-cores; we expect this delay to be nearly absent for a timer interrupt originating at
-its destination core's own local interrupt controller.  Second, 2,084 cycles (42\%)
-are incurred by the sending core; assuming the interrupt controller supports
-periodic timer interrupts at the necessary frequency, this cost does not need to be
-paid between each interrupt, suggesting measurable savings here too.  Although
-our prototype is not yet optimized to this extent, we expect it is possible for a
-system built on intra-thread Linux signals to achieve an average preemption latency
-within 2x that of Shinjuku's custom operating system.
-
-Of course, in our design, increasing the accuracy of preemption is a tradeoff:\@ more
-frequent timer signals mean a tighter bound on timeout detection, but also a lower
-throughput of useful work.  The correct balance certainly depends at least on the
-timeout value and size of the function, and merits further study.
-
-\solb{THESIS: Could try to confirm these predicted measurements.}
-
-\solb{THESIS: Could explore strategies for choosing POSIX timer intervals.}
+\solb{THESIS: Implement resource cleanup.}

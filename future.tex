@@ -1,13 +1,41 @@
 \section{Future work}
 
-TODO
+\solb{This isn't exactly a future work section, is it...?}
 
-\solb{Shinjuku's signal-related continuation optimizations apply to us as well}
+Like \textit{Shinjuku} and \textit{RT} before us, we have arrived at a preemptive
+thread library; however, we have done so by building parallelism on top of
+not the other way around.  Because of this, we have a more flexible abstraction, and
+we intend to continue applying it to other problems.
 
-\solb{Thesis work should actually support resource cleanup}
+\solb{Mention other use cases, such as the continuation-memoizing RPC server?}
 
-\solb{Thesis work might want to support nested preemptible functions}
+But we have also diverged from \textit{Shinjuku} and \textit{RT}
+in another way:\@ unlike these systems, we make each thread responsible for
+its own preemption rather than serving preemption signals from a shared watchdog
+thread.  This decision was informed by back-of-the-envelope calculations based on
+Shinjuku's comparison of the end-to-end latency of bare-metal interprocessor
+interrupts (IPIs) versus Linux signals.
 
-\solb{Thesis work might want to accelerate kernel signal handling}
+While Shinjuku reports that IPIs take an average of only 1,993 cycles, compared to
+4,950 for signals (roughly 1:2.5), their sender/receiver breakdown of the latter
+number suggests significant latency savings by avoiding cross-core signaling:
+First, 343 of those cycles (6.9\%) are spent propagating the signal between the two
+cores; we expect this delay to be nearly absent for a timer interrupt originating at
+its destination core's own local interrupt controller.  Second, 2,084 cycles (42\%)
+are incurred by the sending core; assuming the interrupt controller supports
+periodic timer interrupts at the necessary frequency, this cost does not need to be
+paid between each interrupt, suggesting measurable savings here too.  Although
+our prototype is not yet optimized to this extent, we expect it is possible for a
+system built on intra-thread Linux signals to achieve an average preemption latency
+within 2x that of Shinjuku's custom operating system.  It is our hope that further
+optimization of our system, including through the adoption of some of Shinjuku's
+continuation optimizations, will allow us to meet this performance goal.
 
-\solb{Thesis work might want to add better handling for blocking system calls}
+Of course, in our design, increasing the accuracy of preemption is a tradeoff:\@ more
+frequent timer signals mean a tighter bound on timeout detection, but also a lower
+throughput of useful work.  The correct balance certainly depends at least on the
+timeout value and size of the function, and also merits further study.
+
+\solb{THESIS: Might want to accelerate kernel signal handling?}
+
+\solb{THESIS: Might want to support nested preemptible functions?}
