@@ -108,7 +108,7 @@ however, we'll soon see that this comes with poor developer usability.
 
 \textit{Shinjuku}~\cite{Kaffes:nsdi2019} is an operating system designed to perform
 preemption at microsecond scale.  Built on the Dune framework~\cite{Belay:osdi2012},
-it runs tasks on a pool of worker threads controlled by a single centralized
+it runs tasks on a worker thread pool controlled by a single centralized
 dispatcher thread.  The latter polices how long each task has been running and
 sends an inter-processor interrupt (IPI) to any worker whose task has timed out.
 The authors study the cost of IPIs and the overheads
@@ -116,10 +116,10 @@ imposed by performing them within a VT-x virtual machine, as required by Dune.  
 then implement optimizations to reduce these overheads at the expense of Shinjuku's
 isolation from the rest of the system.
 
-As seen in in Section~\ref{sec:intro}, nonreentrant interfaces are fundamentally
+As seen in Section~\ref{sec:intro}, nonreentrant interfaces are fundamentally
 incompatible with externally-imposed time limits.  Because such interfaces are
-prolific in popular dependencies, state-of-the-art solutions do not permit timed code
-to call into third-party libraries.  Scheme engines and
+prolific in popular dependencies, no prior work allows timed code to transparently
+call into third-party libraries.  Scheme engines and
 Lilt skirt this issue by only supporting functional code, which cannot have shared
 state.  Due to its focus on realtime embedded systems, RT assumes
 that the timed code in its threads will avoid shared state; this mostly precludes
