@@ -136,22 +136,22 @@ connections.
 \begin{figure*}
 	\begin{minipage}{\columnwidth}
 	\includegraphics[width=\textwidth]{figs/twooom_50-short}
-	\caption{Median latency}
+	\subcaption{Median latency}
 	\end{minipage}
 %
 	\begin{minipage}{\columnwidth}
 	\includegraphics[width=\textwidth]{figs/twooom_90-short}
-	\caption{90\% tail latency}
+	\subcaption{90\% tail latency}
 	\end{minipage}
 
 	\begin{minipage}{\columnwidth}
 	\includegraphics[width=\textwidth]{figs/twooom_99-short}
-	\caption{99\% tail latency}
+	\subcaption{99\% tail latency}
 	\end{minipage}
 %
 	\begin{minipage}{\columnwidth}
 	\includegraphics[width=\textwidth]{figs/twooom_tput}
-	\caption{Overall throughput}
+	\subcaption{Overall throughput}
 	\end{minipage}
 \caption{\textit{hyper} Web server with 500-$\mu$s (short) and 50-ms (long) requests}
 \label{fig:hyper}
@@ -197,13 +197,13 @@ timeout of 10 ms in all cases.
 \begin{figure*}
 	\begin{minipage}{\columnwidth}
 	\includegraphics[width=\textwidth]{figs/cerberus_nns16_surplus256k_mirjam}
-	\caption{\texttt{openclipart-png} image}
+	\subcaption{\texttt{openclipart-png} image}
 	\label{fig:libpng:benign}
 	\end{minipage}
 %
 	\begin{minipage}{\columnwidth}
 	\includegraphics[width=\textwidth]{figs/cerberus_nns16_surplus256k_10K}
-	\caption{\texttt{bomb.codes} image}
+	\subcaption{\texttt{bomb.codes} image}
 	\label{fig:libpng:bomb}
 	\end{minipage}
 \caption{\textit{libpng} in-memory decode times for two different images}
