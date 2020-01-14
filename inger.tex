@@ -42,7 +42,6 @@ proceeds to handling other tasks, and later resumes the first task.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:usage, caption=Preemptible function usage example]
-
 linger = launch(task, TIMEOUT, null);
 if (!linger.is_complete) {
   // Save @linger to a task queue to
