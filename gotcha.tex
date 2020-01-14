@@ -215,23 +215,9 @@ perform in-place pointer arithmetic on a register rather than using displacement
 addressing with a base address), in our experience public shared data is rare enough
 that we have not yet encountered any cases where programs do this.}.
 
-\paragraph{Shortcomings and workarounds}
-
-The libgotcha approach has known conflicts with two modern extensions to the
-dynamic-linking model.  Here we discuss these shortcomings and our proposed
-workarounds.
-
-When an executable directly accesses a global variable defined in a shared library,
-the assembler migrates it into the executable, allowing the main program to access it
-via static relocations instead of via the GOT.  The static linker generates a COPY
-relocation that causes the dynamic linker to copy the variable's contents from the
-shared library at load time.  Unfortunately, this approach makes
-it impossible for us to intercept cross-library references occurring within the
-executable, and causes associated dynamic references in the defining shared library
-to be erroneously treated as cross-library references.  For this reason, libgotcha
-emits a warning when it detects a COPY relocation.  Developers can avoid the problem
-by building any executables that use libgotcha with the C compiler's \texttt{-fpic}
-flag to skip generating such relocations.
+\solb{THESIS: Explain the trouble with COPY relocations and the need to use
+\texttt{-fpic} as a workaround, ideally showing the performance ramifications
+(e.g., via the nginx experiment).}
 
 \solb{THESIS: Cover the \texttt{NODELETE} flag, ld.so monkey patching, and the
 library header rewriting trick I use to circumvent the issue.}
