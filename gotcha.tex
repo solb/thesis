@@ -233,23 +233,8 @@ emits a warning when it detects a COPY relocation.  Developers can avoid the pro
 by building any executables that use libgotcha with the C compiler's \texttt{-fpic}
 flag to skip generating such relocations.
 
-Some shared libraries are marked with a special configuration flag,
-\texttt{DF\_1\_NODELETE}, which prevents the dynamic linker from ever removing them
-once they have been loaded.  Because almost all libraries depend on libc, the
-presence of even one such library prevents us from reinitializing a libset for reuse
-after its preemptible function has been canceled!  The flag is mostly used on
-libraries that need
-to monkey-patch some other loaded library, such that the two subsequently have a
-circular dependency.  Fortunately, this is not usually a problem because when we
-unload one library from a libset, we then unload the rest, so whenever we encounter a
-\texttt{NODELETE} object file, we make a special copy with the flag cleared, for
-loading into every namespace except the main one.  The one place this does not work
-is when a library monkey-patches the dynamic linker itself.  This
-requires the use of a private interface, and the only offending library to our
-knowledge is GNU libpthread, which replaces function pointers in order to cause the
-dynamic linker to take locks when performing potentially concurrent operations; we
-handle this by preventing the monkey-patching constructor code from running in our
-modified copy of that library.
+\solb{THESIS: Cover the \texttt{NODELETE} flag, ld.so monkey patching, and the
+library header rewriting trick I use to circumvent the issue.}
 
 \paragraph{Execution environment}
 
