@@ -163,11 +163,10 @@ reusable stacks the first time it is used.
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/twostacks}
-\caption{The stacks before and after a timeout.  \textnormal{Upon discovering
+\caption{The stacks just before a timeout.  \textnormal{Upon discovering
 that the preemptible function has exceeded its time bound, the handler jumps into the
-\texttt{launch()} function.  Then, \texttt{launch()} returns to the original call
-site, removing its stack frame in the process.}}
-\solb{Remove the continuations from this diagram and add the handler's stack frame.}
+\texttt{launch()} (or \texttt{resume()}) function, which in turn returns to the
+original call site, removing its own stack frame in the process.}}
 \label{fig:twostacks}
 \end{figure}
 
