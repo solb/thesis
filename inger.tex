@@ -128,7 +128,8 @@ language's first-class concurrency support to prevent such mistakes from compili
 (only reference state in a thread-safe manner)~\cite{www-rustlang-conc}.
 
 While the compiler rejects such broken Rust code, it is still possible to introduce
-correctness bugs such as deadlock.  One way to do this is to block on a mutex held by
+correctness bugs such as deadlock~\cite{www-rustlang-nu}.  One way to do this is to
+block on a mutex held by
 the preemptible function's caller (recall that invocation is synchronous, so blocking
 in a preemptible function does not cause it to yield!).  It is sometimes necessary to
 acquire such a mutex, so \textit{libinger} provides a way to do it:  The API has one

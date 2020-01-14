@@ -3,48 +3,7 @@
 
 \solb{Replace the term ``whitelisted'' with ``uninterruptible.''}
 
-Our discussion of libinger's implementation was complete but for one important
-detail:\@ shared state.  As described so far, the library provides an interface that
-makes it unsafe to call functions that are not async-signal safe after the
-\texttt{launch()} call site.  Fortunately, users of preemptible functions are spared
-from this
-restriction because libgotcha uses another library, \textit{libgotcha}, that
-automatically protects much of a program's shared state.
-
 \subsection{Principle}
-
-There are two cases where shared state arises:\@ in code that uses preemptible
-functions, and in code that doesn't.  This distinction is important because we want
-to permit use of existing code, which cannot be aware that preemptible functions
-exist, let alone account for their concurrency implications.  To precisely demarcate
-the two cases, we define code as \textbf{aware} of preemptible functions if it is
-linked into an executable or shared library that uses them, and \textbf{unaware} of
-them otherwise.  We permit aware code to call into unaware code, both inside and
-outside of its timed functions; however, in exchange we impose a requirement on
-preemptible functions that we term \textbf{async-preempt safety}.
-
-The first restriction of async-preempt safety is that aware code must protect against
-concurrency violations any state that is explicitly shared between a preemptible
-function and any other part of the program (aware or otherwise).  This can be done
-with atomics or locks, although in the latter case, authors should take care to use
-try operations instead of blocking ones to avoid deadlock.  Adherence to this
-principle is the responsible of the programmer, although the language may offer
-assistance.  For example, our Rust bindings require preemptible functions to be
-\textbf{Send}~\cite{www-rustlang-conc}, instructing the compiler to enforce that they
-access shared state only in a thread-safe manner\footnote{Of course, this means it is
-still possible to create deadlock or some other logic error, but it does protect
-against undefined behavior~\cite{www-rustlang-nu}.}.
-
-The other restriction of async-preempt safety is that, while a preemptiblee function
-may use nonreentrant interfaces to unaware code (assuming that it does so safely
-with respect to their own APIs), it may not rely on earlier uses of such interfaces,
-nor may it expect the rest of the program to rely on its own.  To see why, consider a
-program that calls \texttt{strtok()} within a preemptible function, and again after
-its the call site of its \texttt{launch()}.  Because we cannot know a priori whether
-the preemptible function will time out before its \texttt{strtok()} call completes,
-we cannot allow the two invocations to interact without introducing uncertain
-semantics.  Indeed, as we are about to see, the two \texttt{strtok()} calls are
-completely unaware of each other.
 
 This brings us to unaware code, and the purpose of libgotcha.  This library employs
 a technique we call \textbf{selective relinking} to redirect at runtime each use of a
@@ -154,28 +113,8 @@ interposing is already active by the time control is transferred to the applicat
 
 \paragraph{Just enough dynamic linking}
 
-Doing all this at runtime is possible thanks to dynamic linking, an
-approach by which the static linker delays the relocation of addresses associated
-with \textbf{dynamic calls} to functions and \textbf{dynamic references} to global
-variables.  Instead of resolving their addresses directly within the output machine
-code, the static linker includes a
-\textbf{dynamic relocation table} in each output ELF object file describing the
-locations of dynamic calls and references, as well as the name of each target symbol.
-A component of the C runtime known as the dynamic linker (\texttt{ld.so}) uses this
-table to resolve dynamic symbol addresses after the application is loaded.
-
-Recall that our goal is to reroute cross-library uses of symbols at runtime.  This
-means we need to instrument all use sites and inject our own code that decides which
-libset to route to.  In order to accomplish this, we first study the operation of the
-dynamic linker.  When it needs to resolve a symbol use to the address of its
-corresponding definition, it looks up the symbol name in the relocation table and
-searches the dependency graph of loaded object files for the first definition of a
-symbol with that name.  Having found the definition, it needs to store the address
-where the program can find it during execution.  Unlike the static linker, it does
-not modify the program's executable regions; instead, it places the resolved address
-into the requesting object file's \textbf{global offset table (GOT)}\footnote{It is
-from this structure that \textit{lib\textbf{got}cha} gets its name.}, a structure
-created by the static linker with a spot corresponding to each dynamic relocation.
+\solb{Define GOT\footnote{It is this structure that gives \textit{lib\textbf{got}cha}
+its name.}}
 
 Dynamic calls to functions are slightly more complicated because they can resolve
 lazily at first invocation.  For instance, the instruction
