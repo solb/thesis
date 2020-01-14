@@ -81,10 +81,10 @@ necessary/enough/possible to cite our benchmark from the microservices paper?}
 	\begin{tabular}{c | c}
 	Trigger & Time with \textit{libgotcha} ($ns$) \\
 	\hline
-	Whitelisted call & $21 \pm 0$ \\
-	Whitelisted call + callback & $25 \pm 0$
+	Uninterruptible call & $21 \pm 0$ \\
+	Uninterruptible call + callback & $25 \pm 0$
 	\end{tabular}
-	\subcaption{Whitelisted calls triggering a libset switch}
+	\subcaption{Uninterruptible calls triggering a libset switch}
 	\label{tab:libgotcha:whitelist}
 	\end{minipage}
 \caption{Runtime overheads of accessing dynamic symbols}
@@ -108,7 +108,7 @@ call latency is on par with that of a trivial C library function and one-third
 that of a simple system call.  This overhead affects the entire program, regardless
 of the
 current libset at the time of the call.  Additionally, calls to
-whitelisted functions from within a preemptible function incur several extra
+uninterruptible functions from within a preemptible function incur several extra
 nanoseconds of latency to switch back to the main namespace as described in
 Section~\ref{sec:libgotcha}; Table~\ref{tab:libgotcha:whitelist} breaks this down to
 show the cost of notification callbacks at the conclusion of such a call (always
