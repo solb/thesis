@@ -1,9 +1,9 @@
 \section{Evaluation}
 \label{sec:eval}
 
-We now evaluate the performance of the preemptible functions software stack,
-presenting a suite of microbenchmarks and two examples of their application to
-existing systems to improve resilience to malicious or otherwise long-running
+We now evaluate preemptible function performance, presenting several
+microbenchmarks and two examples of their application to improve
+existing systems' resilience to malicious or otherwise long-running
 requests.  All experiments were run on an Intel Xeon E5-2683 v4 (Broadwell)
 server running Linux 4.12.6, rustc 1.36.0, gcc 9.2.1, and glibc 2.29.
 
@@ -34,15 +34,16 @@ Table~\ref{tab:libinger} shows the overhead of \textit{libinger}'s core function
 Each test makes use of hundreds of preemptible functions, each with its own stack and
 continuation, but sharing an implementation that immediately calls \texttt{pause()}.
 For comparison, we also measured the cost of calling \texttt{fork()} then
-\texttt{exit()} and \texttt{pthread\_create()} with an empty function; the parent
+\texttt{exit()}, and of calling \texttt{pthread\_create()} with an empty function;
+the parent
 thread waits using \texttt{waitpid()} or \texttt{pthread\_join()}, respectively.
 
 The results show that, as long as preemptible functions are eventually allowed to run
 to completion, they are an order of magnitude faster than spawning a thread and two
 orders of magnitude faster than forking a process.  Although cancellation takes
 milliseconds in the benchmark application, this operation need not lie on the
-critical unless the application is cancelling tasks frequently enough to exhaust its
-supply of libsets.
+critical path unless the application is cancelling tasks frequently enough to exhaust
+its supply of libsets.
 
 \solb{What do we want to say about throughput degradation?  Is it
 necessary/enough/possible to cite our benchmark from the microservices paper?}
@@ -95,18 +96,19 @@ Table~\ref{tab:libgotcha:symb}.  Eager function calls account for almost all of 
 modern program's dynamic symbol accesses:  Direct access to global variables is rarer
 now that thread safety is a pervasive concern, with libc removing the \texttt{errno}
 symbol in favor of an \texttt{\_\_errno\_location()} helper
-function~\cite{www-lsb-errno}, and compilers translating thread-local variable
+function~\cite{www-lsb-errno}, and compilers now translating thread-local variable
 accesses into calls to \texttt{\_\_tls\_get\_addr()} or offsets from a segment
 register~\cite{drepper:spec2013}.  As explained in Section~\ref{sec:libgotcha}, lazy
 resolution only occurs the first time an object file calls a particular function, and
-can be avoided altogether by asking the dynamic linker to resolve all symbols at load
-time.
+it can be avoided altogether by asking the dynamic linker to resolve all symbols at
+load time.
 
 Table~\ref{tab:libgotcha:baseline} shows that the \textit{libgotcha} eager function
-call overhead is on par with the cost of a trivial C library function and one-third
-the cost of a simple system call.  This affects the entire program, regardless of the
-current libset at the time of the call.  Additionally, calls to whitelisted
-nonpreemptible functions from within a preemptible function incur several extra
+call latency is on par with that of a trivial C library function and one-third
+that of a simple system call.  This overhead affects the entire program, regardless
+of the
+current libset at the time of the call.  Additionally, calls to
+whitelisted functions from within a preemptible function incur several extra
 nanoseconds of latency to switch back to the main namespace as described in
 Section~\ref{sec:libgotcha}; Table~\ref{tab:libgotcha:whitelist} breaks this down to
 show the cost of notification callbacks at the conclusion of such a call (always
@@ -115,21 +117,21 @@ required by \textit{libinger}).
 
 \subsection{Web server}
 
-To demonstrate asynchronous preemption in a large system, we benchmarked
+To test whether our thread library could combat head-of-line blocking in a large
+system, we benchmarked
 \textit{hyper}, the highest-performing Web server in TechEmpower's plaintext
-benchmark as of July 2019~\cite{www-hyper}.  Wanting to assess its treatment of
-bimodally-distributed request lengths, we built \textit{hyper} against
+benchmark as of July 2019~\cite{www-hyper}.  We built \textit{hyper} against
 \textit{libturquoise} configured with a task timeout of 2 ms, give or take a
-100-$\mu$s \textit{libinger} preemption interval, and configured it to serve empty
+100-$\mu$s \textit{libinger} preemption interval, and configured it to serve
 responses only after spinning in a busy loop for a number of iterations specified in
-their request.  For our client, we modified version 4.1.0 of the
+each request.  For our client, we modified version 4.1.0 of the
 \textit{wrk}~\cite{www-wrk} closed-loop HTTP load generator to separately record the
-latency distributions of two request classes.
+latency distributions of two different request classes.
 
 Our testbed consisted of two machines connected by a direct 10-GbE link.  We pinned
 \textit{hyper} to the 16 physical cores on the NIC's NUMA node of our Broadwell
 server.  Our client machine, a Intel Xeon E5-2697 v3 (Haswell) running Linux 4.10.0,
-ran a separate \textit{wrk} process pinned to each of the 14 logical codes on the
+ran a separate \textit{wrk} process pinned to each of the 14 logical cores on the
 NIC's NUMA node.  Each client core maintained two concurrent pipelined HTTP
 connections.
 
@@ -158,6 +160,7 @@ connections.
 \end{figure*}
 
 Using loop lengths of approximately 500 $\mu$s and 50 ms for short and long requests,
+respectively,
 we varied the percentage of long requests from 0\% to 2\% and measured the round-trip
 median and tail latencies of short requests and the throughput of all requests.
 Figure~\ref{fig:hyper} plots the results for three server configurations:\@
@@ -165,7 +168,8 @@ Figure~\ref{fig:hyper} plots the results for three server configurations:\@
 \texttt{overhead} is the same but with \textit{libgotcha} loaded to assess the
 impact of slower dynamic function calls, and \texttt{preempt} is preemptive
 scheduling via \textit{libturquoise}.  The experiment shows that the preemptible
-functions stack keeps the tail latency of short requests scaling linearly for a
+functions stack keeps the tail latency of short requests scaling linearly at the cost
+of a
 modest 4.5\% median latency overhead (with no long requests).
 
 \solb{Is it worth trying to get this running with HTTPS to increase dependence on
@@ -185,7 +189,7 @@ trust) such functionality from a third-party codec.
 We benchmarked the use of \textit{libpng}'s ``simple API'' to decode an in-memory PNG
 file.  We then compared against synchronous isolation using preemptible functions, as
 well as the na\"ive alternative mitigations proposed in Section~\ref{sec:intro}.  For
-preemptible functions, we wrapped all uses of the \textit{libpng} in a call to
+preemptible functions, we wrapped all uses of \textit{libpng} in a call to
 \texttt{launch()} and used a dedicated (but blocking) reaper thread to remove the
 cost of cancellation from the critical path; for threads, we used
 \texttt{pthread\_create()} followed by \texttt{pthread\_timedjoin\_np()} and a
@@ -212,7 +216,8 @@ timeout of 10 ms in all cases.
 Running on the benign RGB image \texttt{mirjam\_meijer\_mirjam\_mei.png} from version
 \texttt{1:0.18+dfsg-15} of Debian's \texttt{openclipart-png} package showed
 \texttt{launch()} to be both faster and lower-variance than the other approaches,
-adding just 154 $\mu$s or 2.2\% (Figure~\ref{fig:libpng:benign}).  Although the cost
+adding just 154 $\mu$s or 2.2\% over the baseline (Figure~\ref{fig:libpng:benign}).
+Although the cost
 of \texttt{fork()} was significantly higher when run with \textit{libgotcha}, we
 consider this a positive result:\@ it is a reminder that the cost of \texttt{fork()}
 is proportional to the number of pages the process has mapped.
