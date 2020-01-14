@@ -351,9 +351,5 @@ when a signal handler runs, that handler is deferred (using libgotcha's callback
 mechanism) until the current whitelisted call returns.  This transformation can be
 demonstrated for this program by whitelisting the stdio functions and streams.
 
-As expected, use of either transformation prevents deadlock just by virtue of linking
-the buggy program against libas-safe\footnote{Interestingly, libas-safe represents a
-significant step in the direction of supporting safe signal handling in Rust,
-something the language has been missing since its initial release.}.  Recall that the
-use of a preemptible function imposes the restrictions of a signal handler on the
-rest of the program, restrictions that can be lifted by the use of libgotcha.
+\solb{THESIS: Use \textit{libas-safe} to prototype a library that enables safe signal
+handling in Rust.}
