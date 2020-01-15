@@ -108,8 +108,6 @@ def main():
 			ax1.spines['bottom'].set_visible(False)
 			ax1.tick_params(axis='x', which='both', bottom=False)
 			ax2.spines['top'].set_visible(False)
-			# Set lower axes y limits.
-			ax2.set_ylim(0, ymax)
 			# Calculate and set upper axes y limits. Figure out the maximum and
 			# minimum values that will fall in the upper axes.
 			upper_pts = []
@@ -141,6 +139,8 @@ def main():
 		fig.suptitle(title[0])
 		ax1.set_ylabel(ylabel)
 		label_ax.set_xlabel(xlabel)
+		if ymax:
+			label_ax.set_ylim(0, ymax)
 
 		# This code assumes that there may be multiple bar clusters. Define a
 		# bar series to be the same bar across all of the bar
