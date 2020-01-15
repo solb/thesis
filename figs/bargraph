@@ -11,7 +11,7 @@ def autolabel(rects, ax, labels):
 	""" Originally from: http://composition.al/blog/2015/11/29/a-better-way-to-add-labels-to-bar-charts-with-matplotlib/ """
 	for i, rect in enumerate(rects):
 		ax.text(rect.get_x() + rect.get_width()/2., 0,
-				'	 ' + labels[i], ha='center', va='bottom', rotation=90)
+				'    ' + labels[i], ha='center', va='bottom', rotation=90)
 
 
 def main():
