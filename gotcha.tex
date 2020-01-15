@@ -36,6 +36,29 @@ Before explaining selective relinking and introducing the \textit{libgotcha} API
 will now briefly motivate the need for libgotcha by demonstrating how existing system
 interfaces fail to provide the isolation we require.
 
+
+\subsection{Library copying}
+
+Expanding a preemptible function's isolation boundary to include libraries requires
+providing it with private copies of said libraries.  POSIX has long provided a
+\texttt{dlopen()} interface to the dynamic linker for loading shared objects at
+runtime; however, opening an already-loaded library does nothing more than increment
+a reference count, and this function is therefore of no use for making copies.
+Fortunately, the GNU dynamic linker (\texttt{ld-linux.so}) also supports
+Solaris-style \textbf{namespaces}, or isolated sets of loaded libraries.  For each
+namespace, \texttt{ld-linux.so} maintains a separate set of loaded libraries whose
+dependency graph and reference counts are tracked independently from the rest of the
+program~\cite{dlmopen-manpage}.
+
+It may seem like namespaces provide the isolation we need:\@ whenever we
+\texttt{launch(\textnormal{\textit{F}})}, we can initialize a namespace with a copy
+of the whole application and transfer control into that namespace's copy of
+\textit{F}, rather than the original.  The problem with this approach is that it
+breaks lexical scoping.  For instance, the user would expect static variables in the
+object file where \textit{F} is defined to be visible from both inside and outside of
+the preemptible function, since they represent explicitly-shared state.
+
+
 \subsection{Principle}
 
 This brings us to unaware code, and the purpose of libgotcha.  This library employs
@@ -142,21 +165,6 @@ interposing is already active by the time control is transferred to the applicat
 
 \solb{Define GOT\footnote{It is this structure that gives \textit{lib\textbf{got}cha}
 its name.}}
-
-\paragraph{Implementing libsets}
-
-When a dynamically-linked application is run, the kernel first passes control to the
-dynamic linker, which reads its shared library dependencies\footnote{The dependency
-list is found in the executable's ELF headers, alongside other dynamic linking
-metadata such as the relocation table.}.  It then loads these libraries into the
-process image, repeats with
-\textit{their} dependencies, and so on.  The linker also provides a \texttt{dlopen()}
-that can be used to load additional shared object files at runtime.  The GNU dynamic
-linker extends this interface with the Solaris concept of namespaces, each of which
-represents an independent dependency graph of loaded
-libraries~\cite{dlmopen-manpage}.  It is this feature upon which we build the libset
-abstraction, which extends this notion of duplicate copies of a library to allow one
-namespace's use of a symbol to resolve to a definition in a different namespace.
 
 \paragraph{Identifying cross-library symbol uses}
 
