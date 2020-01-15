@@ -179,8 +179,8 @@ dynamic libraries?}
 While the Web benchmark showed preemptive scheduling at scale, it did not exercise
 preemptible function cancellation.  To demonstrate this feature, we consider
 decompression bombs, files that expand exponentially when decoded, consuming enormous
-computation time in addition to their large memory footprint.  As compressed image
-data, PNG files are vulnerable to such an attack, and although \textit{libpng} now
+computation time in addition to their large memory footprint.
+PNG files are vulnerable to such an attack, and although \textit{libpng} now
 supports some mitigations~\cite{www-libpng-bombs}, one cannot always expect (or
 trust) such functionality from a third-party codec.
 

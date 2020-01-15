@@ -145,7 +145,7 @@ a flag on the continuation.
 
 \subsection{Execution stacks}
 
-Recall that, when a preemptible function times out, \textit{libinger} returns a
+When a preemptible function times out, \textit{libinger} returns a
 continuation object.  The caller might pass this object around the program, which
 could later call \texttt{resume()} from a different stack frame.  Thus, the
 continuation must contain not only the register context, but also the stack
