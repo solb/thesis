@@ -166,7 +166,10 @@ Figure~\ref{fig:hyper} plots the results for three server configurations:\@
 the
 impact of slower dynamic function calls, and \texttt{baseline+libturquoise} is
 preemptive
-scheduling via \textit{libturquoise}.  The experiment shows that the preemptible
+scheduling via \textit{libturquoise}.  A 2\% long request mix was enough to reduce
+the throughput of the \textit{libgotcha} server enough to impact the
+median short request latency.
+The experiment shows that the preemptible
 functions stack keeps the tail latency of short requests scaling linearly at the cost
 of a
 modest 4.5\% median latency overhead when not under attack.
