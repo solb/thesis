@@ -66,8 +66,8 @@ corresponding to virtual machine instructions and cleanup handled by the garbage
 collector.  Although the literature suggests using timer interrupts as an
 alternative, this was apparently never tried.
 
-In 2006, C.\@ Joseph Vanderwaart introduced a language, \textit{Lilt}, for writing
-programs with statically-enforced timing policies~\cite{vanderwaart:cmucs2006}.
+\textit{Lilt}~\cite{vanderwaart:cmucs2006} introduced a language for writing
+programs with statically-enforced timing policies.
 Its compiler tracks the possible duration of each path through a program and
 inserts yield operations wherever a timeout could possibly occur.  Although this
 approach requires assigning the execution limit at compile time, the compiler is able
@@ -81,7 +81,7 @@ Some recent languages offer explicit userland threading, which could be used to
 support timed
 code.  One example is the Go language's~\cite{www-golang} \textit{goroutines}.
 The language's runtime includes a cooperative scheduler that conditionally yields
-at function call sites.  This has long caused problems with tight loops, with the
+at function call sites.  This causes problems with tight loops, the
 traditional workaround being to manually add calls to the \texttt{runtime.Gosched()}
 yield function~\cite{www-golang-tightloop}.
 
@@ -111,7 +111,7 @@ As seen in Section~\ref{sec:intro}, nonreentrant interfaces are
 incompatible with externally-imposed time limits.  Because such interfaces are
 prolific in popular dependencies, no prior work allows timed code to transparently
 call into third-party libraries.  Scheme engines and
-Lilt skirt this issue by only supporting functional code, which cannot have shared
+Lilt avoid this issue by only supporting functional code, which cannot have shared
 state.  Due to its focus on realtime embedded systems, RT assumes
 that the timed code in its threads will avoid shared state; this mostly precludes
 calls to third-party libraries, though the system supports the dynamic memory
