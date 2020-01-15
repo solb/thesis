@@ -29,6 +29,7 @@ def main():
 		parser.add_argument('-i', type = int, default = 1, help = 'Visible label increment (for skipping some)')
 		parser.add_argument('-r', type = float, default = 0.0, help = 'Label rotation')
 		parser.add_argument('-p', type = float, default = 0.05, help = 'Padding before the first bar and after the last bar')
+		parser.add_argument('-s', action = 'store_true', help = 'Whether to split the y-axis to support very tall bars. Splits at the value of \'-y\'.')
 	parser.add_argument('dest', help = 'Destination filename')
 	args = parser.parse_args()
 	errorbars = args.e
@@ -46,6 +47,8 @@ def main():
 		increment = args.i
 		rotation = args.r
 		padding = args.p
+		split = args.s
+		assert not split or (split and ymax), '\'-s\' requires \'-y\''
 
 	title = input().strip().split(',')
 	labels = input().strip().split(',')
@@ -74,6 +77,10 @@ def main():
 
 	rendered_series = []
 	if linegraph:
+		pyplot.title(title[0])
+		pyplot.xlabel(xlabel)
+		pyplot.ylabel(ylabel)
+
 		for index in range(len(series[0])):
 			rendered_series.append(pyplot.errorbar(indeps, [row[index] for row in series], yerr = [row[index] for row in errors] if errorbars else None, marker = '.', linestyle = '' if scatter else '-', capsize = 2)[0])
 			if logscale:
@@ -81,6 +88,58 @@ def main():
 			if hlogscale:
 				pyplot.xscale('log')
 	else:
+		subfigs_num = 2 if split else 1
+		width = 4
+		height = 6
+		fig, subfigs = pyplot.subplots(subfigs_num, 1, sharex=True, figsize=(width, height))
+
+		if split:
+			# Extract two subfigures.
+			ax1, ax2 = subfigs
+
+			# Set figure and axis titles.
+			fig.suptitle(title[0])
+			ax2.set_xlabel(xlabel)
+			ax1.yaxis.set_label_coords(-0.17, -0.1)
+
+			# Set axis visibility.
+			ax1.spines['bottom'].set_visible(False)
+			ax1.tick_params(axis='x', which='both', bottom=False)
+			ax2.spines['top'].set_visible(False)
+
+			# Set lower axes y limits.
+			ax2.set_ylim(0, ymax)
+			# Calculate and set upper axes y limits. Figure out the maximum and
+			# minimum values that will fall in the upper axes.
+			upper_pts = []
+			for yerrs, ys in zip(errors, series):
+				for yerr, y in zip(yerrs, ys):
+					if y > ymax:
+						yerr = yerr if errorbars else 0
+						upper_pts.extend([y - yerr, y + yerr])
+			upper_max = max(upper_pts)
+			upper_min = min(upper_pts)
+			upper_padding = (upper_max - upper_min) * 0.05
+			ax1.set_ylim(upper_min - upper_padding, upper_max + upper_padding)
+
+			# Draw slash markers on y axis.
+			d = 0.015
+			kwargs = dict(transform=ax1.transAxes, color='k', clip_on=False)
+			ax1.plot((-d, +d), (-d, +d), **kwargs)
+			ax1.plot((1 - d, 1 + d), (-d, +d), **kwargs)
+			kwargs.update(transform=ax2.transAxes)
+			ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)
+			ax2.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)
+		else:
+			# Extract only a single subfigure.
+			ax1 = subfigs
+
+			# Set figure and axis titles.
+			ax1.set_xlabel(xlabel)
+			ax1.set_ylabel(ylabel)
+		fig.suptitle(title[0])
+		ax1.set_ylabel(ylabel)
+
 		# This code assumes that there may be multiple bar clusters. Define a
 		# bar series to be the same bar across all of the bar
 		# clusters. Therefore, a cluster is a set of one bar from each bar
@@ -105,8 +164,12 @@ def main():
 			# Add the xticks at the same x locs as the bars.
 			xticks.extend([(x, slabels[bar]) for x in xs])
 			# Plot this bar series.
-			pyplot.bar(xs, ys, width=width, log=logscale,
-					   yerr=yerrs if errorbars else None)
+			ax1.bar(xs, ys, width=width, log=logscale,
+					yerr=yerrs if errorbars else None)
+			if split:
+				ax2.bar(xs, ys, width=width, log=logscale,
+						yerr=yerrs if errorbars else None)
+
 		# The xticks are out of order, so sort them based on their x locs.
 		xticks = sorted(xticks, key=lambda x: x[0])
 		# Split the x locs and labels into separate arrays.
@@ -138,9 +201,6 @@ def main():
 	else:
 		pyplot.ylim(0)
 
-	pyplot.title(title[0])
-	pyplot.xlabel(xlabel)
-	pyplot.ylabel(ylabel)
 	if linegraph:
 		if len(slabels) == 1:
 			pyplot.ylabel(*slabels)
@@ -148,6 +208,7 @@ def main():
 			pyplot.legend(slabels, loc = 'center left', bbox_to_anchor = (vertlx, vertly))
 		else:
 			pyplot.legend(slabels)
+
 
 	pyplot.savefig(args.dest, bbox_inches = 'tight')
 
