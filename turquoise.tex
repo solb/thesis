@@ -5,7 +5,7 @@
 efficient, user-space thread libraries.  They all focus on cooperative
 scheduling''~\cite{Kaffes:nsdi2019}.  We agree that such libraries are rare, and
 attribute this to a lack of natural abstractions to support them.  (Though
-\textit{RT} from Section~\ref{sec:related} is could be a counterpoint, its lack of
+\textit{RT} from Section~\ref{sec:related} could be a counterexample, its lack of
 nonreentrancy support makes it far from general purpose.)
 
 While the preemptible function is a fundamentally synchronous abstraction, its
@@ -22,8 +22,8 @@ futures} adapter.
 
 Currently, \textit{libturquoise} assigns each future it launches or resumes the same
 fixed time budget, although this design could be extended to support
-multiple job priorities.  Whenever a task times out, the scheduler pops it from its
-worker thread's job queue and pushes it onto the incoming work queue, thereby
+multiple job priorities.  When a task times out, the scheduler pops it from its
+worker thread's job queue and pushes it onto the incoming work queue,
 offering it to any available worker for rescheduling after all other waiting jobs
 have had a turn.
 
@@ -39,7 +39,8 @@ type and an algorithm for polling one in Listing~\ref{lst:future}.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:future,caption=Futures adapter type (pseudocode)]
-function wrap(Future fut, Num timeout):
+function PreemptibleFuture(Future fut,
+                           Num timeout):
   function adapt():
     while poll(fut) == NotReady:
       pause()

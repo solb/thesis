@@ -31,7 +31,7 @@ Operation & Duration ($\mu{s}$) \\
 \end{table}
 
 Table~\ref{tab:libinger} shows the overhead of \textit{libinger}'s core functions.
-Each test makes use of hundreds of preemptible functions, each with its own stack and
+Each test uses hundreds of preemptible functions, each with its own stack and
 continuation, but sharing an implementation that immediately calls \texttt{pause()}.
 For comparison, we also measured the cost of calling \texttt{fork()} then
 \texttt{exit()}, and of calling \texttt{pthread\_create()} with an empty function;
@@ -44,8 +44,6 @@ orders of magnitude faster than forking a process.  Although cancellation takes
 milliseconds in the benchmark application, this operation need not lie on the
 critical path unless the application is cancelling tasks frequently enough to exhaust
 its supply of libsets.
-
-\solb{We also don't currently discuss process startup times.}
 
 \begin{table*}
 	\begin{minipage}{2\columnwidth}
@@ -101,7 +99,8 @@ it can be avoided altogether by asking the dynamic linker to resolve all symbols
 load time.
 
 Table~\ref{tab:libgotcha:baseline} shows that the \textit{libgotcha} eager function
-call latency is on par with that of a trivial C library function and one-third
+call overhead of 14 ns is on par with the cost of a trivial C library function and
+one-third
 that of a simple system call.  This overhead affects the entire program, regardless
 of the
 current libset at the time of the call.  Additionally, calls to
@@ -156,9 +155,9 @@ connections.
 \label{fig:hyper}
 \end{figure*}
 
-Using loop lengths of approximately 500 $\mu$s and 50 ms for short and long requests,
-respectively,
-we varied the percentage of long requests from 0\% to 2\% and measured the round-trip
+We used loop lengths of approximately 500 $\mu$s and 50 ms for short and long requests,
+respectively, viewing the latter requests as possible DoS attacks on the system.
+We varied the percentage of long requests from 0\% to 2\% and measured the round-trip
 median and tail latencies of short requests and the throughput of all requests.
 Figure~\ref{fig:hyper} plots the results for three server configurations:\@
 \texttt{baseline} is cooperative scheduling via \textit{tokio-threadpool},
@@ -167,7 +166,7 @@ impact of slower dynamic function calls, and \texttt{preempt} is preemptive
 scheduling via \textit{libturquoise}.  The experiment shows that the preemptible
 functions stack keeps the tail latency of short requests scaling linearly at the cost
 of a
-modest 4.5\% median latency overhead (with no long requests).
+modest 4.5\% median latency overhead when not under attack.
 
 \solb{Is it worth trying to get this running with HTTPS to increase dependence on
 dynamic libraries?}

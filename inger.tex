@@ -33,12 +33,12 @@ void resume(linger_t *cont, u64 time_us);
 \end{lstlisting}
 \end{figure}
 
-Listing~\ref{lst:usage} shows an example usage of \textit{libinger}
+Listing~\ref{lst:usage} shows an example use of \textit{libinger}
 in a task queue manager designed to prevent latency-critical tasks from blocking
 behind longer-running
 ones. The caller invokes a task with a timeout. If the task does not complete
 within the allotted time, the caller saves its continuation in the task queue,
-proceeds to handling other tasks, and later resumes the first task.
+handles other tasks, and later resumes the first task.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:usage, caption=Preemptible function usage example]
@@ -68,7 +68,7 @@ comprising the preemptible functions stack.  The \textit{libinger} library itsel
 implemented in approximately 2,500 lines of Rust.  To support calls to nonreentrant
 functions, it depends on another library, \textit{libgotcha}, which consists of
 another 3,000 lines of C, Rust, and x86-64 assembly.  We now describe the
-implementation of \textit{libinger}, beginning with this shared state handling.
+implementation of \textit{libinger}, beginning with shared state handling.
 
 \begin{figure}
 \begin{center}
@@ -115,21 +115,21 @@ design and implementation challenges, which we cover when we introduce
 \subsection{Safe concurrency}
 
 Automatically handling shared state arising from nonreentrant library interfaces is
-\textit{only} necessary because the implicit dependency hides the underlying data,
-preventing the programmer from applying normal concurrency controls.  Note that a
+needed because the sharing is transparent to the programmer.  A
 different problem arises when a programmer explicitly shares state between a
 preemptible function and any other part of the program.  Unlike third-party library
-authors, this programmer is aware that they are using preemptible functions, a
-concurrency mechanism; therefore, the programmer bears responsibility for writing
-race-free code (e.g., by using atomics and mutexes wherever necessary).
+authors, this programmer knows they are using preemptible functions, a
+concurrency mechanism.
 
-Using the C interface, one can accidentally introduce a data race that causes
-undefined behavior.  The \textit{libinger} Rust API, however, leverages the
+When using the C interface, the programmer bears complete responsibility for writing
+race-free code (e.g., by using atomics and mutexes wherever necessary).
+The \textit{libinger} Rust API, however, leverages the
 language's first-class concurrency support to prevent such mistakes from compiling:\@
 \texttt{launch()}'s signature requires the wrapped function to be \texttt{Send} safe
 (only reference state in a thread-safe manner)~\cite{www-rustlang-conc}.
 
-While the compiler rejects such broken Rust code, it is still possible to introduce
+While the Rust compiler rejects all code that shares state unsafely, it is still
+possible to introduce
 correctness bugs such as deadlock~\cite{www-rustlang-nu}.  One way to do this is to
 block on a mutex held by
 the preemptible function's caller (recall that invocation is synchronous, so blocking
@@ -153,10 +153,9 @@ user-provided function.
 
 Because of the infeasibility of moving these stacks after a function has started
 executing, \textit{libinger} currently heap-allocates large 2-MB stacks so it can
-treat them as having fixed size.  The latency of performing these large allocations
-was once responsible for an order of magnitude increase in the time overhead of the
-\texttt{launch()} operation, so \textit{libinger} now preallocates a large pool of
-reusable stacks the first time it is used.
+treat them as having fixed size.  To avoid an order of magnitude slowdown from having
+such large dynamic allocations on the critical path, \textit{libinger} preallocates a
+pool of reusable stacks when it is first used.
 
 
 \subsection{Timer interrupts}
@@ -173,8 +172,12 @@ original call site, removing its own stack frame in the process.}}
 Whenever \textit{libinger} is executing a user-provided function, we
 enable fine-grained timer interrupts to
 monitor that function's elapsed running time.  A timer interrupt fires
-periodically, causing our signal
-handler to be invoked each time.  If the function exceeds its timeout,
+periodically\footnote{For simplicity, we use a fixed signal frequency for all
+preemptible functions, but this is not fundamental to the design.  In the future,
+we plan to adjust each function's frequency based on its timeout, and to delay the
+first signal until shortly before the time limit (in the case of longer-running
+functions).}, causing our signal
+handler to be invoked.  If the function exceeds its timeout,
 this handler saves a continuation by dumping the machine's registers.  It then
 performs an unstructured jump out of the signal handler and back into the
 \texttt{launch()} or \texttt{resume()} function, switching stacks as it does so.
@@ -187,11 +190,6 @@ continuation, thereby jumping back into the signal handler.  The handler
 returns, resuming the preemptible function from the instruction that was executing
 when the preemption signal arrived.
 
-For simplicity, we use a fixed signal frequency for all preemptible
-functions, but this is not fundamental to the design.  In the future, we plan to
-adjust each function's frequency based on its timeout, and to delay the first signal
-until
-shortly before the time limit (in the case of longer-running functions).
 
 \solb{THESIS: Removed discussion of our signal pool trick for notifying specific
 POSIX threads.}

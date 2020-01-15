@@ -1,8 +1,6 @@
 \section{Related work}
 \label{sec:related}
 
-\mk{Maybe reverse use of bold and italics?}
-
 \begin{table*}
 \small
 \begin{tabular}{c||c|c|c|c|c|c}
@@ -43,9 +41,6 @@ Occupying the other extreme are \textbf{preemptive} systems that externally
 pause timed code and transfer control to a scheduler routine (e.g., via
 an interrupt service routine or signal handler, possibly within the language's VM).
 
-\dga{May want to cut long-running CPU instructions unless we can come up with a
-modern (i.e., non-VAX) example.  Furthermore, it invites disagreement.}
-
 The cooperative approach tends to be unable to interrupt two classes of timed code:\@
 (1) \textbf{blocking-call} code sections that cause
 long-running kernel traps (e.g., by making I/O system calls),
@@ -70,10 +65,6 @@ implementation relied heavily on Scheme's managed runtime, with ticks
 corresponding to virtual machine instructions and cleanup handled by the garbage
 collector.  Although the literature suggests using timer interrupts as an
 alternative, this was apparently never tried.
-
-\dga{In the early days of green threading, runtimes (e.g., libasync) would use
-complex and fragile handling of blocking calls, proxying them to \texttt{select()}
-or similar.  Might be a good footnote to pacify the old, crotchety reviewer.}
 
 In 2006, C.\@ Joseph Vanderwaart introduced a language, \textit{Lilt}, for writing
 programs with statically-enforced timing policies~\cite{vanderwaart:cmucs2006}.
@@ -104,7 +95,7 @@ preemption using timer interrupts, as proposed in the early Scheme engines
 literature.  They install a periodic signal handler responsible for scheduling
 tasks and migrating them between cores.  This lightweight runtime
 achieves average overall scheduling latencies in the tens of microseconds;
-however, we'll soon see that this comes with poor developer usability.
+however, as explained later in this section, developers to compromise on usability.
 
 \textit{Shinjuku}~\cite{Kaffes:nsdi2019} is an operating system designed to perform
 preemption at microsecond scale.  Built on the Dune framework~\cite{Belay:osdi2012},
@@ -116,7 +107,7 @@ imposed by performing them within a VT-x virtual machine, as required by Dune.  
 then implement optimizations to reduce these overheads at the expense of Shinjuku's
 isolation from the rest of the system.
 
-As seen in Section~\ref{sec:intro}, nonreentrant interfaces are fundamentally
+As seen in Section~\ref{sec:intro}, nonreentrant interfaces are
 incompatible with externally-imposed time limits.  Because such interfaces are
 prolific in popular dependencies, no prior work allows timed code to transparently
 call into third-party libraries.  Scheme engines and

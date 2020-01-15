@@ -2,13 +2,13 @@
 
 Lamenting the lack of a natural userland abstraction for preemptive interruption and
 asynchronous cancellation, we propose lightweight preemptible functions, a mechanism
-for \textit{synchronously} performing a function call with a \textit{precise timeout}
-that is lightweight, efficient, and composable, all while being \textit{portable
-between programming languages}.  We present the design of \textit{libinger}, the
+for synchronously performing a function call with a precise timeout
+that is lightweight, efficient, and composable, all while being portable
+between programming languages.  We present the design of \textit{libinger}, the
 library that provides this abstraction, on top of which we build
 \textit{libturquoise}, arguably the first general-purpose preemptive thread library
 implemented entirely in userland.  Finally, we demonstrate the applicability to and
 performance of this software stack on the problems of combatting head-of-line
-blocking and denial-of-service attacks on existing systems.
+blocking and time-based DoS attacks on existing systems.
 
 \end{abstract}
