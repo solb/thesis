@@ -177,13 +177,13 @@ dynamic libraries?}
 
 \subsection{Image decompression}
 
-The Web benchmark showed preemptive scheduling at scale, but does not exercise
+The Web benchmark showed preemptive scheduling at scale, but did not exercise
 preemptible function cancellation.  To demonstrate this feature, we consider
 decompression bombs, files that expand exponentially when decoded, consuming enormous
 computation time in addition to their large memory footprint.
 PNG files are vulnerable to such an attack, and although \textit{libpng} now
 supports some mitigations~\cite{www-libpng-bombs}, one cannot always expect (or
-trust) such functionality from a third-party codec.
+trust) such functionality from third-party code.
 
 We benchmarked the use of \textit{libpng}'s ``simple API'' to decode an in-memory PNG
 file.  We then compared against synchronous isolation using preemptible functions, as
@@ -191,11 +191,12 @@ well as the na\"ive alternative mitigations proposed in Section~\ref{sec:intro}.
 preemptible functions, we wrapped all uses of \textit{libpng} in a call to
 \texttt{launch()} and used a dedicated (but blocking) reaper thread to remove the
 cost of cancellation from the critical path; for threads, we used
-\texttt{pthread\_create()} followed by \texttt{pthread\_timedjoin\_np()} and a
-conditional \texttt{pthread\_cancel()} (with asynchronous cancelability enabled); and
-for processes, we used \texttt{fork()} followed by \texttt{sigtimedwait()}, a
-conditional \texttt{kill()}, then a \texttt{waitpid()} to reap the child.  We used a
-timeout of 10 ms in all cases.
+\texttt{pthread\_create()} followed by \texttt{pthread\_timedjoin\_np()} and,
+conditionally, \texttt{pthread\_cancel()} and \texttt{pthread\_join()}; and for
+processes, we used \texttt{fork()} followed by \texttt{sigtimedwait()}, a
+conditional \texttt{kill()}, then a \texttt{waitpid()} to reap the child.  We ran
+\texttt{pthread\_cancel()} both with and without asynchronous cancelability enabled,
+but the former always deadlocked.  The timeout was 10 ms in all cases.
 
 \begin{figure*}
 	\begin{minipage}{0.94\columnwidth}
@@ -215,18 +216,15 @@ timeout of 10 ms in all cases.
 Running on the benign RGB image \texttt{mirjam\_meijer\_mirjam\_mei.png} from version
 \texttt{1:0.18+dfsg-15} of Debian's \texttt{openclipart-png} package showed
 \texttt{launch()} to be both faster and lower-variance than the other approaches,
-adding just 154 $\mu$s or 2.2\% over the baseline (Figure~\ref{fig:libpng:benign}).
-Although the cost
-of \texttt{fork()} was significantly higher when run with \textit{libgotcha}, we
-consider this a positive result:\@ it is a reminder that the cost of \texttt{fork()}
-is proportional to the number of pages the process has mapped.
+adding 355 $\mu$s or 5.2\% over the baseline (Figure~\ref{fig:libpng:benign}).  The
+results for \texttt{fork()} represent a best-case scenario for that technique, as we
+did not implement a shared memory mechanism for sharing the buffer, and the cost of
+the system call will increase with the number pages mapped by the process (which was
+small in this case).
 
 Next, we tried a similarly-sized RGB decompression bomb from revision
-\texttt{b726584} of \url{https://bomb.codes} (Figure~\ref{fig:libpng:bomb}):  We omit
-the unmitigated measurement (to keep the graph scale from growing by an order of
-magnitude), and could not obtain results for \texttt{pthread\_create()} (due to
-recurring segfaults).  Here, \texttt{launch()} exceeded the deadline by just 100
+\texttt{b726584} of \url{https://bomb.codes} (Figure~\ref{fig:libpng:bomb}).  Without
+asynchronous cancelability, the pthreads approach was unable to interrupt the thread.
+Here, \texttt{launch()} exceeded the deadline by just 100
 $\mu$s, a figure that includes deviation due to the 100-$\mu$s preemption interval in
 addition to \textit{libinger}'s own overhead.  It again had the lowest variance.
-
-\solb{Should I have run the baseline and thread cases without \textit{libgotcha}?}
