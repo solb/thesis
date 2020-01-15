@@ -11,12 +11,12 @@ yield if the result is not yet available.
 Key to the popularity of this concurrency abstraction is the ease and seamlessness of
 parallelizing it.  Underlying every major futures runtime is a green threading
 library, typically consisting of a scheduler that distributes work to a pool of
-OS-managed worker threads.  Note that without uncommon kernel
-support (e.g., scheduler activations~\cite{anderson:sosp1991}), this logical
+OS-managed worker threads.  Without uncommon kernel
+support (e.g., scheduler activations~\cite{anderson:sosp1991}), however, this logical
 threading model renders the operating system unaware of individual tasks, meaning
 context switches are purely cooperative.
 
-This leads us to an abstraction that is \textit{not} available in modern languages:\@
+We propose an abstraction that is \textit{not} available in modern languages:\@
 an easy way of \textit{preemptively} scheduling functions (e.g., calling a function
 with a timeout).  An implementation of such \textbf{preemptible functions} based on
 OS threads suggests itself, where the function would run on a new thread that

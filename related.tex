@@ -49,7 +49,7 @@ thereby preventing the interruption logic from being run; and (2)
 spin locks or long-running CPU instructions).
 Although some cooperative systems refine their approach with mechanisms
 to tolerate either blocking-call code sections~\cite{www-golang} or excessively-tight
-loops~\cite{vanderwaart:cmucs2006}, we're not aware of any that are capable of
+loops~\cite{vanderwaart:cmucs2006}, we are not aware of any that are capable of
 handling both
 cases.
 
@@ -63,7 +63,7 @@ Scheme language, engines were stateless:\@ whenever one ran out of computation t
 it would return a replacement engine recording the point of interruption.  Engines'
 implementation relied heavily on Scheme's managed runtime, with ticks
 corresponding to virtual machine instructions and cleanup handled by the garbage
-collector.  Although the literature suggests using timer interrupts as an
+collector.  Although the authors mention timer interrupts as an
 alternative, this was apparently never tried.
 
 \textit{Lilt}~\cite{vanderwaart:cmucs2006} introduced a language for writing
@@ -95,7 +95,7 @@ preemption using timer interrupts, as proposed in the early Scheme engines
 literature.  They install a periodic signal handler responsible for scheduling
 tasks and migrating them between cores.  This lightweight runtime
 achieves average overall scheduling latencies in the tens of microseconds;
-however, as explained later in this section, developers to compromise on usability.
+however, as explained later in this section, the compromise is developer usability.
 
 \textit{Shinjuku}~\cite{Kaffes:nsdi2019} is an operating system designed to perform
 preemption at microsecond scale.  Built on the Dune framework~\cite{Belay:osdi2012},

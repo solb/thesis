@@ -19,7 +19,7 @@ Operation & Duration ($\mu{s}$) \\
 \hline
 \texttt{launch()} & $4.6 \pm 0.05$ \\
 \texttt{resume()} & $4.4 \pm 0.02$ \\
-\texttt{cancel()} & $4,767.7 \pm 1,168.7$ \\
+\texttt{cancel()} & $4767.7 \pm 1168.7$ \\
 \hline
 \texttt{fork()} & $207.5 \pm 79.3$ \\
 \texttt{pthread\_create()} & $32.5 \pm 8.0$
@@ -32,10 +32,11 @@ Operation & Duration ($\mu{s}$) \\
 
 Table~\ref{tab:libinger} shows the overhead of \textit{libinger}'s core functions.
 Each test uses hundreds of preemptible functions, each with its own stack and
-continuation, but sharing an implementation that immediately calls \texttt{pause()}.
+continuation, but sharing an implementation; the goal is to measure invocation time,
+so the function body immediately calls \texttt{pause()}.
 For comparison, we also measured the cost of calling \texttt{fork()} then
-\texttt{exit()}, and of calling \texttt{pthread\_create()} with an empty function;
-the parent
+\texttt{exit()}, and of calling \texttt{pthread\_create()} with an empty function,
+while the parent
 thread waits using \texttt{waitpid()} or \texttt{pthread\_join()}, respectively.
 
 The results show that, as long as preemptible functions are eventually allowed to run
@@ -53,7 +54,7 @@ its supply of libsets.
 	\hline
 	eager (load time) & $2 \pm 0$ & $14 \pm 0$ \\
 	lazy (runtime) & $100 \pm 1$ & $125 \pm 0$ \\
-	global variable & $0 \pm 0$ & $3,438 \pm 13$
+	global variable & $0 \pm 0$ & $3438 \pm 13$
 	\end{tabular}
 	\subcaption{Generic symbols, with and without \textit{libgotcha}}
 	\label{tab:libgotcha:symb}
@@ -176,7 +177,7 @@ dynamic libraries?}
 
 \subsection{Image decompression}
 
-While the Web benchmark showed preemptive scheduling at scale, it did not exercise
+The Web benchmark showed preemptive scheduling at scale, but does not exercise
 preemptible function cancellation.  To demonstrate this feature, we consider
 decompression bombs, files that expand exponentially when decoded, consuming enormous
 computation time in addition to their large memory footprint.

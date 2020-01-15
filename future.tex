@@ -4,21 +4,22 @@
 
 \dga{Need to discuss libgotcha here as well.}
 
-Like \textit{Shinjuku} and \textit{RT} before us, we have arrived at a preemptive
+Like \textit{Shinjuku} and \textit{RT} before us, we have presented a preemptive
 thread library; however, we have done so by building parallelism on top of
-not the other way around.  Because of this, we have a more flexible abstraction, and
-we intend to continue applying it to other problems.
+preemption,
+not the other way around.  This approach offers a more flexible abstraction that
+we intend to apply to other problems.
 
 \solb{Mention other use cases, such as the continuation-memoizing RPC server?}
 
-But we have also diverged from \textit{Shinjuku} and \textit{RT}
+We also diverge from \textit{Shinjuku} and \textit{RT}
 in another way:\@ unlike these systems, we make each thread responsible for
 its own preemption rather than serving preemption signals from a shared watchdog
 thread.  This decision was informed by back-of-the-envelope calculations based on
 Shinjuku's comparison of the end-to-end latency of bare-metal interprocessor
 interrupts (IPIs) versus Linux signals.
 
-While Shinjuku reports that IPIs take an average of only 1,993 cycles, compared to
+Although Shinjuku reports that IPIs take an average of only 1,993 cycles, compared to
 4,950 for signals (roughly 1:2.5), their sender/receiver breakdown of the latter
 number suggests significant latency savings by avoiding cross-core signaling:
 First, 343 of those cycles (6.9\%) are spent propagating the signal between the two
@@ -33,7 +34,7 @@ within 2x that of Shinjuku's custom operating system.  It is our hope that furth
 optimization of our system, including through the adoption of some of Shinjuku's
 continuation optimizations, will allow us to meet this performance goal.
 
-Of course, in our design, increasing the accuracy of preemption is a tradeoff:\@ more
+Of course, in our design, increasing the granularity of preemption is a tradeoff:\@ more
 frequent timer signals mean a tighter bound on timeout detection, but also a lower
 throughput of useful work.  The correct balance depends at least on the
 timeout value and size of the function, and also merits further study.
