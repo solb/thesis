@@ -1,0 +1,6 @@
+
+running 1 test
+test direct  ... bench: 868,653,430 ns/iter (+/- 1,883,324)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured; 3 filtered out
+

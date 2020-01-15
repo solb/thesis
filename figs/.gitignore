@@ -1,3 +1,5 @@
 !/cerberus2_nns16_surplus256k_*.pdf
 !/twooom_*.pdf
 !/twostacks.pdf
+
+!*.log
