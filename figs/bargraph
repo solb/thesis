@@ -28,6 +28,7 @@ def main():
 	else:
 		parser.add_argument('-i', type = int, default = 1, help = 'Visible label increment (for skipping some)')
 		parser.add_argument('-r', type = float, default = 0.0, help = 'Label rotation')
+		parser.add_argument('-p', type = float, default = 0.05, help = 'Padding before the first bar and after the last bar')
 	parser.add_argument('dest', help = 'Destination filename')
 	args = parser.parse_args()
 	errorbars = args.e
@@ -44,6 +45,7 @@ def main():
 	else:
 		increment = args.i
 		rotation = args.r
+		padding = args.p
 
 	title = input().strip().split(',')
 	labels = input().strip().split(',')
@@ -69,8 +71,6 @@ def main():
 		series = [[float(each[col]) for col in range(0, len(each), 2)] for each in series]
 
 	offsets = [index + 0.1 for index in range(len(data))]
-	if not linegraph:
-		pyplot.xticks(offsets, indeps, rotation = rotation, horizontalalignment = 'left' if rotation else 'center')
 
 	rendered_series = []
 	if linegraph:
@@ -81,17 +81,55 @@ def main():
 			if hlogscale:
 				pyplot.xscale('log')
 	else:
-		for index in range(len(series[0])):
-			rendered_series.append(pyplot.bar([each + index * 0.9 / len(series[0]) for each in offsets], [row[index] for row in series], 0.9 / len(series[0]), log = logscale, yerr = [row[0] for row in errors] if errorbars else None))
+		# This code assumes that there may be multiple bar clusters. Define a
+		# bar series to be the same bar across all of the bar
+		# clusters. Therefore, a cluster is a set of one bar from each bar
+		# series. We plot each bar series separately.
 
+		# The width of a bar.
+		width = 0.9 / len(series[0])
+		# Baseline xs. Each element anchors a cluster.
+		xs = [x + width / 2. + padding for x in range(len(series))]
+		# A list of all xticks, where each element is a tuple of (x loc, label).
+		xticks = []
+		# Loop over each bar series.
+		for bar in range(len(series[0])):
+			# For this bar series, the x locs are the width of a bar over from
+			# the x locs of the previous bar series. For the first bar series,
+			# use the baseline xs.
+			if bar > 0:
+				xs = [x + width for x in xs]
+			# Extract from each cluster the appropriate bar y value and error.
+			ys = [cluster[bar] for cluster in series]
+			yerrs = [e[bar] for e in errors]
+			# Add the xticks at the same x locs as the bars.
+			xticks.extend([(x, slabels[bar]) for x in xs])
+			# Plot this bar series.
+			pyplot.bar(xs, ys, width=width, log=logscale,
+					   yerr=yerrs if errorbars else None)
+		# The xticks are out of order, so sort them based on their x locs.
+		xticks = sorted(xticks, key=lambda x: x[0])
+		# Split the x locs and labels into separate arrays.
+		xticks_xs, xticks_labels = zip(*xticks)
+		# Plot the xticks all at once, possible with rotation.
+		pyplot.xticks(xticks_xs, xticks_labels, rotation=rotation,
+					  horizontalalignment='left' if rotation else 'center')
+		# Compute the right boundary of the plot. To understand the calculation,
+		# see where xs is originally defined.
+		xmax = xticks_xs[-1] + width / 2. + padding
+
+	if props and not linegraph:
+		# I do not understand what the props are used for, so I did not
+		# implement support for them.
+		raise Exception("props not supported for bargraphs")
 	for rs in rendered_series:
 		for prop in props:
 			getattr(rs, prop)(next(props[prop]))
 
 	if xmax:
-		pyplot.xlim(0 if linegraph else -0.5, xmax)
+		pyplot.xlim(0, xmax)
 	else:
-		pyplot.xlim(0 if linegraph else -0.5)
+		pyplot.xlim(0)
 
 	if not linegraph and logscale:
 		pyplot.ylim(10 ** 0, ymax)
@@ -103,12 +141,13 @@ def main():
 	pyplot.title(title[0])
 	pyplot.xlabel(xlabel)
 	pyplot.ylabel(ylabel)
-	if len(slabels) == 1:
-		pyplot.ylabel(*slabels)
-	elif vertlegend:
-		pyplot.legend(slabels, loc = 'center left', bbox_to_anchor = (vertlx, vertly))
-	else:
-		pyplot.legend(slabels)
+	if linegraph:
+		if len(slabels) == 1:
+			pyplot.ylabel(*slabels)
+		elif vertlegend:
+			pyplot.legend(slabels, loc = 'center left', bbox_to_anchor = (vertlx, vertly))
+		else:
+			pyplot.legend(slabels)
 
 	pyplot.savefig(args.dest, bbox_inches = 'tight')
 
