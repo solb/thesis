@@ -1,0 +1,116 @@
+#!/usr/bin/python3
+
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from itertools import cycle
+from matplotlib import pyplot
+from os.path import basename
+from sys import argv, stdin
+
+def main():
+	linegraph = basename(argv[0]) == 'linegraph'
+
+	url_of_sandwich = 'file:///usr/share/doc/python-matplotlib-doc/html/api/patches_api.html#matplotlib.patches.Patch.set_aa'
+	if linegraph:
+		url_of_sandwich = 'file:///usr/share/doc/python-matplotlib-doc/html/api/lines_api.html#matplotlib.lines.Line2D.set_aa'
+
+	parser = ArgumentParser(epilog = 'Each line beginning with \'--\' invokes a function listed at:\n\t' + url_of_sandwich + '\non each series, cycling through the rest of the comma-separated line for the arguments.', formatter_class = RawDescriptionHelpFormatter)
+	parser.add_argument('-e', action = 'store_true', help = 'Draw error bars using alternate columns')
+	parser.add_argument('-l', action = 'store_true', help = 'Use log scale')
+	if linegraph:
+		parser.add_argument('-x', type = float, default = 0.0, help = 'Custom x max')
+	parser.add_argument('-y', type = float, default = 0.0, help = 'Custom y max')
+	parser.add_argument('-v', action = 'store_true', help = 'Position legend to the right of the graph area')
+	parser.add_argument('-u', type = float, default = 1.0, help = 'x position for further customizing -v')
+	parser.add_argument('-w', type = float, default = 0.5, help = 'y position for further customizing -v')
+	if linegraph:
+		parser.add_argument('-o', action = 'store_true', help = 'Use *horizontal* log scale')
+		parser.add_argument('-s', action = 'store_true', help = 'Draw a scatterplot instead of a linegraph')
+	else:
+		parser.add_argument('-i', type = int, default = 1, help = 'Visible label increment (for skipping some)')
+		parser.add_argument('-r', type = float, default = 0.0, help = 'Label rotation')
+	parser.add_argument('dest', help = 'Destination filename')
+	args = parser.parse_args()
+	errorbars = args.e
+	logscale = args.l
+	ymax = args.y
+	vertlegend = args.v
+	vertlx = args.u
+	vertly = args.w
+	xmax = 0
+	if linegraph:
+		xmax = args.x
+		hlogscale = args.o
+		scatter = args.s
+	else:
+		increment = args.i
+		rotation = args.r
+
+	title = input().strip().split(',')
+	labels = input().strip().split(',')
+	xlabel = labels[0]
+	ylabel = title[1] if len(title) > 1 else ''
+	slabels = [labels[col] for col in range(1, len(labels), 2)] if errorbars else labels[1:]
+	props = {}
+	data = []
+	for line in stdin:
+		line = line.strip().split(',')
+		if line[0][:2] == '--':
+			props[line[0][2:]] = cycle(line[1:])
+			pass
+		else:
+			data.append(line)
+	if linegraph:
+		indeps = [float(each[0]) for each in data]
+	else:
+		indeps = [data[each][0] if not each % increment else '' for each in range(len(data))]
+	series = [[float(col) for col in each[1:]] for each in data]
+	errors = [[float(each[index]) for index in range(1, len(each), 2)] for each in series]
+	if errorbars:
+		series = [[float(each[col]) for col in range(0, len(each), 2)] for each in series]
+
+	offsets = [index + 0.1 for index in range(len(data))]
+	if not linegraph:
+		pyplot.xticks(offsets, indeps, rotation = rotation, horizontalalignment = 'left' if rotation else 'center')
+
+	rendered_series = []
+	if linegraph:
+		for index in range(len(series[0])):
+			rendered_series.append(pyplot.errorbar(indeps, [row[index] for row in series], yerr = [row[index] for row in errors] if errorbars else None, marker = '.', linestyle = '' if scatter else '-', capsize = 2)[0])
+			if logscale:
+				pyplot.yscale('log')
+			if hlogscale:
+				pyplot.xscale('log')
+	else:
+		for index in range(len(series[0])):
+			rendered_series.append(pyplot.bar([each + index * 0.9 / len(series[0]) for each in offsets], [row[index] for row in series], 0.9 / len(series[0]), log = logscale, yerr = [row[0] for row in errors] if errorbars else None))
+
+	for rs in rendered_series:
+		for prop in props:
+			getattr(rs, prop)(next(props[prop]))
+
+	if xmax:
+		pyplot.xlim(0 if linegraph else -0.5, xmax)
+	else:
+		pyplot.xlim(0 if linegraph else -0.5)
+
+	if not linegraph and logscale:
+		pyplot.ylim(10 ** 0, ymax)
+	elif ymax:
+		pyplot.ylim(0, ymax)
+	else:
+		pyplot.ylim(0)
+
+	pyplot.title(title[0])
+	pyplot.xlabel(xlabel)
+	pyplot.ylabel(ylabel)
+	if len(slabels) == 1:
+		pyplot.ylabel(*slabels)
+	elif vertlegend:
+		pyplot.legend(slabels, loc = 'center left', bbox_to_anchor = (vertlx, vertly))
+	else:
+		pyplot.legend(slabels)
+
+	pyplot.savefig(args.dest, bbox_inches = 'tight')
+
+if __name__ == '__main__':
+	main()
