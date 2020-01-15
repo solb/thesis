@@ -40,7 +40,7 @@ type and an algorithm for polling one in Listing~\ref{lst:future}.
 \begin{figure}
 \begin{lstlisting}[label=lst:future,caption=Futures adapter type (pseudocode)]
 function PreemptibleFuture(Future fut,
-                           Num timeout):
+                              Num timeout):
   function adapt():
     while poll(fut) == NotReady:
       pause()
