@@ -1,11 +1,10 @@
 \section{Shared state: \textit{libgotcha}}
 \label{sec:libgotcha}
 
-Having covered \textit{libinger} and \textit{libturquoise}, two libraries providing
-tools intended for use by application programmers, we now turn our attention to the
-reclusive \textit{libgotcha}.  Just as the shared state it protects is hidden behind
-deceptive nonreentrant interfaces, \textit{libgotcha} lurks behind the scenes of
-\textit{libinger}, which controls it using a private API.  Although the rest of the
+The \textit{libinger} and \textit{libturquoise} libraries provided
+tools intended for use by application programmers.  We now turn our attention to
+\textit{libgotcha}, which is acts more like a runtime, protecting hidden shared state
+throughout the application.  Although the rest of the
 program does not interact directly with \textit{libgotcha}, its presence has a
 profound effect:\@ once loaded into the process image, it employs a technique we call
 \textbf{selective relinking} to intercept and reroute many of the program's function
@@ -20,7 +19,7 @@ for protecting from concurrency violations (Section~\ref{sec:libinger:concurrenc
 
 Note that \textit{libgotcha} operates at runtime, which constrains its visibility
 into the program and therefore the granularity of its operation.  Because all static
-relocations (e.g., between the object files and static libraries linked to form the
+relocations (e.g., between the object files and static libraries linked into the
 program executable) have already been resolved at build time via the static linker,
 they are invisible to \textit{libgotcha}.  This means it cannot protect an
 application's use of nonreentrant static libraries:\@ from \textit{libgotcha}'s
@@ -30,7 +29,7 @@ any other part of the executable.  However, whenever a dynamic relocation is inv
 as the executable and shared libraries), \textit{libgotcha} can tell the nature of
 the symbol access and may choose to redirect it.
 
-Before explaining selective relinking and introducing the \textit{libgotcha} API, we
+Before introducing the \textit{libgotcha} API and explaining selective relinking, we
 will now briefly motivate the need for libgotcha by demonstrating how existing system
 interfaces fail to provide the isolation we require.
 
@@ -38,9 +37,9 @@ interfaces fail to provide the isolation we require.
 \subsection{Library copying: namespaces}
 
 Expanding a preemptible function's isolation boundary to include libraries requires
-providing it with private copies of said libraries.  POSIX has long provided a
+providing it with private copies of those libraries.  POSIX has long provided a
 \texttt{dlopen()} interface to the dynamic linker for loading shared objects at
-runtime; however, opening an already-loaded library does nothing more than increment
+runtime; however, opening an already-loaded library just increments
 a reference count, and this function is therefore of no use for making copies.
 Fortunately, the GNU dynamic linker (\texttt{ld-linux.so}) also supports
 Solaris-style \textbf{namespaces}, or isolated sets of loaded libraries.  For each
@@ -62,14 +61,14 @@ cross-library symbols.}
 
 \subsection{Library copying: libsets}
 
-We just saw that namespaces provide a form of isolation that is \textit{too strong}
+We just saw that namespaces provide too much isolation
 for our needs:\@ because they have completely independent dependency graphs, they
 never encounter any state from another namespace, even according to normal scoping
 rules.  However, we can use namespaces to build the abstraction we need, which we
-term a \textbf{libset}.  A libset is like a namespace, except that dynamic symbols
-resolved from within one libset (e.g., due to a function call or global variable
-access) may resolve to a definition of the same symbol in a different libset.  Such
-\textbf{libset switches} are controlled via \textbf{libgotcha}'s control API, shown
+term a \textbf{libset}.  A libset is like a namespace, except that the program can
+explicitly control whether symbols referenced within a libset resolve to the same
+libset or a different one.  Libraries such as \textit{libinger} configure such
+\textbf{libset switches} via \textbf{libgotcha}'s private control API, shown
 in Listing~\ref{lst:gotchaapi}.
 
 \begin{figure}
@@ -82,18 +81,15 @@ bool libset_reinit(libset_t);
 \end{lstlisting}
 \end{figure}
 
-Each thread has a \textbf{current libset}, which is the libset where the page of code
-that is presently being executed is mapped.  It also has a \textbf{next libset}, as
-exposed via the API, which is the libset to which dynamic symbols will resolved.  At
-any given time, a thread's two libset settings may or may not agree.
-
-This time we have the perfect abstraction:\@ when a
+This abstraction serves our needs:\@ when a
 \texttt{launch(\textnormal{\textit{F}})} happens, \textit{libinger} assigns an
 available \texttt{libset\_t} exclusively to that preemptible function.  Just before
 calling \textit{F}, it informs \textit{libgotcha} by calling
-\texttt{libset\_thread\_set\_next()}.  At this point, the current libset remains
-unchanged, so the preemptible function enjoys the expected access to the same static
-variables as the caller.
+\texttt{libset\_thread\_set\_next()} to set the thread's \textbf{next libset}:\@ any
+dynamic symbols used by the preemptible function will resolve to this libset.  The
+thread's \textbf{current libset} remains
+unchanged, however, so the preemptible function itself executes from the same libset
+as its caller and the two share access to the same dynamic global variables.
 
 There is one scoping issue still to resolve, though.  Dynamic symbols can resolve back
 to a definition in the same executable or shared object that used them, yet we want
@@ -108,11 +104,11 @@ object than the use result in a libset switch.
 At program start, \textit{libgotcha} initializes a pool of libsets, each with a full
 complement of the program's loaded object files.  Throughout the program's run
 \textit{libinger} tracks the libset assigned to each preemptible function that has
-started running but not yet reached successful completion.  Whenever a preemptible
-function does complete, \textit{libinger} assumes it has not corrupted its libset and
-returns it to the pool of available ones.  However, whenever a preemptible function
-is canceled rather than being allowed to return, \textit{libinger} is forced to
-assume that its libset's shared state has become corrupted.  It unloads and reloads
+started running but not yet reached successful completion.  When a preemptible
+function completes, \textit{libinger} assumes it has not corrupted its libset and
+returns it to the pool of available ones.  However, if a preemptible function
+is canceled rather than being allowed to return, \textit{libinger} must
+assume that its libset's shared state could be corrupted.  It unloads and reloads
 all objects in such a libset by calling \texttt{libset\_reinit()}.
 
 \solb{THESIS: Can we (re)initialize libsets more efficiently than that (e.g., by
@@ -168,18 +164,21 @@ clobbering registers.
 \solb{THESIS: Cover trick for defeating lazy PLT relocations' memoization.}
 
 Global variables' addresses are replaced with a unique address within a mapped but
-inaccessible page.  Whenever the program tries to read or write such an address, a
+inaccessible page.  When the program tries to read or write such an address, a
 segmentation fault occurs; \textit{libgotcha} handles the fault, disassembles the
 faulting instruction to determine the base address register of its address
-calculation, loads the address from this register, computes the location of the
-shadow GOT entry based on the fake address, checks the thread's next libset, and
-replaces the register's contents with the appropriate resolved address.  It then
-returns, causing the faulting instruction to be reexecuted with the valid address
-this time\footnote{Although it is possible to
+calculation\footnote{Although it is possible to
 generate code sequences that are incompatible with this approach (e.g., because they
 perform in-place pointer arithmetic on a register rather than using displacement-mode
 addressing with a base address), we employ a few heuristics based on the context of
-the instruction and fault; in our experience, these cover the common cases.}.
+the instruction and fault; in our experience, these cover the common cases.},
+loads the address from this register, computes the location of the
+shadow GOT entry based on the fake address, checks the thread's next libset, and
+replaces the register's contents with the appropriate resolved address.  It then
+returns, causing the faulting instruction to be reexecuted with the valid address
+this time\footnote{This does not break applications with existing segfault
+handlers:\@ we intercept their calls to \texttt{sigaction()}, and forward the signal
+along to their handler whenever we are unable to resolve an address ourselves.}
 
 \solb{THESIS: Give more details on global variable interpositions, especially
 heuristics.}
