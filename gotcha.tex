@@ -1,8 +1,6 @@
 \section{Shared state: \textit{libgotcha}}
 \label{sec:libgotcha}
 
-\solb{Replace the term ``whitelisted'' with ``uninterruptible.''}
-
 Having covered \textit{libinger} and \textit{libturquoise}, two libraries providing
 tools intended for use by application programmers, we now turn our attention to the
 reclusive \textit{libgotcha}.  Just as the shared state it protects is hidden behind
@@ -126,6 +124,15 @@ statically-allocated thread-local storage area.  We work around this by rebuildi
 glibc with an increased \texttt{TLS\_STATIC\_SURPLUS}.  It is useful to also raise
 the maximum number of namespaces by increasing \texttt{DL\_NNS}.
 
+\solb{THESIS: Explain the trouble with COPY relocations and the need to use
+\texttt{-fpic} as a workaround, ideally showing the performance ramifications
+(e.g., via the nginx experiment).}
+
+\solb{THESIS: Cover the \texttt{NODELETE} flag, ld.so monkey patching, and the
+library header rewriting trick I use to circumvent the issue.}
+
+\solb{THESIS: Describe (and hopefully even address) the monomorphization problem.}
+
 
 \subsection{Selective relinking}
 
@@ -147,6 +154,8 @@ type of symbol:
 
 \solb{THESIS: Draw a diagram explaining our custom tables and the series of lookups
 performed by \texttt{procedure\_linkage\_override()}.}
+
+\solb{THESIS: Talk about PLOTs and pointer comparison.}
 
 Functions' addresses are replaced by the address of a special function,
 \texttt{procedure\_linkage\_override()}.  Whenever the program tries to call one of
@@ -176,111 +185,42 @@ the instruction and fault; in our experience, these cover the common cases.}.
 heuristics.}
 
 
-\subsection{Principle}
+\subsection{Uninterruptible code}
 
-This brings us to unaware code, and the purpose of libgotcha.  This library employs
-a technique we call \textbf{selective relinking} to redirect at runtime each use of a
-function or global variable from outside the current object file\footnote{Whenevee we
-refer to an object file, we mean specifically a relocated object file (i.e.,
-executable or dynamic shared library); that is, one that is loaded into the process's
-memory image.} to one of numerous possible copies.  Depending on the symbol accessed,
-libinger uses libgotcha to accomplish one of two things:  In the common case, it
-gives each preemptible function its own copy of the symbol, complete with its own
-shared state.  Although this approach works for many libraries, it is sometimes
-inappropriate; for instance, using multiple copies of the dynamic allocator would
-cause them to manage the same heap with different free lists.  In such cases, it
-instead defers preemption until the function call into the library returns.
+The library-copying approach to memory isolation works for the common case, and
+allows us to handle most third-party libraries with no configuration.  However, in
+rare cases it is not appropriate.  The main example is the \texttt{malloc()} family
+of functions:\@ in Section~\ref{sec:intro}, we observed that not sharing a common
+heap complicates ownership transfer of objects allocated from inside a preemptible
+function.  To support dynamic memory allocation and a few other special cases,
+\textit{libgotcha} has an internal whitelist of \textbf{uninterruptible} symbols.
 
-The libgotcha API, show in Listing~\ref{lst:gotchaapi}, is based on something we term
-a \textbf{libset}, which is a full copy of the program's set of loaded
-libraries\footnote{Technically, a libset also includes the executable, which is
-needed in case one of the application's libraries uses preemptible functions that use
-symbols from the executable file.}.  Every program has a \textbf{main libset} (the
-program itself, as originally loaded), and libgotcha may open any number of
-additional libsets.  Users of libgotcha may explicitly reinitialize a libset, closing
-all its object files then reopening them to prepare for fresh use.  While execution
-is within one libset, it remains there until directed to change via one of two
-explicit mechanisms.
+From \textit{libgotcha}'s perspective, uninterruptible symbols differ only in what
+happens on a libset switch.  If code executing in any libset other than the
+application's \textbf{starting libset} calls an uninterruptible symbol, a libset
+switch still occurs, but it returns to the starting libset instead of the next
+libset; thus, all calls to an uninterruptible symbol are routed to a single,
+globally-shared definition.  When the function call that caused one of these special
+libset switches returns, the next libset is restored to its prior value.  The
+\textit{libgotcha} control API provides one more function,
+\texttt{libset\_register\_interruptible\_callback()}, that allows others to request
+a notification when one of these libset restorations occurs.
 
-The other mechanism for changing libsets is a \textbf{whitelist} of symbols (such as
-the dynamic allocator) that should share a single definition throughout the entire
-application.  Whenever a global variable from this list is accessed, libgotcha serves
-the definition from the main libset.  Whenever a function from the list is called,
-libgotcha automatically changes the thread's current libset to the main one before
-performing the call, then restores its original value as soon as the function
-returns.  Users of libgotcha can optionally install a callback function to be
-notified whenever the whitelist causes the current libset to change.
-
-One activates the functionality of libgotcha simply by linking against it:\@ once
-loaded into the process image, it immediately instruments the boundaries between
-object files.  The libinger shared library is statically linked against
-libgotcha\footnote{The attentive reader will notice that both libgotcha and libinger
-contain shared state (the current libset and thread preemption signal, respectively).
-To handle this, libgotcha automatically adds all the symbols defined by its own
-object file to the whitelist.  By statically linking to it, libinger gains this same
-protection.} so that the latter is active in any program using preemptible functions.
-Execution will not, of course, leave the main libset until such an action is
-requested via libgotcha's API.
-
-Use of this API by libinger is straightforward.  The \texttt{launch()} function
-allocates a new libset by either using an unused one, reusing one from a preemptible
-function that ran to completion, or reinitializing one from a preemptible function
-that was canceled prematurely.  It installs
-this as the current libset just before enabling preemption.  Right after checking
-whether the received signal was intended for the current thread, the preemption
-signal handler checks the thread's current libset; in the case of the main one
-(indicating the preemptible function is currently in whitelisted code), it blocks the
-preemption signal and immediately returns, effectively deferring
-preemption\footnote{When whitelisting the dynamic allocator, it is important not to
-whitelist all of libc as collateral damage, since preemptible functions could easily
-exploit this to run forever (e.g., by performing their work in the \texttt{qsort()}
-function's comparator callback).  Fortunately, libc uses dynamic calls when it needs
-to invoke the allocator internally, allowing us to whitelist that component alone.}.
-The deferral is not indefinite:\@ libinger uses libgotcha's callback mechanism to
-both call the handler and unblock the signal as soon as the function returns.
+Because it is never safe to preempt while executing in the starting libset, the
+first thing the \textit{libinger} preemption handler described in
+Section~\ref{sec:libinger:signals} does is check whether the thread's next libset
+is set to the starting one; if so, it disables preemption interrupts and immediately
+returns.  However, \textit{libinger} registers an interruptible callback that it uses
+to reenable preemption as soon as any uninterruptible function returns.
 
 \solb{THESIS: Draw a figure depicting what happens w.r.t. the current libset,
 preemptibility, and the notification callbacks when a preemptible function calls
 an uninterruptible function (say, malloc()).}
 
-\paragraph{Preserving equality comparisons}
-
-A subtle but important point in the semantics of dynamic linking is that pointers to
-the same definition must compare equal, regardless of where they are obtained.  For
-instance,
-the reader might notice that invocation is not the only thing a program can do with a
-function:\@ it might also pass around the function's address.  In fact, after taking
-the address, it could pass it to code within a different object file, which might
-compare it\footnote{In order for such comparisons to correctly indicate whether the
-same code will be run, the compiler loads such addresses directly from the GOT via
-instructions of the special position-independent relocation form
-\texttt{mov~\textit{symbol}@gotpcrel(\%rip),~\%\textit{dest}}, and the dynamic linker
-resolves the calls and populates their GOT entries eagerly at load time.}.  To avoid
-breaking pointer comparison, libgotcha makes sure to share the same PLOT
-stub between all GOT entries to a given symbol that use this type of
-relocation.  As long as the current libset remains the same between the time of a
-function pointer comparison and the time of its invocation, such a comparison
-guarantees that \texttt{procedure\_linkage\_override()} will dispatch to the same
-copy when invoked using either pointer.
-
-\solb{THESIS: Explain the trouble with COPY relocations and the need to use
-\texttt{-fpic} as a workaround, ideally showing the performance ramifications
-(e.g., via the nginx experiment).}
-
-\solb{THESIS: Cover the \texttt{NODELETE} flag, ld.so monkey patching, and the
-library header rewriting trick I use to circumvent the issue.}
-
-\solb{THESIS: Describe (and hopefully even address) the monomorphization problem.}
-
-\paragraph{Execution environment}
-
-\vspace{\parsep}
-In case the reader presently struggles to reason about the implications of libgotcha
-in the somewhat complex context of preemptible functions, the following section gives
-a simpler example that seeks to illuminate the situation.
 
 \subsection{Case study: Auto async-signal safety}
-\label{sec:statefulness}
+
+\solb{Replace the term ``whitelisted'' with ``uninterruptible.''}
 
 There are two ways to weaken the semantics of this program to prevent the deadlock
 without modifying the program's source code.  (1) We can elide the file descriptor
