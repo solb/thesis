@@ -58,6 +58,9 @@ breaks lexical scoping.  For instance, the user would expect static variables in
 object file where \textit{F} is defined to be visible from both inside and outside of
 the preemptible function, since they represent explicitly-shared state.
 
+\solb{THESIS: Cover the algorithm for identifying GOT entries that correspond to
+cross-library symbols.}
+
 
 \subsection{Library copying: libsets}
 
@@ -122,6 +125,55 @@ practice initializing more than one namespace tends to exhaust the
 statically-allocated thread-local storage area.  We work around this by rebuilding
 glibc with an increased \texttt{TLS\_STATIC\_SURPLUS}.  It is useful to also raise
 the maximum number of namespaces by increasing \texttt{DL\_NNS}.
+
+
+\subsection{Selective relinking}
+
+Most of the complexity of \textit{libgotcha} lies in the implementation of selective
+relinking, the mechanism underlying libset switches.
+
+Whenever a program uses a dynamic symbol, it looks up its address in a data structure
+called the Global Offset Table (GOT).  As it loads the program, \texttt{ld-linux.so}
+eagerly resolves the addresses of all global variables and some functions and stores
+them in the GOT\footnote{Some other functions are instead resolved lazily at their
+first invocation.}.
+
+Selective relinking works by shadowing the GOT\footnote{Hence the name
+\textit{libGOTcha}.}.  As soon as \texttt{ld-linux.so} finishes populating
+the GOT, \textit{libgotcha} replaces every entry that should trigger a libset switch
+with a fake address, storing the original one in its shadow GOT, which is organized
+by the libset that houses the definition.  The fake address used depends upon the
+type of symbol:
+
+\solb{THESIS: Draw a diagram explaining our custom tables and the series of lookups
+performed by \texttt{procedure\_linkage\_override()}.}
+
+Functions' addresses are replaced by the address of a special function,
+\texttt{procedure\_linkage\_override()}.  Whenever the program tries to call one of
+the affected functions, this intermediary checks the thread's next libset, looks up
+the address of the appropriate definition in the shadow GOT, and jumps to it.
+Because \texttt{procedure\_linkage\_override()} runs between the caller's
+\texttt{call} instruction and the real function, it is written in assembly to avoid
+clobbering registers.
+
+\solb{THESIS: Cover trick for defeating lazy PLT relocations' memoization.}
+
+Global variables' addresses are replaced with a unique address within a mapped but
+inaccessible page.  Whenever the program tries to read or write such an address, a
+segmentation fault occurs; \textit{libgotcha} handles the fault, disassembles the
+faulting instruction to determine the base address register of its address
+calculation, loads the address from this register, computes the location of the
+shadow GOT entry based on the fake address, checks the thread's next libset, and
+replaces the register's contents with the appropriate resolved address.  It then
+returns, causing the faulting instruction to be reexecuted with the valid address
+this time\footnote{Although it is possible to
+generate code sequences that are incompatible with this approach (e.g., because they
+perform in-place pointer arithmetic on a register rather than using displacement-mode
+addressing with a base address), we employ a few heuristics based on the context of
+the instruction and fault; in our experience, these cover the common cases.}.
+
+\solb{THESIS: Give more details on global variable interpositions, especially
+heuristics.}
 
 
 \subsection{Principle}
@@ -191,68 +243,6 @@ both call the handler and unblock the signal as soon as the function returns.
 preemptibility, and the notification callbacks when a preemptible function calls
 an uninterruptible function (say, malloc()).}
 
-\subsection{Mechanics}
-
-The rest of this section covers the implementation of libgotcha, which isolates
-shared state at the granularity of object files by intercepting many dynamic function
-calls and global variable accesses.  To accomplish this, it must collect all uses of
-dynamic symbols, discriminate between intra- and \textbf{cross-library} uses of those
-symbols, and interpose cross-library uses by shadowing the existing structures that
-support dynamic symbol resolution.  The libgotcha library includes a constructor that
-gets invoked by the dynamic linker after all shared libraries have been loaded but
-before the call to \texttt{main()}:\@ the aforementioned steps are performed here so
-interposing is already active by the time control is transferred to the application.
-
-\paragraph{Just enough dynamic linking}
-
-\solb{Define GOT\footnote{It is this structure that gives \textit{lib\textbf{got}cha}
-its name.}}
-
-\paragraph{Identifying cross-library symbol uses}
-
-It is important to realize that dynamic calls and references are resolved based on
-the name of a symbol, which may be ambiguous between multiple libraries within the
-same namespace; as such, the library associated with each dynamic relocation is not
-determined until runtime.  In fact, a dynamic relocation might even resolve back to
-the same object file that contains it; this is most common when a shared library
-makes an internal reference to one of its own public interfaces (since the
-application might replace that public interface with its own implementation or one
-from a different library).  Note that other internal references within such a shared
-library are linked statically, leaving no way to locate them at runtime.  In order to
-provide consistent semantics, we only instrument cross-library variable
-references and function calls, where the use and definition occur in different object
-files.
-
-\solb{THESIS: Cover the algorithm for identifying GOT entries that correspond to
-cross-library symbols.}
-
-\paragraph{Intercepting cross-library calls}
-
-Dynamic linking gives us a powerful tool for intercepting cross-library function
-calls:\@ each PLT entry already executes by branching to an address stored in the
-GOT, so the libgotcha constructor has only to change the latter to one of its own
-functions, and any calls through that PLT entry will be sent to libgotcha instead.
-
-The constructor allocates one or more executable pages full of custom PLT-like
-stubs, which we refer to as the \textbf{procedure linkage override tables (PLOTs)}.
-Each PLOT is associated with one \textbf{shadow GOT} for each namespace:\@ when a
-particular PLOT stub is executed, it pushes an index to the stack and calls a
-function, \texttt{procedure\_linkage\_override()}, that decides which libset the call
-should target, locates the corresponding shadow GOT, and transfers control to the
-address listed at the appropriate index in that table.  (Because this function
-is injected into the "middle" of function calls, it is written in assembly to avoid
-clobbering any of the application's registers.)  The constructor sets up this system
-by replacing each GOT entry corresponding to a cross-library call with a fresh PLOT
-entry, storing its previous value in the shadow GOT for the main namespace.  It then
-opens a fixed number of additional libsets, redirects the cross-library calls from
-each new copy of a library to the same PLOT stubs as before, and creates a shadow GOT
-for each libset.
-
-\solb{THESIS: Cover trick for defeating lazy PLT relocations' memoization.}
-
-\solb{THESIS: Draw a diagram explaining our custom tables and the series of lookups
-performed by \texttt{procedure\_linkage\_override()}.}
-
 \paragraph{Preserving equality comparisons}
 
 A subtle but important point in the semantics of dynamic linking is that pointers to
@@ -273,32 +263,6 @@ function pointer comparison and the time of its invocation, such a comparison
 guarantees that \texttt{procedure\_linkage\_override()} will dispatch to the same
 copy when invoked using either pointer.
 
-\paragraph{Intercepting cross-library references}
-
-Handling references to global data besides functions is more challenging, and less
-efficient, because such accesses use the aforementioned position-independent
-relocation but do not include a PLT-style codepath for us to co-opt.
-In order to capture (hopefully rare) cross-library references to global variables,
-we use a different approach.  After each shadow GOT page, we allocate an inaccessible
-page with no protection bits set.  Each time the libgotcha constructor encounters a
-relocation entry corresponding to a data symbol, we migrate the contents of its GOT
-entry into an available shadow GOT entry, replacing it with an address the same
-number of bytes into the shadow GOT's corresponding inaccessible page\footnote{For
-security reasons, the dynamic linker leaves the portion of each GOT corresponding to
-eargerly-resolved symbol uses read-only.  We restore write access to these entries
-using \texttt{mprotect()}, then remove it again after updating the entries.}.  Thus,
-whenever the program takes the address of a particular symbol, it gets the same fake
-address.  Any attempt to read from or write to this address results in a segmentation
-fault, which libgotcha catches; we then look up the real address in the shadow GOT
-corresponding to the currently-selected libset, disassemble the offending
-instruction(s), and replace the contents of the memory-address register with the
-found address.  Once the signal handler returns, the instruction executes again, this
-time with a valid memory address in its register\footnote{Although it is possible to
-generate code sequences that are incompatible with this approach (e.g., because they
-perform in-place pointer arithmetic on a register rather than using displacement-mode
-addressing with a base address), in our experience public shared data is rare enough
-that we have not yet encountered any cases where programs do this.}.
-
 \solb{THESIS: Explain the trouble with COPY relocations and the need to use
 \texttt{-fpic} as a workaround, ideally showing the performance ramifications
 (e.g., via the nginx experiment).}
@@ -309,18 +273,6 @@ library header rewriting trick I use to circumvent the issue.}
 \solb{THESIS: Describe (and hopefully even address) the monomorphization problem.}
 
 \paragraph{Execution environment}
-
-While libinger in principle runs on top of an unmodified version of the GNU dynamic
-linker, in practice initializing more than one namespace tends to exhaust the
-statically-allocated thread-local storage area.  We currently work around this
-problem by rebuilding \texttt{ld.so} with the \texttt{TLS\_STATIC\_SURPLUS} macro set
-to a larger value.  At the same time, it is possible to raise the default limit
-of 16 linker namespaces by increasing the value of \texttt{DL\_NNS}.  With this
-change, the only remaining scaling limit is the number of kernel threads running
-timed functions, which is limited to the number of signals earmarked for preemption;
-however, this number could be increased to over 32 by using realtime
-signals~\cite{signal-manpage}, and beyond by rebuilding Linux and glibc with a larger
-\texttt{\_NSIG}.
 
 \vspace{\parsep}
 In case the reader presently struggles to reason about the implications of libgotcha
