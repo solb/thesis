@@ -161,8 +161,10 @@ We varied the percentage of long requests from 0\% to 2\% and measured the round
 median and tail latencies of short requests and the throughput of all requests.
 Figure~\ref{fig:hyper} plots the results for three server configurations:\@
 \texttt{baseline} is cooperative scheduling via \textit{tokio-threadpool},
-\texttt{overhead} is the same but with \textit{libgotcha} loaded to assess the
-impact of slower dynamic function calls, and \texttt{preempt} is preemptive
+\texttt{baseline+libgotcha} is the same but with \textit{libgotcha} loaded to assess
+the
+impact of slower dynamic function calls, and \texttt{baseline+libturquoise} is
+preemptive
 scheduling via \textit{libturquoise}.  The experiment shows that the preemptible
 functions stack keeps the tail latency of short requests scaling linearly at the cost
 of a

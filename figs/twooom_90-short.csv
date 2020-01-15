@@ -1,5 +1,5 @@
 Short 90% tail latency vs. long:short request ratio,90% latency of SHORT requests (μs)
-Prevalence of long requests (%),baseline,overhead,preempt
+Prevalence of long requests (%),baseline,baseline+libgotcha,baseline+libturquoise
 0,1329.2857142857142,1293.5714285714287,1295.7142857142858
 0.2,3222.1428571428573,5437.857142857143,1768.5714285714287
 0.4,18074.285714285714,23924.285714285714,2280.714285714286

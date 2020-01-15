@@ -1,5 +1,5 @@
 Throughput vs. long:short request ratio,Throughput of ALL requests (reqs/s)
-Prevalence of long requests (%),baseline,overhead,preempt
+Prevalence of long requests (%),baseline,baseline+libgotcha,baseline+libturquoise
 0,1732.680714285714,1661.560714285714,1732.734285714286
 0.2,1445.3678571428572,1343.2378571428576,1441.1371428571426
 0.4,1248.0321428571428,1143.3228571428572,1249.1271428571429
