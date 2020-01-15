@@ -6,6 +6,14 @@ from matplotlib import pyplot
 from os.path import basename
 from sys import argv, stdin
 
+
+def autolabel(rects, ax, labels):
+	""" Originally from: http://composition.al/blog/2015/11/29/a-better-way-to-add-labels-to-bar-charts-with-matplotlib/ """
+	for i, rect in enumerate(rects):
+		ax.text(rect.get_x() + rect.get_width()/2., 0,
+				'	 ' + labels[i], ha='center', va='bottom', rotation=90)
+
+
 def main():
 	linegraph = basename(argv[0]) == 'linegraph'
 
@@ -73,8 +81,6 @@ def main():
 	if errorbars:
 		series = [[float(each[col]) for col in range(0, len(each), 2)] for each in series]
 
-	offsets = [index + 0.1 for index in range(len(data))]
-
 	rendered_series = []
 	if linegraph:
 		pyplot.title(title[0])
@@ -88,25 +94,20 @@ def main():
 			if hlogscale:
 				pyplot.xscale('log')
 	else:
-		subfigs_num = 2 if split else 1
-		width = 4
-		height = 6
-		fig, subfigs = pyplot.subplots(subfigs_num, 1, sharex=True, figsize=(width, height))
+		fig, subfigs = pyplot.subplots(2 if split else 1, 1, sharex=True, figsize=(4, 6))
 
 		if split:
 			# Extract two subfigures.
 			ax1, ax2 = subfigs
+			# The axes on which to put the x-axis and DEADLOCK labels.
+			label_ax = ax2
 
-			# Set figure and axis titles.
-			fig.suptitle(title[0])
-			ax2.set_xlabel(xlabel)
-			ax1.yaxis.set_label_coords(-0.17, -0.1)
-
+			# Configure custom coordinates for the y-axis label.
+			ax1.yaxis.set_label_coords(-0.13, -0.1)
 			# Set axis visibility.
 			ax1.spines['bottom'].set_visible(False)
 			ax1.tick_params(axis='x', which='both', bottom=False)
 			ax2.spines['top'].set_visible(False)
-
 			# Set lower axes y limits.
 			ax2.set_ylim(0, ymax)
 			# Calculate and set upper axes y limits. Figure out the maximum and
@@ -133,17 +134,28 @@ def main():
 		else:
 			# Extract only a single subfigure.
 			ax1 = subfigs
+			# The axes on which to put the x-axis and DEADLOCK labels.
+			label_ax = ax1
 
-			# Set figure and axis titles.
-			ax1.set_xlabel(xlabel)
-			ax1.set_ylabel(ylabel)
+		# Set figure title and axes labels.
 		fig.suptitle(title[0])
 		ax1.set_ylabel(ylabel)
+		label_ax.set_xlabel(xlabel)
 
 		# This code assumes that there may be multiple bar clusters. Define a
 		# bar series to be the same bar across all of the bar
 		# clusters. Therefore, a cluster is a set of one bar from each bar
 		# series. We plot each bar series separately.
+
+		idx = slabels.index('pthread_create()') + 1
+		slabels.insert(idx, 'pthread_create()+async')
+		bar_labels = []
+		for i in range(len(series)):
+			series[i].insert(idx, 0)
+			errors[i].insert(idx, 0)
+			bar_labels_new = [''] * len(series[0])
+			bar_labels_new[idx] = 'DEADLOCK'
+			bar_labels.extend(bar_labels_new)
 
 		# The width of a bar.
 		width = 0.9 / len(series[0])
@@ -151,24 +163,26 @@ def main():
 		xs = [x + width / 2. + padding for x in range(len(series))]
 		# A list of all xticks, where each element is a tuple of (x loc, label).
 		xticks = []
+		lower_rects = []
 		# Loop over each bar series.
-		for bar in range(len(series[0])):
+		for br in range(len(series[0])):
 			# For this bar series, the x locs are the width of a bar over from
 			# the x locs of the previous bar series. For the first bar series,
 			# use the baseline xs.
-			if bar > 0:
+			if br > 0:
 				xs = [x + width for x in xs]
 			# Extract from each cluster the appropriate bar y value and error.
-			ys = [cluster[bar] for cluster in series]
-			yerrs = [e[bar] for e in errors]
+			ys = [cluster[br] for cluster in series]
+			yerrs = [e[br] for e in errors]
 			# Add the xticks at the same x locs as the bars.
-			xticks.extend([(x, slabels[bar]) for x in xs])
+			xticks.extend([(x, slabels[br]) for x in xs])
 			# Plot this bar series.
-			ax1.bar(xs, ys, width=width, log=logscale,
-					yerr=yerrs if errorbars else None)
+			lower_rects_new = ax1.bar(xs, ys, width=width, log=logscale,
+									  yerr=yerrs if errorbars else None)
 			if split:
-				ax2.bar(xs, ys, width=width, log=logscale,
-						yerr=yerrs if errorbars else None)
+				lower_rects_new = ax2.bar(xs, ys, width=width, log=logscale,
+										  yerr=yerrs if errorbars else None)
+			lower_rects.extend(lower_rects_new)
 
 		# The xticks are out of order, so sort them based on their x locs.
 		xticks = sorted(xticks, key=lambda x: x[0])
@@ -181,10 +195,15 @@ def main():
 		# see where xs is originally defined.
 		xmax = xticks_xs[-1] + width / 2. + padding
 
+		# Apply DEADLOCK labels.
+		assert len(lower_rects) == len(bar_labels), \
+			'Mismatch between number of bars and number of bar labels.'
+		autolabel(lower_rects, label_ax, bar_labels)
+
 	if props and not linegraph:
 		# I do not understand what the props are used for, so I did not
 		# implement support for them.
-		raise Exception("props not supported for bargraphs")
+		raise Exception('props not supported for bar graphs')
 	for rs in rendered_series:
 		for prop in props:
 			getattr(rs, prop)(next(props[prop]))
@@ -196,8 +215,6 @@ def main():
 
 	if not linegraph and logscale:
 		pyplot.ylim(10 ** 0, ymax)
-	elif ymax:
-		pyplot.ylim(0, ymax)
 	else:
 		pyplot.ylim(0)
 
@@ -209,8 +226,8 @@ def main():
 		else:
 			pyplot.legend(slabels)
 
-
 	pyplot.savefig(args.dest, bbox_inches = 'tight')
+
 
 if __name__ == '__main__':
 	main()
