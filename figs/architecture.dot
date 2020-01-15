@@ -7,8 +7,8 @@ strict graph {
 	{
 		node [shape=oval];
 
-		serialclient [label="Client code\n(serial)"];
-		parallelclient [label="Client code\n(parallel)"];
+		serialclient [label="Your program\n(if synchronous)"];
+		parallelclient [label="Your program\n(if parallel)"];
 		libassafe [label=<Client libraries<br/>(e.g., <i>libas-safe</i>)>];
 	}
 
