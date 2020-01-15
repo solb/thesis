@@ -218,30 +218,35 @@ preemptibility, and the notification callbacks when a preemptible function calls
 an uninterruptible function (say, malloc()).}
 
 
-\subsection{Case study: Auto async-signal safety}
+\subsection{Case study: auto async-signal safety}
 
-\solb{Replace the term ``whitelisted'' with ``uninterruptible.''}
+We have now described the role of \textit{libgotcha}, and how \textit{libinger} uses
+it to handle nonreentrancy.  Before concluding our discussion, however, we note that
+\textit{libgotcha} has other interesting uses in its own right.
 
-There are two ways to weaken the semantics of this program to prevent the deadlock
-without modifying the program's source code.  (1) We can elide the file descriptor
-lock, which in this case may occasionally allow the signal handler's output to
-interleave with any (hypothetical) output from the main program (if the signal
-handler interrupts a \texttt{write} syscall from the stream library implementation).
-(2) We can defer handling of any signal that arrives during a call to
-\texttt{fflush()} until that function returns.
+As an example, we have used it to implement a small library, \textit{libas-safe},
+that transparently allows an application's signal handlers to call functions that
+are not async-signal safe, which is forbidden by POSIX because it is normally unsafe.
 
-In 127 lines of C, we wrote a signal-handling client library, \textit{libas-safe},
-that can use libgotcha to automatically transform the program in either of these
-ways.  It
-injects code before \texttt{main()} to switch to a new libset, and provides a custom
-implementation of \texttt{sigaction()} that switches the current libset back to the
-main one while each signal handler is running.  This is enough to achieve
-transformation (1), since it causes \texttt{main()} and \texttt{handler()} to use
-distinct copies of the buffered \texttt{stdio} object.  One other \textit{libas-safe}
-feature enables transformation (2):\@ whenever the main libset is already selected
-when a signal handler runs, that handler is deferred (using libgotcha's callback
-mechanism) until the current whitelisted call returns.  This transformation can be
-demonstrated for this program by whitelisting the stdio functions and streams.
+Written in 127 lines of C, \textit{libas-safe} works by injecting code before
+\texttt{main()} to switch the program away from its starting libset.  It shadows
+the system's \texttt{sigaction()}, providing an implementation that:
+\begin{itemize}
+\item Provides copy-based library isolation for signal handlers by switching the
+	thread's next libset to the starting libset while a signal handler is running.
+\item Allows use of uninterruptible code such as \texttt{malloc()} from a signal
+	handler by deferring signal arrival whenever the thread is already executing
+	in the starting libset, then delivering the deferred signal when the
+	interruptible callback fires.
+\end{itemize}
+
+In addition to making signal handlers a lot easier to write, \textit{libas-safe} can
+be used to automatically ``fix'' deadlocks and other misbehaviors in misbehaved
+signal-handling programs just by loading it via \texttt{LD\_PRELOAD}.
+
+We can imagine extending \textit{libgotcha} to support other use cases, such as
+simultaneously using different versions or build configurations of the same library
+from a single application.
 
 \solb{THESIS: Walk through example(s) of programs that are automatically repaired by
 \textit{libas-safe}.}
