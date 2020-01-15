@@ -1,3 +1,0 @@
-PNG decode time on 332-KB benign image,Decode time (ms)
-Decompression bomb mitigation strategy,none,,pthread_create(),,fork(),,fork() w/o libgotcha,,launch(),
-,6.991713,0.013647,7.755877,0.357158,12.449109,0.276033,8.554523,0.517110,7.145726,0.015520
