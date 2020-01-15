@@ -85,6 +85,7 @@ required runtime environment.}}
 
 
 \subsection{Automatic handling of shared state}
+\label{sec:libinger:reentrancy}
 
 As we found in Section~\ref{sec:intro}, a key design challenge facing
 \textit{libinger} is the shared state problem:  Suppose a preemptible function
@@ -113,6 +114,7 @@ design and implementation challenges, which we cover when we introduce
 
 
 \subsection{Safe concurrency}
+\label{sec:libinger:concurrency}
 
 Automatically handling shared state arising from nonreentrant library interfaces is
 needed because the sharing is transparent to the programmer.  A

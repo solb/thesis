@@ -3,6 +3,39 @@
 
 \solb{Replace the term ``whitelisted'' with ``uninterruptible.''}
 
+Having covered \textit{libinger} and \textit{libturquoise}, two libraries providing
+tools intended for use by application programmers, we now turn our attention to the
+reclusive \textit{libgotcha}.  Just as the shared state it protects is hidden behind
+deceptive nonreentrant interfaces, \textit{libgotcha} lurks behind the scenes of
+\textit{libinger}, which controls it using a private API.  Although the rest of the
+program does not interact directly with \textit{libgotcha}, its presence has a
+profound effect:\@ once loaded into the process image, it employs a technique we call
+\textbf{selective relinking} to intercept and reroute many of the program's function
+calls and global variable accesses at runtime.
+
+The goal of \textit{libgotcha} is to establish around every preemptible function a
+memory isolation boundary encompassing whatever third-party libraries that function
+interacts with (Section~\ref{sec:libinger:reentrancy}).  The result is that the only
+state shared across the boundary is that explicitly passed between via arguments,
+return value, or closure---the same state the application programmer is responsible
+for protecting from concurrency violations (Section~\ref{sec:libinger:concurrency}).
+
+Note that \textit{libgotcha} operates at runtime, which constrains its visibility
+into the program and therefore the granularity of its operation.  Because all static
+relocations (e.g., between the object files and static libraries linked to form the
+program executable) have already been resolved at build time via the static linker,
+they are invisible to \textit{libgotcha}.  This means it cannot protect an
+application's use of nonreentrant static libraries:\@ from \textit{libgotcha}'s
+perspective, interactions with such a library are indistinguishable from those with
+any other part of the executable.  However, whenever a dynamic relocation is involved
+(e.g., a function call or global variable access between runtime-loaded objects such
+as the executable and shared libraries), \textit{libgotcha} can tell the nature of
+the symbol access and may choose to redirect it.
+
+Before explaining selective relinking and introducing the \textit{libgotcha} API, we
+will now briefly motivate the need for libgotcha by demonstrating how existing system
+interfaces fail to provide the isolation we require.
+
 \subsection{Principle}
 
 This brings us to unaware code, and the purpose of libgotcha.  This library employs
