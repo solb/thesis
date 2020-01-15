@@ -10,11 +10,14 @@ nonreentrancy support makes it far from general purpose.)
 
 While the preemptible function is a fundamentally synchronous abstraction, its
 simplicity makes it readily composable, and indeed, well-suited to implementing
-preemptive threading.  To demonstrate this, we have created a
-proof-of-concept library, \textit{libturquoise}\footnote{so called because it
-implements ``green threading with a twist''}, by modifying the
+preemptive threading.  As a proof of concept, we have created a
+preemptively-scheduled userland thread library, \textit{libturquoise}\footnote{so
+called because it implements ``green threading with a twist''}, by modifying the
 \textit{tokio-threadpool}~\cite{www-tokio-threadpool} work-stealing scheduler from
-the Rust ecosystem to wrap each future in a preemptible function.  We did this in
+the Rust futures ecosystem.
+
+To migrate the thread pool workers to preemptive scheduling, we made them poll each
+task future from within a preemptible function.  We did this in
 just 120 new lines of Rust, 50 of them added to version 0.1.16 of the thread library
 and
 70 spent augmenting \textit{libinger}'s Rust API with a reusable \textbf{preemptible
@@ -31,10 +34,15 @@ have had a turn.
 \subsection{Preemptible futures}
 
 For seamless interoperation between preemptible functions and the futures ecosystem,
-we built a preemptible future adapter that wraps the \textit{libinger} API.  Because
+we built a preemptible future adapter that wraps the \textit{libinger} API.  This
+can be used to pass preemptible functions into a platform designed to process
+futures.
+
+Because
 of languages' differing futures, this integration is not portable like the core API.
 Fortunately, its implementation is a straightforward application of
-\texttt{pause()}:\@ we present the general construction of the preemptible future
+\texttt{pause()} to propagate cooperative yields across the preemptive function
+boundary:\@ we present the general construction of the preemptible future
 type and an algorithm for polling one in Listing~\ref{lst:future}.
 
 \begin{figure}
