@@ -37,7 +37,7 @@ will now briefly motivate the need for libgotcha by demonstrating how existing s
 interfaces fail to provide the isolation we require.
 
 
-\subsection{Library copying}
+\subsection{Library copying: namespaces}
 
 Expanding a preemptible function's isolation boundary to include libraries requires
 providing it with private copies of said libraries.  POSIX has long provided a
@@ -57,6 +57,49 @@ of the whole application and transfer control into that namespace's copy of
 breaks lexical scoping.  For instance, the user would expect static variables in the
 object file where \textit{F} is defined to be visible from both inside and outside of
 the preemptible function, since they represent explicitly-shared state.
+
+
+\subsection{Library copying: libsets}
+
+We just saw that namespaces provide a form of isolation that is \textit{too strong}
+for our needs:\@ because they have completely independent dependency graphs, they
+never encounter any state from another namespace, even according to normal scoping
+rules.  However, we can use namespaces to build the abstraction we need, which we
+term a \textbf{libset}.  A libset is like a namespace, except that dynamic symbols
+resolved from within one libset (e.g., due to a function call or global variable
+access) may resolve to a definition of the same symbol in a different libset.  Such
+\textbf{libset switches} are controlled via \textbf{libgotcha}'s control API, shown
+in Listing~\ref{lst:gotchaapi}.
+
+\begin{figure}
+\begin{lstlisting}[label=lst:gotchaapi,caption=libgotcha C interface]
+typedef long libset_t;
+
+bool libset_thread_set_next(libset_t);
+libset_t libset_thread_get_next(void);
+bool libset_reinit(libset_t);
+\end{lstlisting}
+\end{figure}
+
+Each thread has a \textbf{current libset}, which is the libset where the page of code
+that is presently being executed is mapped.  It also has a \textbf{next libset}, as
+exposed via the API, which is the libset to which dynamic symbols will resolved.  At
+any given time, a thread's two libset settings may or may not agree.
+
+This time we have the perfect abstraction:\@ when a
+\texttt{launch(\textnormal{\textit{F}})} happens, \textit{libinger} assigns an
+available \texttt{libset\_t} exclusively to that preemptible function.  Just before
+calling \textit{F}, it informs \textit{libgotcha} by calling
+\texttt{libset\_thread\_set\_next()}.  At this point, the current libset remains
+unchanged, so the preemptible function enjoys the expected access to the same static
+variables as the caller.
+
+There is one scoping issue still to resolve, though.  Dynamic symbols can resolve back
+to a definition in the same executable or shared object that used them, yet we want
+global variables defined in \textit{F}'s object file to have the same scoping
+semantics regardless of whether they are declared \texttt{static}.  For this reason,
+only dynamic symbols that resolve to a definition in a different executable or shared
+object than the use result in a libset switch.
 
 
 \subsection{Principle}
@@ -84,29 +127,6 @@ additional libsets.  Users of libgotcha may explicitly reinitialize a libset, cl
 all its object files then reopening them to prepare for fresh use.  While execution
 is within one libset, it remains there until directed to change via one of two
 explicit mechanisms.
-
-\begin{figure}
-\begin{lstlisting}[label=lst:gotchaapi,caption=libgotcha C interface]
-typedef long libset_t;
-
-libset_t libset_new(void);
-bool libset_reinit(libset_t);
-
-// Returns previously-selected libset
-bool libset_thread_set_current(libset_t);
-libset_t libset_thread_get_current(void);
-
-void libset_register_whitelist_callback(
-  void (*)(void)):
-\end{lstlisting}
-\end{figure}
-
-Each thread has an attribute called the \textbf{current libset} that controls which
-libset symbol uses are redirected to.  This does not determine the libset from which
-the current code is being executed, but rather the libset that will be used to
-provide any function or global variable defined external to the current object file.
-One way to move between libsets is to change the current libset, then use such a
-symbol.
 
 The other mechanism for changing libsets is a \textbf{whitelist} of symbols (such as
 the dynamic allocator) that should share a single definition throughout the entire
