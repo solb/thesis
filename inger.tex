@@ -135,8 +135,9 @@ correctness bugs such as deadlock~\cite{www-rustlang-nu}.  One way to do this is
 block on a mutex held by
 the preemptible function's caller (recall that invocation is synchronous, so blocking
 in a preemptible function does not cause it to yield!).  It is sometimes necessary to
-acquire such a mutex, so \textit{libinger} provides a way to do it:  The API has one
-last function, \texttt{pause()}, that is a rough analog of yield.  After performing a
+acquire such a mutex, so \textit{libinger} provides a way to do it:  The API has an
+additional function, \texttt{pause()}, that is a rough analog of yield.  After
+performing a
 try-lock operation, a preemptible function can call this function to immediately
 return to its caller as if it had timed out.  The caller can detect this by checking
 a flag on the continuation.
