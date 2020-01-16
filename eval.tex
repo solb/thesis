@@ -95,9 +95,7 @@ symbol in favor of an \texttt{\_\_errno\_location()} helper
 function~\cite{www-lsb-errno}, and compilers now translating thread-local variable
 accesses into calls to \texttt{\_\_tls\_get\_addr()} or offsets from a segment
 register~\cite{drepper:spec2013}.  As explained in Section~\ref{sec:libgotcha}, lazy
-resolution only occurs the first time an object file calls a particular function, and
-it can be avoided altogether by asking the dynamic linker to resolve all symbols at
-load time.
+resolution only occurs the first time an object file calls a particular function.
 
 Table~\ref{tab:libgotcha:baseline} shows that the \textit{libgotcha} eager function
 call overhead of 14 ns is on par with the cost of a trivial C library function and
