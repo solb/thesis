@@ -9,7 +9,7 @@ strict graph {
 
 		serialclient [label="Your program\n(if synchronous)"];
 		parallelclient [label="Your program\n(if parallel)"];
-		libassafe [label=<Client libraries<br/>(e.g., <i>libas-safe</i>)>];
+		libassafe [label=<Other control lib.<br/>(e.g., <i>libas-safe</i>)>];
 	}
 
 	{
