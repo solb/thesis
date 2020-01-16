@@ -109,7 +109,7 @@ calling \textit{F}, it informs \textit{libgotcha} by calling
 dynamic symbols used by the preemptible function will resolve to this libset.  The
 thread's \textbf{current libset} remains
 unchanged, however, so the preemptible function itself executes from the same libset
-as its caller and the two share access to the same dynamic global variables.
+as its caller and the two share access to the same global variables.
 
 One scoping issue remains, though.  Because dynamic symbols can resolve back
 to a definition in the same executable or shared object that used them,
