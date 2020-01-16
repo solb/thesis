@@ -57,7 +57,8 @@ handles other tasks, and later resumes the first task.
 In accordance with our goal of language agnosticism, \textit{libinger} exposes both C
 and Rust~\cite{www-rustlang} APIs.  To demonstrate the flexibility and composability
 of the preemptible function abstraction, we have also created \textit{libturquoise},
-a preemptive userland thread library, by porting an existing futures-based thread
+a preemptive userland thread library for Rust, by porting an existing futures-based
+thread
 pool to \textit{libinger}.  We discuss this system in Section~\ref{sec:libturquoise}.
 
 Figure~\ref{fig:architecture} shows a dependency graph of the software components
