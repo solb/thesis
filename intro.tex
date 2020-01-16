@@ -40,8 +40,7 @@ One might instead seek to implement preemptible functions via the UNIX
 careful configuration of shared memory
 to ensure that objects created outside the function were accessible inside, and worse
 yet, that allocations performed inside remained available after it exited.
-Furthermore, the inverse is equally desirable and potentially trickier because the
-allocations would need to outlive a return from the function.  And all this is
+And all this is
 without addressing the difficulty of even calling \texttt{fork()} in a multithreaded
 program:\@ because doing so effectively cancels all threads in the child process
 except the calling one, that process can experience the same problems as with the
