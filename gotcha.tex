@@ -82,12 +82,12 @@ cross-library symbols.}
 \subsection{Library copying: libsets}
 
 We just saw that namespaces provide too much isolation
-for our needs:\@ because they have completely independent dependency graphs, they
+for our needs:\@ because of their completely independent dependency graphs, they
 never encounter any state from another namespace, even according to normal scoping
 rules.  However, we can use namespaces to build the abstraction we need, which we
 term a \textbf{libset}.  A libset is like a namespace, except that the program can
-explicitly control whether symbols referenced within a libset resolve to the same
-libset or a different one.  Libraries such as \textit{libinger} configure such
+decide whether symbols referenced within a libset resolve to the same
+libset or a different one.  Control libraries such as \textit{libinger} configure such
 \textbf{libset switches} via \textbf{libgotcha}'s private control API, shown
 in Listing~\ref{lst:gotchaapi}.
 
