@@ -16,6 +16,27 @@ interacts with (Section~\ref{sec:libinger:reentrancy}).  The result is that the 
 state shared across the boundary is that explicitly passed between via arguments,
 return value, or closure---the same state the application programmer is responsible
 for protecting from concurrency violations (Section~\ref{sec:libinger:concurrency}).
+Listing~\ref{lst:exmplstate} shows the impact on an example program.
+
+\begin{figure}
+\begin{lstlisting}[label=lst:exmplstate,caption=Demo of isolated \textnormal{(1)} vs.\ shared \textnormal{(2\&3)} state]
+static bool two;
+bool three;
+
+linger_t caller(const char *s, u64 timeout) {
+  stdout = NULL;
+  two = true;
+  three = true;
+  return launch(timed, timeout, s);
+}
+
+void timed(void *s) {
+  assert(stdout); // (1)
+  assert(two); // (2)
+  assert(three); // (3)
+}
+\end{lstlisting}
+\end{figure}
 
 Note that \textit{libgotcha} operates at runtime, which constrains its visibility
 into the program and therefore the granularity of its operation.  Because all static
@@ -51,9 +72,8 @@ It may seem like namespaces provide the isolation we need:\@ whenever we
 \texttt{launch(\textnormal{\textit{F}})}, we can initialize a namespace with a copy
 of the whole application and transfer control into that namespace's copy of
 \textit{F}, rather than the original.  The problem with this approach is that it
-breaks lexical scoping.  For instance, the user would expect static variables in the
-object file where \textit{F} is defined to be visible from both inside and outside of
-the preemptible function, since they represent explicitly-shared state.
+breaks the lexical scoping of static variables.  For example,
+Listing~\ref{lst:exmplstate} would fail assertion (2).
 
 \solb{THESIS: Cover the algorithm for identifying GOT entries that correspond to
 cross-library symbols.}
@@ -91,12 +111,13 @@ thread's \textbf{current libset} remains
 unchanged, however, so the preemptible function itself executes from the same libset
 as its caller and the two share access to the same dynamic global variables.
 
-There is one scoping issue still to resolve, though.  Dynamic symbols can resolve back
-to a definition in the same executable or shared object that used them, yet we want
-global variables defined in \textit{F}'s object file to have the same scoping
-semantics regardless of whether they are declared \texttt{static}.  For this reason,
-only dynamic symbols that resolve to a definition in a different executable or shared
-object than the use result in a libset switch.
+One scoping issue remains, though.  Because dynamic symbols can resolve back
+to a definition in the same executable or shared object that used them,
+Listing~\ref{lst:gotchaapi} would fail assertion (3) under the described rules.
+We want global variables defined in \textit{F}'s object file to have the same scoping
+semantics regardless of whether they are declared \texttt{static}, so
+\textit{libgotcha} only performs a namespace switch when the use of a dynamic symbol
+occurs in a different executable or shared library than that symbol's definition.
 
 
 \subsection{Managing libsets}
