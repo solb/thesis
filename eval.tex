@@ -132,7 +132,7 @@ ran a separate \textit{wrk} process pinned to each of the 14 logical cores on th
 NIC's NUMA node.  Each client core maintained two concurrent pipelined HTTP
 connections.
 
-\begin{figure*}
+\begin{figure*}[t]
 	\begin{minipage}{\columnwidth}
 	\includegraphics[width=\textwidth]{figs/twooom_50-short}
 	\subcaption{Median latency}
@@ -201,7 +201,7 @@ conditional \texttt{kill()}, then a \texttt{waitpid()} to reap the child.  We ra
 \texttt{pthread\_cancel()} both with and without asynchronous cancelability enabled,
 but the former always deadlocked.  The timeout was 10 ms in all cases.
 
-\begin{figure*}
+\begin{figure*}[t]
 	\begin{minipage}{0.94\columnwidth}
 	\includegraphics[width=\textwidth]{figs/cerberus2_nns16_surplus256k_mirjam}
 	\subcaption{\texttt{openclipart-png} image}
