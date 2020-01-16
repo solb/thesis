@@ -80,9 +80,9 @@ isolation~\cite{hunt:msr2005}.
 Some recent languages offer explicit userland threading, which could be used to
 support timed
 code.  One example is the Go language's~\cite{www-golang} \textit{goroutines}.
-The language's runtime includes a cooperative scheduler that conditionally yields
-at function call sites.  This causes problems with tight loops, the
-traditional workaround being to manually add calls to the \texttt{runtime.Gosched()}
+Its runtime includes a cooperative scheduler that conditionally yields
+at function call sites.  This causes problems with tight loops, which require the
+programmer to manually add calls to the \texttt{runtime.Gosched()}
 yield function~\cite{www-golang-tightloop}.
 
 The solutions described thus far all assume languages with a heavyweight,
@@ -92,7 +92,7 @@ dependencies.  One example is the userland C-language thread library for realtim
 systems (here, ``\textit{RT}'') developed by Mollison and
 Anderson~\cite{mollison:rtas2013}, which performs
 preemption using timer interrupts, as proposed in the early Scheme engines
-literature.  They install a periodic signal handler responsible for scheduling
+literature.  They install a periodic signal handler for scheduling
 tasks and migrating them between cores.  This lightweight runtime
 achieves average overall scheduling latencies in the tens of microseconds;
 however, as explained later in this section, the compromise is developer usability.
