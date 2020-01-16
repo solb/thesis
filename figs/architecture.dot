@@ -8,8 +8,10 @@ strict graph {
 		node [shape=oval];
 
 		serialclient [label="Your program\n(if synchronous)"];
-		parallelclient [label="Your program\n(if parallel)"];
+		clientlib [label="Your novel\npreemptive library"];
 		elipsis [shape=none,label="...",fontsize=18];
+		parallelclient [label="Your program\n(if parallel)"];
+		elipsister [shape=none,label="...",fontsize=18];
 		libassafe [label=<Other control lib.<br/>(e.g., <i>libas-safe</i>)>];
 	}
 
@@ -31,8 +33,10 @@ strict graph {
 		edge [style=dashed];
 
 		serialclient -- libinger;
+		clientlib -- libinger;
+		elipsis -- libinger;
 		parallelclient -- libturquoise;
-		elipsis -- libgotcha;
+		elipsister -- libgotcha;
 		libassafe -- libgotcha;
 	}
 }
