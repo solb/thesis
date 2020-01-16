@@ -87,7 +87,7 @@ its supply of libsets.
 \end{table*}
 
 Recall that linking an application against \textit{libgotcha} imposes additional
-overhead on every dynamic symbol access; we report these overheads in
+overhead on most dynamic symbol accesses; we report these overheads in
 Table~\ref{tab:libgotcha:symb}.  Eager function calls account for almost all of a
 modern program's dynamic symbol accesses:  Direct access to global variables is rarer
 now that thread safety is a pervasive concern, with libc removing the \texttt{errno}
