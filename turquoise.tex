@@ -26,7 +26,7 @@ futures} adapter.
 Currently, \textit{libturquoise} assigns each future it launches or resumes the same
 fixed time budget, although this design could be extended to support
 multiple job priorities.  When a task times out, the scheduler pops it from its
-worker thread's job queue and pushes it onto the incoming work queue,
+worker thread's job queue and pushes it to the incoming queue,
 offering it to any available worker for rescheduling after all other waiting jobs
 have had a turn.
 

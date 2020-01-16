@@ -15,9 +15,9 @@ we intend to apply to other problems.
 We also diverge from \textit{Shinjuku} and \textit{RT}
 in another way:\@ unlike these systems, we make each thread responsible for
 its own preemption rather than serving preemption signals from a shared watchdog
-thread.  This decision was informed by back-of-the-envelope calculations based on
-Shinjuku's comparison of the end-to-end latency of bare-metal interprocessor
-interrupts (IPIs) versus Linux signals.
+thread.  We informed this decision by back-of-the-envelope calculations based on
+Shinjuku's measurements of bare-metal interprocessor
+interrupts (IPIs) and Linux signals.
 
 Although Shinjuku reports that IPIs take an average of only 1,993 cycles, compared to
 4,950 for signals (roughly 1:2.5), their sender/receiver breakdown of the latter
