@@ -38,17 +38,14 @@ void timed(void *s) {
 \end{lstlisting}
 \end{figure}
 
-Note that \textit{libgotcha} operates at runtime, which constrains its visibility
-into the program and therefore the granularity of its operation.  Because all static
-relocations (e.g., between the object files and static libraries linked into the
-program executable) have already been resolved at build time via the static linker,
-they are invisible to \textit{libgotcha}.  This means it cannot protect an
-application's use of nonreentrant static libraries:\@ from \textit{libgotcha}'s
-perspective, interactions with such a library are indistinguishable from those with
-any other part of the executable.  However, whenever a dynamic relocation is involved
-(e.g., a function call or global variable access between runtime-loaded objects such
-as the executable and shared libraries), \textit{libgotcha} can tell the nature of
-the symbol access and may choose to redirect it.
+Note that \textit{libgotcha} operates at runtime; this constrains its visibility
+into the program, and therefore the granularity of its operation, to shared
+libraries.  It therefore
+assumes that the programmer will dynamically link all third-party libraries, since
+otherwise there is no way to tell them apart from the rest of the program at runtime.
+We feel this restriction is reasonable because a programmer wishing to use
+\textit{libinger} or \textit{libgotcha} must already have control over their
+project's build in order to add the dependency.
 
 Before introducing the \textit{libgotcha} API and explaining selective relinking, we
 now briefly motivate the need for libgotcha by demonstrating how existing system
