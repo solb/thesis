@@ -5,8 +5,8 @@ To address the literature's shortcomings, we have developed
 \textit{libinger}\footnote{In the style of GNU's \textit{libiberty}, we named our
 system for the command-line switch used to link against it.  As the proverb goes,
 ``Don't want your function calls to linger?  Link with \texttt{-linger}.''},
-a library that allows timed function dispatch via a small API with
-two core functions:
+a library providing a small API for timed function dispatch
+(Listing~\ref{lst:ingerapi}):
 \begin{itemize}
 \item \texttt{launch()} invokes an ordinary function $F$ with an
 execution time cap of $T$.  The call to \texttt{launch()} returns when $F$
