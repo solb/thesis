@@ -103,7 +103,7 @@ one-third
 that of a simple system call.  This overhead affects the entire program, regardless
 of the
 current libset at the time of the call.  Additionally, calls to
-uninterruptible functions from within a preemptible function incur several extra
+uncopyable functions from within a preemptible function incur several extra
 nanoseconds of latency to switch back to the main namespace as described in
 Section~\ref{sec:libgotcha}; Table~\ref{tab:libgotcha:whitelist} breaks this down to
 show the cost of notification callbacks at the conclusion of such a call (always
