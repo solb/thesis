@@ -1,3 +1,6 @@
 [submodule "functions"]
 	path = functions
 	url = ../libinger_paper
+[submodule "microservices"]
+	path = microservices
+	url = ../microservices_paper
