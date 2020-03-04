@@ -1,0 +1,62 @@
+\documentclass[12pt,letterpaper,openright]{report}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{libertine}
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+	\vspace*{\fill}
+
+	\textbf{\Large Lightweight Preemptible Functions} \\
+	A thesis proposal \\
+	\hfill \\
+	{\large Sol Boucher} \\
+	\today \\
+
+	\vspace{1in}
+
+	\textbf{Thesis committee:} \\
+	David G.\@ Andersen, \textit{chair} \\
+	Adam Belay \\
+	Michael Kaminsky \\
+	Brandon Lucia \\
+
+	\vspace{\fill}
+
+	\textit{Submitted in partial fulfillment of the requirements \\
+	for the degree of Doctor of Philosophy} \\
+	\hfill \\
+	Computer Science Department \\
+	School of Computer Science \\
+	Carnegie Mellon University \\
+	Pittsburgh, PA 15213 \\
+\end{center}
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+\chapter{Introduction}
+
+\textit{Contemporary general-purpose operating systems provide task preemption, which
+they treat as a resource sharing mechanism:\@ when the total number of application
+threads exceeds the number of processors, the kernel scheduler preempts long-running
+or low-priority threads to allow others to run.  Preemption is also useful to
+application programmers in its own right, and the operating system's choice of
+preemption abstraction imposes a prescribed structure and architecture on programs
+seeking to use this primitive.  Specifically, exposing preemption via the scheduler
+encourages programmers to treat the thread as the unit of preemption, meaning that
+a program making internal use of preemption is also parallel; however, because
+preemption fundamentally entails concurrency but not parallelism, such an application
+may be incurring unnecessary complexity and performance penalties.  We provide an
+abstraction for preemption at the granularity of a synchronous function call, and
+demonstrate that this represents a more efficient and composable interface that
+enables new functionality for latency-critical applications, yet is expressive enough
+to encode classic asynchrony primitives.
+}
+
+\end{document}
