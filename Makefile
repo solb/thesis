@@ -1,3 +1,6 @@
+CROP := pdfcrop
+DOT := dot
+GIT := git
 TEX := pdflatex
 
 proposal.pdf:
@@ -6,6 +9,12 @@ proposal.pdf:
 clean:
 	$(GIT) clean -fX
 
+%.pdf: %.dot
+	$(DOT) -Tpdf $(DOTFLAGS) -o $@ $<
+
 %.pdf: %.tex
 	$(TEX) $(TEXFLAGS) $<
 	$(TEX) $(TEXFLAGS) $<
+
+%-crop.pdf: %.pdf
+	$(CROP) $<
