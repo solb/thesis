@@ -1,8 +1,45 @@
 \documentclass[12pt,letterpaper,openright]{report}
+
+\usepackage{amssymb}
+\usepackage{booktabs}
 \usepackage[T1]{fontenc}
 \usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
 \usepackage{hyperref}
-\usepackage{libertine}
+\usepackage[mono=false]{libertine}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{subcaption}
+\usepackage{xcolor}
+
+\lstset{captionpos=b,
+	basicstyle=\ttfamily,
+	keywordstyle=\color{blue},
+	commentstyle=\color{magenta},
+	columns=flexible,
+	language=C++
+}
+
+\newcommand{\solb}[1]{}
+
+\newcommand{\ms}[1]{#1 ms}
+\newcommand{\us}[1]{#1 $\mu$s}
+
+\makeatletter
+\let\@includegraphics\includegraphics
+\renewcommand{\includegraphics}[2][]{\@includegraphics[#1]{\includegraphicsdir#2}}
+\newcommand{\includegraphicsdir}{}
+
+\let\@input\input
+\renewcommand{\input}[2][]{
+	\renewcommand{\includegraphicsdir}{#1/}
+	\@input{#1/#2}
+	\renewcommand{\includegraphicsdir}{}
+}
+\makeatother
+
+\renewenvironment{abstract}{\itshape}
+
 \begin{document}
 
 \begin{titlepage}
@@ -58,5 +95,43 @@ demonstrate that this represents a more efficient and composable interface that
 enables new functionality for latency-critical applications, yet is expressive enough
 to encode classic asynchrony primitives.
 }
+
+\input[functions]{intro}
+\input[functions]{concl}
+
+
+\chapter{Lightweight preemptible functions}
+
+\input[functions]{abstract}
+\input[functions]{inger}
+\input[functions]{related}
+
+
+\chapter{Nonreentrancy and selective relinking}
+
+\input[functions]{gotcha}
+
+
+\chapter{Preemptive userland threading}
+
+\input[functions]{turquoise}
+\input[functions]{eval}
+
+
+\chapter{Microsecond-scale microservices}
+
+\input[microservices]{abstract}
+\input[microservices]{intro}
+\input[microservices]{motivation}
+\input[microservices]{isolation}
+\input[microservices]{eval}
+\input[microservices]{concl}
+
+
+\chapter{Proposed work}
+
+\section{Remaining work}
+\section{Timeline}
+
 
 \end{document}
