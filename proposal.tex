@@ -26,14 +26,14 @@
 \newcommand{\us}[1]{#1 $\mu$s}
 
 \makeatletter
-\let\@includegraphics\includegraphics
-\renewcommand{\includegraphics}[2][]{\@includegraphics[#1]{\includegraphicsdir#2}}
+\let\includegraphics@\includegraphics
+\renewcommand{\includegraphics}[2][]{\includegraphics@[#1]{\includegraphicsdir#2}}
 \newcommand{\includegraphicsdir}{}
 
-\let\@input\input
+\let\input@\input
 \renewcommand{\input}[2][]{
 	\renewcommand{\includegraphicsdir}{#1/}
-	\@input{#1/#2}
+	\input@{#1/#2}
 	\renewcommand{\includegraphicsdir}{}
 }
 \makeatother
