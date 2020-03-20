@@ -96,11 +96,38 @@ enables new functionality for latency-critical applications, yet is expressive e
 to encode classic asynchrony primitives.
 }
 
+The contributions of this thesis are as follows:
+\begin{itemize}
+\item We prototype our abstraction on top the GNU/Linux operating system with an
+	unmodified kernel (Chapter~\ref{chap:libinger}).  Although the current
+	implementation limited to the x86-64 architecture and relies on POSIX
+	features such as signals, timers, and contexts and GNU dynamic linker
+	namespaces, we believe it could be ported to other systems and architectures
+	with additional engineering effort.  We examine the performance properties of
+	preemptible function invocations, pauses, resumes, and cancellations.
+\item Supporting existing nonreentrant code requires an approach we call selective
+	relinking; our implementation includes a lightweight runtime to do this
+	transparently with modest overhead (Chapter~\ref{chap:libgotcha}).  We
+	present the technique, along with its interaction with dynamic linking and
+	loading, in detail and with examples of semantic implications.
+\item Although lightweight preemptible functions are fundamentally synchronous, we
+	demonstrate their expressiveness by applying them to the asynchrony problem
+	of making an existing cooperative thread library preemptive
+	(Chapter~\ref{chap:libturquoise}).  We demonstrate the applicability of this
+	artifact to mitigating head-of-line blocking in a modern Web server.
+\item We discuss the relevance of preemptible functions to serverless computing,
+	where we argue they could be used to accelerate the launch times of
+	microservices, enabling customers to better leverage the low latency of
+	modern datacenter networks and the steady performance improvements of FaaS
+	providers' walled garden services (Chapter~\ref{chap:microservices}).
+\end{itemize}
+
 \input[functions]{intro}
 \input[functions]{concl}
 
 
 \chapter{Lightweight preemptible functions}
+\label{chap:libinger}
 
 \input[functions]{abstract}
 \input[functions]{inger}
@@ -108,17 +135,20 @@ to encode classic asynchrony primitives.
 
 
 \chapter{Nonreentrancy and selective relinking}
+\label{chap:libgotcha}
 
 \input[functions]{gotcha}
 
 
 \chapter{Preemptive userland threading}
+\label{chap:libturquoise}
 
 \input[functions]{turquoise}
 \input[functions]{eval}
 
 
 \chapter{Microsecond-scale microservices}
+\label{chap:microservices}
 
 \input[microservices]{abstract}
 \input[microservices]{intro}
