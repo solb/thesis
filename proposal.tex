@@ -131,7 +131,42 @@ to encode classic asynchrony primitives.
 \chapter{Proposed work}
 
 \section{Remaining work}
+
+Plan on doing:
+\begin{itemize}
+\item Cancellation resource cleanup for the Rust interface
+\item Automatic selection and variation of preemption quanta
+\item Get OpenSSL working and benchmark hyper with HTTPS
+\end{itemize}
+
+\noindent
+Pick 2 from these:
+\begin{itemize}
+\item Optimize \textit{libgotcha} libset reinitialization?
+\item Implement ``\textit{libac-safe}'' and use it to benchmark cancellation against pthreads?
+\item Port to Dune and/or benchmark against Shinjuku?
+\item Implement request-caching RPC framework?
+\item Implement ``\textit{libingerOS}'' container framework?
+\end{itemize}
+
+
 \section{Timeline}
+
+\begin{itemize}
+\item 24 April 2020: ATC '20 author notification
+\item 4 June 2020: ATC '20 cameraready deadline (if applicable)
+\item 15 July 2020: ATC '20 conference (?)
+\item August 2020: Start cancellation resource cleanup
+\item September 2020: Speaking skills talk?
+\item October 2020: Finish cancellation resource cleanup, start automatic preemption quanta
+\item November 2020: Finish and evaluate automatic preemption quanata
+\item December 2020: Start first additional task
+\item January 2021: Finish and evaluate first additional task
+\item February 2021: Start second additional task
+\item March 2021: Finish and evaluate second additional task
+\item April 2021: Thesis writing
+\item May 2021: Finish thesis and defend
+\end{itemize}
 
 
 \end{document}
