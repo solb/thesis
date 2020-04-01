@@ -96,22 +96,17 @@
 \chapter{Introduction}
 
 \begin{itemize}
-\item Programming with wires and switches and lights
-\item Definition of a processor
-\item Peripherals and the latency gap
-\item Punchcards and printouts and batch processing
-\item Definition of a process
-\item Timesharing and context switching
-\item Stored-program computers and operating systems
-\item Cooperative multitasking and reliability
-\item Definition of an interrupt
+\item Scheduling is a fundamental concern in system design
+\item CPUs and sequential execution
+\item Definition of a function: synchronous + trivially schedulable
+\item Definition of a process: concurrency + isolation
+\item Cooperative multitasking and context switching
 \item Timer interrupts and preemptive multitasking
 \item Multiprocessing and parallelism
-\item Multithreading and concurrency
-\item Slowdown of Moore's Law and the narrowing of the latency gap
-\item Definition of a function
-\item Unlike threads, function calls are synchronous
-\item Propose preemptible functions
+\item Definition of a thread: process-unlike resource sharing + function-unlike asynchrony
+\item Asynchrony means scheduling managed by someone else, but user may not need parallelism
+\item Threads are the standard application abstraction for exploiting preemption
+\item Application programmers should have an easy abstraction for preemption
 \end{itemize}
 
 \textit{Contemporary general-purpose operating systems provide task preemption, which
