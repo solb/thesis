@@ -276,6 +276,9 @@ control and abstracting away the details of context switching.  We therefore pro
 a new abstraction for easy preemption within an application, but show that it can be
 implemented on top of the existing operating system.
 
+
+\section{Thesis statement}
+
 \textit{Contemporary general-purpose operating systems provide task preemption, which
 they treat as a resource sharing mechanism:\@ when the total number of application
 threads exceeds the number of processors, the kernel scheduler preempts long-running
@@ -293,7 +296,10 @@ enables new functionality for latency-critical applications, yet is expressive e
 to encode classic asynchrony primitives.
 }
 
-The contributions of this thesis are as follows:
+
+\section{Upcoming}
+
+The rest of the chapters of this thesis break down this research as follows:
 \begin{itemize}
 \item We prototype our abstraction on top the GNU/Linux operating system with an
 	unmodified kernel (Chapter~\ref{chap:libinger}).  Although the current
@@ -318,6 +324,7 @@ The contributions of this thesis are as follows:
 	modern datacenter networks and the steady performance improvements of FaaS
 	providers' walled garden services (Chapter~\ref{chap:microservices}).
 \end{itemize}
+
 
 \input[functions]{intro}
 \input[functions]{concl}
