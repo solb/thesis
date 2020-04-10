@@ -271,11 +271,9 @@ threads exceeds the number of processors, the kernel scheduler preempts long-run
 or low-priority threads to allow others to run.  Preemption is also useful to
 applications in its own right, and its interface
 influences the structure and architecture of such programs.
-Specifically, exposing preemption via the scheduler
-encourages programmers to treat the thread as the unit of preemption, meaning that
-a program making internal use of preemption is also parallel; however, because
-preemption fundamentally entails concurrency but not parallelism, such an application
-may be incurring unnecessary complexity and performance penalties.  We provide an
+Providing only an asynchronous interface encourages the programmer to leave even
+simple scheduling to the operating system, thereby accepting the scheduler's overhead
+and coarse resolution.  We introduce an
 abstraction for preemption at the granularity of a synchronous function call, and
 demonstrate that this represents a more efficient and composable interface that
 enables new functionality for latency-critical applications, yet is expressive enough
