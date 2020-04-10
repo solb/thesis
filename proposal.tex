@@ -273,10 +273,11 @@ applications in its own right, and its interface
 influences the structure and architecture of such programs.
 Providing only an asynchronous interface encourages the programmer to leave even
 simple scheduling to the operating system, thereby accepting the scheduler's overhead
-and coarse resolution.  We introduce an
+and coarse resolution.  We introduce a novel
 abstraction for preemption at the granularity of a synchronous function call, and
 demonstrate that this represents a more efficient and composable interface that
-enables new functionality for latency-critical applications, yet is expressive enough
+enables new functionality for latency-critical applications, while being both
+compatible with the existing systems stack and expressive enough
 to encode classic asynchrony primitives.
 }
 
