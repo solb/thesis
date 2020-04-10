@@ -93,6 +93,7 @@
 \newpage
 \pagenumbering{arabic}
 
+\ifdefined\foreword
 \chapter*{Foreword}
 
 Perhaps it is inevitable that when a nonfiction work reaches a certain length, it
@@ -261,6 +262,7 @@ perform hardware-style unstructured jumps rather than using language-style struc
 control and abstracting away the details of context switching.  We therefore propose
 a new abstraction for easy preemption within an application, but show that it can be
 implemented on top of the existing operating system.
+\fi
 
 
 \chapter{Introduction}
