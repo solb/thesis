@@ -1,3 +1,4 @@
+BIB := bibtex
 CROP := pdfcrop
 DOT := dot
 GIT := git
@@ -14,6 +15,8 @@ clean:
 	$(DOT) -Tpdf $(DOTFLAGS) -o $@ $<
 
 %.pdf: %.tex
+	$(TEX) $(TEXFLAGS) $<
+	$(BIB) $*.aux
 	$(TEX) $(TEXFLAGS) $<
 	$(TEX) $(TEXFLAGS) $<
 
