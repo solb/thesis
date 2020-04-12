@@ -12,6 +12,13 @@
 \usepackage{subcaption}
 \usepackage[svgnames]{xcolor}
 
+\ifdefined\thisisathesis
+	\newcommand{\chapquotes}{}
+	\newcommand{\solb}[1]{{\color{magenta} TODO #1}}
+\else
+	\newcommand{\solb}[1]{}
+\fi
+
 \lstset{captionpos=b,
 	basicstyle=\ttfamily,
 	keywordstyle=\color{Blue},
@@ -19,8 +26,6 @@
 	columns=flexible,
 	language=C++
 }
-
-\newcommand{\solb}[1]{{\color{magenta} TODO #1}}
 
 \newcommand{\ms}[1]{#1 ms}
 \newcommand{\us}[1]{#1 $\mu$s}
