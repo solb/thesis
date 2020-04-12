@@ -1,0 +1,29 @@
+However, there remain three important
+questions:
+
+\paragraph{For how long should each microservice be allowed to run?}
+%Consider a well-utilized but not overloaded compute node in which a user task
+%is executing on each available core, but there is no backlog behind which an incoming task must wait.
+Assume that each core executes one user task at a
+time and that all microservice
+functions are pre-compiled and resident (warm invocation).
+%The impact of microservice runtime on tail latency in 
+%(This being preliminary work, any discussion of the cluster-level
+%scheduling responsible for these theoretical conditions are outside the scope of
+%this paper.)
+%Furthermore, we'll assume an incoming microservice that is warm on each
+%worker thread.
+We define $L$ to be the desired warm invocation latency, $B$ to be the
+runtime budget allotted to each microservice, and $r_c$ to be the remaining runtime
+of the microservice on CPU $c$.  Thus, in the worst case (where all tasks are
+executing for their entire allotted time) the probability that the incoming
+microservice will have somewhere to run in time to meet the invocation
+latency SLO is given by:
+\vspace{-10pt}
+\begin{equation}
+p(r_\textrm{min} \le L) = \sum\limits_{c \in C} p(r_c \le L) = \big| C \big| \frac{L}{B}
+\vspace{-10pt}
+\end{equation}
+Given the 14 cores in our setup and imagining we want to keep the 99\% tail,
+$p(r_\textrm{min} \le L) = 0.99$, to an $L$ of 8~$\mu{}s$, we need to kill tasks
+running for more than B = 113~$\mu{}s$.
