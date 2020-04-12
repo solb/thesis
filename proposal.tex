@@ -411,6 +411,23 @@ A half-read book is a half-finished love affair.
 \input[functions]{inger}
 
 
+\section{Evaluation}
+
+\input[functions]{eval_testbed}
+
+
+\subsection{Microbenchmarks}
+
+\input[functions]{eval_uinger}
+
+
+\subsection{Image decompression}
+
+Unlike state of the art approaches, lightweight preemptible functions support
+cancellation.
+\input[functions]{eval_cancel}
+
+
 \chapter{Nonreentrancy and selective relinking}
 \label{chap:libgotcha}
 
@@ -424,6 +441,13 @@ A half-read book is a half-finished love affair.
 \begin{swallowsections}
 \input[functions]{gotcha}
 \end{swallowsections}
+
+
+\section{Evaluation}
+
+\input[functions]{eval_ugotcha}
+
+\input[functions]{eval_testbed}
 
 
 \chapter{Preemptive userland threading}
@@ -440,7 +464,13 @@ sleep-sweaty hair standing out from his skull in every direction. \\
 \begin{swallowsections}
 \input[functions]{turquoise}
 \end{swallowsections}
-\input[functions]{eval}
+
+
+\section{Evaluation}
+
+\input[functions]{eval_turquoise}
+
+\input[functions]{eval_testbed}
 
 
 \chapter{Microsecond-scale microservices}
