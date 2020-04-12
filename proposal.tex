@@ -55,7 +55,7 @@
 \newcommand{\includegraphicsdir}{}
 
 \let\input@\input
-\renewcommand{\input}[2][]{
+\renewcommand{\input}[2][.]{
 	\renewcommand{\includegraphicsdir}{#1/}
 	\input@{#1/#2}
 	\renewcommand{\includegraphicsdir}{}
