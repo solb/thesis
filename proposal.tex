@@ -60,6 +60,13 @@
 	\input@{#1/#2}
 	\renewcommand{\includegraphicsdir}{}
 }
+
+\let\section@\section
+\newenvironment{swallowsections}{
+	\renewcommand{\section}[1]{}
+}{
+	\let\section\section@
+}
 \makeatother
 
 \renewenvironment{abstract}{\itshape}
@@ -397,7 +404,9 @@ A half-read book is a half-finished love affair.
 \end{chapquote}
 \fi
 
+\begin{swallowsections}
 \input[functions]{intro}
+\end{swallowsections}
 \input[functions]{related}
 \input[functions]{inger}
 
@@ -412,7 +421,9 @@ A half-read book is a half-finished love affair.
 \end{chapquote}
 \fi
 
+\begin{swallowsections}
 \input[functions]{gotcha}
+\end{swallowsections}
 
 
 \chapter{Preemptive userland threading}
@@ -426,7 +437,9 @@ sleep-sweaty hair standing out from his skull in every direction. \\
 \end{chapquote}
 \fi
 
+\begin{swallowsections}
 \input[functions]{turquoise}
+\end{swallowsections}
 \input[functions]{eval}
 
 
@@ -449,7 +462,9 @@ The ships hung in the sky in much the same way that bricks don't.
 
 \chapter{Proposed work}
 
+\begin{swallowsections}
 \input[functions]{concl}
+\end{swallowsections}
 
 
 \section{Remaining work}
