@@ -506,22 +506,90 @@ The ships hung in the sky in much the same way that bricks don't.
 
 \section{Remaining work}
 
-Plan on doing:
-\begin{itemize}
-\item Cancellation resource cleanup for the Rust interface
-\item Automatic selection and variation of preemption quanta
-\item Get OpenSSL working and benchmark hyper with HTTPS
-\end{itemize}
+I propose extending the work already completed in all three of the following ways:
 
+\paragraph{Cancellation resource cleanup for the Rust interface}
+Although we currently support asynchronous cancellation of timed-out preemptible
+functions via \textit{libinger}'s \texttt{cancel()} facility, we do not yet perform
+any automatic cleanup of resources they have already allocated.  This is impossible
+in general for C programs because the language lacks a destructor mechanism; however,
+I intend to add at least partial support for doing so for Rust programs.  The basic
+principle will be to throw an artificial exception (Rust panic) on the preemptible
+function's execution stack, thereby unwinding the stack and invoking local variables'
+destructors.  This approach alone will not guarantee comprehensive cleanup, because
+such variables may not have been fully initialized at the time of preemption; for the
+same reason, it may have safety ramifications that will merit additional study.  I
+have some ideas about how to augment the technique, such as by extending
+\textit{libgotcha} to keep a running cache of the several most recent allocations and
+deallocations of common resources (e.g., memory and file descriptors) from each
+libset.  While exhaustive cleanup may prove difficult to achieve, I hope to at least
+catalogue situations where we guarantee not to leak certain classes of resource, and
+perhaps provide a tunable allowing users to request full resouce tracking if needed.
+
+\paragraph{Automatic selection and variation of timer frequency}
+For simplicity, the current \textit{libinger} implementation subscribes to timer
+signals a globally constant interval apart throughout the entire duration of each
+preemptible function.  To improve efficiency while preserving preemption granularity,
+I plan to dynamically determine this interval based on the requested timeout.  This
+will likely include delaying the first of these signals until shortly before the
+timeout would expire.  Maintaining accuracy across multiple CPUs will probably
+require building in a calibration routine to infer configuration parameters.
+
+\paragraph{Support OpenSSL and benchmark hyper with HTTPS}
+Earlier in \textit{libgotcha}'s development history, it was able to run nginx with
+OpenSSL.  Recent attempts at getting hyper to run with OpenSSL have ended in crashes,
+yet this configuration is desirable for measurement because it exhibits a far greater
+number of dynamic function calls, of which \textit{libgotcha} alters the performance
+characteristics.  I aim to support and benchmark the configuration, which will likely
+involve a regression test using the nginx setup.
+
+\hfill \\
 \noindent
-Pick 2 from these:
-\begin{itemize}
-\item Optimize \textit{libgotcha} libset reinitialization?
-\item Implement ``\textit{libac-safe}'' and use it to benchmark cancellation against pthreads?
-\item Port to Dune and/or benchmark against Shinjuku?
-\item Implement request-caching RPC framework?
-\item Implement ``\textit{libingerOS}'' container framework?
-\end{itemize}
+Additionally, I will complete up to two of the following projects, as selected by the
+committee:
+
+\paragraph{Optimize libset reinitialization}
+The high cost of cancellation is a consequence of our libset reinitialization
+approach, which currently involves unloading all libraries from the libset, then
+reloading them and running all their constructors in the process.  I believe cheaper
+schemes are possible, such as checkpointing only the writeable portions of each
+library's address space (e.g., by replacing their page mappings with copy-on-write
+mappings backed by their contents immediately after return from the library's
+constructors).
+
+\paragraph{Achieve even finer--grained preemption}
+The \textit{Shinjuku} authors included IPI microbenchmarks that suggest it should be
+possible for us to achieve interrupt latencies and spacing within a small constant
+factor of theirs.  I could explore this possibility by reusing some of their
+optimizations to POSIX contexts and adding a specialized timer signal delivery
+mechanism to the kernel to reduce the number of ISR instructions at the expense of
+generality.
+
+\paragraph{Benchmark against \textit{Shinjuku}}
+Competing with \textit{Shinjuku} on a network benchmark would require porting
+kernel-bypass networking to preemptible functions, and possibly running our system
+under Dune or IX.  Sharing hardware under \textit{libgotcha} would require careful
+thought because the normal approach of (library copying and selective relinking)
+changes program semantics in situations where an uncopyable resource such as a
+network adapter underlies the library.
+
+\paragraph{Implement ``\textit{libingerOS}'' container framework}
+Generalizing the serverless platform case study, it should be possible to generate a
+utility that takes two or more position-independent executables and combines them
+into a single process whose thread(s) are timeshared between the two using
+preemptible functions.  Obviously, this would only provide memory isolation for
+programs implemented in memory-safe languages.  This would be implemented on top of
+\textit{libinger} as a sample application.
+
+\paragraph{Implement a caching RPC framework}
+The preemptible functions API naturally lends itself to problems of caching partial
+computations, and one interesting case study would be a caching RPC framework.  I
+imagine this working as follows:  Clients would enclose alongside each request the
+timeout they were using when listening.  The server would process each request inside
+its own preemptible function.  When the client timed out waiting for a response, the
+server would simultaneously time out and cache the continuation.  Subsequent requests
+for the same procedure with identical inputs would resume the interrupted computation
+from where it left off.
 
 
 \section{Timeline}
