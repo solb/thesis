@@ -511,7 +511,7 @@ I propose extending the work already completed in all three of the following way
 \paragraph{Cancellation resource cleanup for the Rust interface}
 Although we currently support asynchronous cancellation of timed-out preemptible
 functions via \textit{libinger}'s \texttt{cancel()} facility, we do not yet perform
-any automatic cleanup of resources they have already allocated.  This is impossible
+any automatic cleanup of already-allocated resources.  This is impossible
 in general for C programs because the language lacks a destructor mechanism; however,
 I intend to add at least partial support for doing so for Rust programs.  The basic
 principle will be to throw an artificial exception (Rust panic) on the preemptible
@@ -528,12 +528,13 @@ perhaps provide a tunable allowing users to request full resouce tracking if nee
 
 \paragraph{Automatic selection and variation of timer frequency}
 For simplicity, the current \textit{libinger} implementation subscribes to timer
-signals a globally constant interval apart throughout the entire duration of each
-preemptible function.  To improve efficiency while preserving preemption granularity,
-I plan to dynamically determine this interval based on the requested timeout.  This
-will likely include delaying the first of these signals until shortly before the
-timeout would expire.  Maintaining accuracy across multiple CPUs will probably
-require building in a calibration routine to infer configuration parameters.
+signals spaced a globally constant interval apart throughout the entire duration of
+each preemptible function.  To improve efficiency while preserving preemption
+granularity, I plan to dynamically determine this interval based on the requested
+timeout.  For long-running functions, this will include delaying the first of these
+signals until shortly before the timeout would expire.  Maintaining accuracy across
+multiple CPUs will probably require building in a calibration routine to infer
+configuration parameters.
 
 \paragraph{Support OpenSSL and benchmark hyper with HTTPS}
 Earlier in \textit{libgotcha}'s development history, it was able to run nginx with
@@ -541,7 +542,7 @@ OpenSSL.  Recent attempts at getting hyper to run with OpenSSL have ended in cra
 yet this configuration is desirable for measurement because it exhibits a far greater
 number of dynamic function calls, of which \textit{libgotcha} alters the performance
 characteristics.  I aim to support and benchmark the configuration, which will likely
-involve a regression test using the nginx setup.
+involve regression testing using the old nginx setup.
 
 \hfill \\
 \noindent
@@ -554,13 +555,13 @@ approach, which currently involves unloading all libraries from the libset, then
 reloading them and running all their constructors in the process.  I believe cheaper
 schemes are possible, such as checkpointing only the writeable portions of each
 library's address space (e.g., by replacing their page mappings with copy-on-write
-mappings backed by their contents immediately after return from the library's
+pages backed by their saved contents immediately after return from the library's
 constructors).
 
 \paragraph{Achieve even finer--grained preemption}
 The \textit{Shinjuku} authors included IPI microbenchmarks that suggest it should be
 possible for us to achieve interrupt latencies and spacing within a small constant
-factor of theirs.  I could explore this possibility by reusing some of their
+factor of theirs.  I could attempt to achieve this by reusing some of their
 optimizations to POSIX contexts and adding a specialized timer signal delivery
 mechanism to the kernel to reduce the number of ISR instructions at the expense of
 generality.
@@ -569,14 +570,14 @@ generality.
 Competing with \textit{Shinjuku} on a network benchmark would require porting
 kernel-bypass networking to preemptible functions, and possibly running our system
 under Dune or IX.  Sharing hardware under \textit{libgotcha} would require careful
-thought because the normal approach of (library copying and selective relinking)
+thought because the normal approach (of library copying and selective relinking)
 changes program semantics in situations where an uncopyable resource such as a
 network adapter underlies the library.
 
 \paragraph{Implement ``\textit{libingerOS}'' container framework}
 Generalizing the serverless platform case study, it should be possible to generate a
 utility that takes two or more position-independent executables and combines them
-into a single process whose thread(s) are timeshared between the two using
+into a single process whose thread(s) are timeshared between the ``programs'' using
 preemptible functions.  Obviously, this would only provide memory isolation for
 programs implemented in memory-safe languages.  This would be implemented on top of
 \textit{libinger} as a sample application.
