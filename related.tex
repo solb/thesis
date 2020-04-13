@@ -2,7 +2,11 @@
 \label{sec:related}
 
 \begin{table*}
-\small
+\ifdefined\mytableistoobig
+	\scriptsize
+\else
+	\small
+\fi
 \begin{tabular}{c||c|c|c|c|c|c}
 &&& \multicolumn{2}{c|}{Dependencies} & \multicolumn{2}{c}{Third-party code support} \\
 System & Preemptive & Synchronous & In userland & Works without GC & Preemptible & Works without recompiling \\
