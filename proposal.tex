@@ -312,36 +312,36 @@ will complete within a specified timeframe; unfortunately, they cannot certify t
 compliance without breaking the abstraction and examining the internals of each
 function they call.  Even then, untrusted or unpredictable input may make the
 function's performance characteristics unclear:  Perhaps it solves a problem that is
-known to be intractable for certain cases that are difficult to identify a priori.
-Perhaps it performs format decoding or translation that is susceptible to attacks
-such as decompression bombs.  Or perhaps it simply contains bug that opens it to
-inefficient corner cases or even an infinite loop.
+known to be intractable for certain cases, but such inputs are difficult to identify
+\textit{a priori}.  Perhaps it performs format decoding or translation that is
+susceptible to attacks such as decompression bombs.  Or perhaps it simply contains
+bug that open it to inefficient corner cases or even an infinite loop.
 
 Faced with such problems, the programmer is often tempted to resort to an
 \textbf{asynchronous} invocation strategy, whereby the function runs in the
 background while the programmer maintains control of the rest of the program.  Common
-abstractions include the operating system's own processes and threads, as well as
-the threads, coroutines, and futures (i.e., promises) provided by some libraries and
-language runtimes.  Any use of asynchronous computation requires an external
-scheduler to allocate work.
+abstractions following this model include the operating system's own processes and
+threads, as well as the threads, coroutines, and futures (i.e., promises) provided by
+some libraries and language runtimes.  Any use of asynchronous computation requires
+an external scheduler to allocate work.
 
 Here again, the programmer is sacrificing control.  Upon handing execution control to
 a scheduler, dependencies are no longer clear from the program's structure and must
-be communicated to the scheduler via synchronization constructs; however, it is
-difficult to fully communicate the relevant bits of the application logic across this
-abstraction boundary, which can result in unintended resource-sharing effects such as
-priority inversion.  Furthermore, each software scheduler is itself a piece of code,
-and because this does not represent useful application work, any time it spends
-executing is pure overhead.  Therefore, introducing unnecessary scheduling
-necessarily reduces per-processor performance.
+be passed to the scheduler by encoding them in synchronization constructs; however,
+it is difficult to fully communicate the relevant bits of the application logic
+across this abstraction boundary, which can result in unintended resource-sharing
+effects such as priority inversion.  Furthermore, each software scheduler is itself a
+piece of code, and because its job does not represent useful application work, any
+time it spends executing is pure overhead.  Therefore, introducing unnecessary
+scheduling necessarily reduces per-processor performance.
 
 In many cases, the \textit{only} tool necessary to ensure timely completion of a
 program is preemption.  Instead of confronting this directly, current programming
 environments incentivize the programmer to rely on a scheduler to fix the problem,
-limiting them to whatever coarse timescales (often milliseconds) the OS schedule
-operates, or (in the case of userland schedulers) even to cooperative scheduling that
-doesn't even address the problem of infinite loops.  The goal of this work is to
-design and prototype an interface that extends the programming model with easy
+limiting them to whatever coarse timescales (often milliseconds) the OS scheduler
+operates at, or (in the case of userland schedulers) to cooperative scheduling
+that doesn't even address the problem of infinite loops.  The goal of this work is to
+design and prototype an interface that extends the programming model with simple
 preemption, thereby allowing the use of functions without having to break the
 abstraction and examine their implementations.  If the function times out, it is
 paused so that the programmer can later resume and/or cancel it at the appropriate
@@ -375,7 +375,7 @@ The rest of the chapters of this thesis break down this research as follows:
 \begin{itemize}
 \item We prototype our abstraction on top the GNU/Linux operating system with an
 	unmodified kernel (Chapter~\ref{chap:libinger}).  Although the current
-	implementation limited to the x86-64 architecture and relies on POSIX
+	implementation is limited to the x86-64 architecture and relies on POSIX
 	features such as signals, timers, and contexts and GNU dynamic linker
 	namespaces, we believe it could be ported to other systems and architectures
 	with additional engineering effort.  We examine the performance properties of
