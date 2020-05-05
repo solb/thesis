@@ -52,11 +52,29 @@ thread creation on the critical path and limit composability by increasing the
 abstraction's complexity.  We observe that, when calling a function with
 a timeout, it is concurrency alone---and not parallelism---that is fundamental.
 
-In this paper, we propose lightweight preemptible functions, a userland abstraction
+\st{In this paper, we propose lightweight preemptible functions, a userland abstraction
 for making function calls with a timeout that differs significantly from the state of
 the art:  (1) Unlike threading abstractions such as coroutines, it \textit{runs
 functions synchronously on the caller's thread}.  (2) It supports \textit{preemption
 at granularities in the tens of microseconds}, orders of magnitude finer than
 contemporary OS schedulers' millisecond scale.  (3) It is \textit{language agnostic},
 being implemented in userland without relying on any particular compiler or managed
-runtime.
+runtime.}
+
+\solb{In this paper, we propose a mechanism for making function calls with a timeout,
+via a \textit{synchronous} wrapper function otherwise reminiscent of thread spawn
+functions.  Separating interruption from asynchrony in this way enables us to provide
+\textit{noncooperative} preemption at granularities in the tens of microseconds.
+However, our work is also applicable to programs that are parallel or use
+asynchronous I/O:\@ we demonstrate how it can be composed with existing abstractions
+such as futures and threads.}
+
+\solb{We believe supporting preemptible function calls in languages without a managed
+runtime to be a novel achievement.  The problem is fundamentally challenging because
+of nonreentrancy:\@ because the preemptible function is interrupted on timeout,
+\textit{the rest of the program} can be viewed as a signal handler, and would
+normally by restricted to calling async-signal-safe (roughly, nonreentrant)
+functions~\cite{signal-safety-manpage}.  Our second main contribution is selective
+relinking, a compiler-agnostic approach to automatically lifting this restriction.
+By default preemptible functions are paused on timeout and return a continuation;
+our final contribution, although more costly, is cancellation support.}
