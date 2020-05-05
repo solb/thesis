@@ -10,6 +10,7 @@
 \newcommand{\PAGENUMBERS}{yes}       % "yes" or "no"
 \newcommand{\COLOR}{yes}
 \newcommand{\showComments}{yes}
+\newcommand{\showThesis}{no}
 \newcommand{\comment}[1]{}
 \newcommand{\onlyAbstract}{no}
 
@@ -246,6 +247,7 @@ Copyright 200X ACM X-XXXXX-XX-X/XX/XX ...\$5.00}
 \newcommand{\akalia}[1]{\note{red}{AKALIA: #1}}
 \newcommand{\dga}[1]{\note{green}{DGA: #1}}
 \newcommand{\mk}[1]{\note{blue}{MK: #1}}
+\newcommand{\thesis}[1]{\ifthenelse{\equal{\showThesis}{yes}}{\note{violet}{THESIS: #1}}{}}
 
 \date{}
 \title{\textbf{\TITLE}\vspace{-0.75em}}

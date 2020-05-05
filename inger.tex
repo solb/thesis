@@ -80,7 +80,7 @@ your program, or in some other loaded library.}}
 \label{fig:architecture}
 \end{figure}
 
-\solb{THESIS: Give a tour of \textit{libtimetravel}?}
+\thesis{Give a tour of \textit{libtimetravel}?}
 
 
 \subsection{Automatic handling of shared state}
@@ -194,10 +194,10 @@ returns, resuming the preemptible function from the instruction that was executi
 when the preemption signal arrived.
 
 
-\solb{THESIS: Removed discussion of our signal pool trick for notifying specific
+\thesis{Removed discussion of our signal pool trick for notifying specific
 POSIX threads.}
 
-\solb{THESIS: Removed discussion of our self-signaling trick for restoring a signal
+\thesis{Removed discussion of our self-signaling trick for restoring a signal
 handler's POSIX context without using \texttt{setcontext()}.}
 
 
@@ -221,4 +221,4 @@ language runtime
 to unwind each stack frame, invoking local variables' destructors in
 the process.
 
-\solb{THESIS: Implement resource cleanup.}
+\thesis{Implement resource cleanup.}

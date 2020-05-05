@@ -72,7 +72,7 @@ of the whole application and transfer control into that namespace's copy of
 breaks the lexical scoping of static variables.  For example,
 Listing~\ref{lst:exmplstate} would fail assertion (2).
 
-\solb{THESIS: Cover the algorithm for identifying GOT entries that correspond to
+\thesis{Cover the algorithm for identifying GOT entries that correspond to
 cross-library symbols.}
 
 
@@ -129,7 +129,7 @@ is canceled rather than being allowed to return, \textit{libinger} must
 assume that its libset's shared state could be corrupted.  It unloads and reloads
 all objects in such a libset by calling \texttt{libset\_reinit()}.
 
-\solb{THESIS: Can we (re)initialize libsets more efficiently than that (e.g., by
+\thesis{Can we (re)initialize libsets more efficiently than that (e.g., by
 restoring only their writable sections)?}
 
 While libinger in principle runs on top of an unmodified \texttt{ld-linux.so}, in
@@ -142,10 +142,10 @@ the maximum number of namespaces by increasing \texttt{DL\_NNS}.
 \texttt{-fpic} as a workaround, ideally showing the performance ramifications
 (e.g., via the nginx experiment).}
 
-\solb{THESIS: Cover the \texttt{NODELETE} flag, ld.so monkey patching, and the
+\thesis{Cover the \texttt{NODELETE} flag, ld.so monkey patching, and the
 library header rewriting trick I use to circumvent the issue.}
 
-\solb{THESIS: Describe (and hopefully even address) the monomorphization problem.}
+\thesis{Describe (and hopefully even address) the monomorphization problem.}
 
 
 \subsection{Selective relinking}
@@ -166,10 +166,10 @@ with a fake address, storing the original one in its shadow GOT, which is organi
 by the libset that houses the definition.  The fake address used depends upon the
 type of symbol:
 
-\solb{THESIS: Draw a diagram explaining our custom tables and the series of lookups
+\thesis{Draw a diagram explaining our custom tables and the series of lookups
 performed by \texttt{procedure\_linkage\_override()}.}
 
-\solb{THESIS: Talk about PLOTs and pointer comparison.}
+\thesis{Talk about PLOTs and pointer comparison.}
 
 Functions' addresses are replaced by the address of a special function,
 \texttt{procedure\_linkage\_override()}.  Whenever the program tries to call one of
@@ -179,7 +179,7 @@ Because \texttt{procedure\_linkage\_override()} runs between the caller's
 \texttt{call} instruction and the real function, it is written in assembly to avoid
 clobbering registers.
 
-\solb{THESIS: Cover trick for defeating lazy PLT relocations' memoization.}
+\thesis{Cover trick for defeating lazy PLT relocations' memoization.}
 
 Global variables' addresses are replaced with a unique address within a mapped but
 inaccessible page.  When the program tries to read or write such an address, a
@@ -198,7 +198,7 @@ this time\footnote{This does not break applications with existing segfault
 handlers:\@ we intercept their calls to \texttt{sigaction()}, and forward the signal
 along to their handler whenever we are unable to resolve an address ourselves.}.
 
-\solb{THESIS: Give more details on global variable interpositions, especially
+\thesis{Give more details on global variable interpositions, especially
 heuristics.}
 
 
@@ -230,7 +230,7 @@ is set to the starting one; if so, it disables preemption interrupts and immedia
 returns.  However, \textit{libinger} registers an interruptible callback that it uses
 to reenable preemption as soon as any uncopyable function returns.
 
-\solb{THESIS: Draw a figure depicting what happens w.r.t. the current libset,
+\thesis{Draw a figure depicting what happens w.r.t. the current libset,
 preemptibility, and the notification callbacks when a preemptible function calls
 an uncopyable function (say, malloc()).}
 
@@ -266,18 +266,18 @@ We can imagine extending \textit{libgotcha} to support other use cases, such as
 simultaneously using different versions or build configurations of the same library
 from a single application.
 
-\solb{THESIS: Walk through example(s) of programs that are automatically repaired by
+\thesis{Walk through example(s) of programs that are automatically repaired by
 \textit{libas-safe}.}
 
-\solb{THESIS: Explore \textit{libac-safe} idea?}
+\thesis{Explore \textit{libac-safe} idea?}
 
-\solb{THESIS: Use \textit{libas-safe} to prototype a library that enables safe signal
+\thesis{Use \textit{libas-safe} to prototype a library that enables safe signal
 handling in Rust.}
 
-\solb{THESIS: It's been suggested that \texttt{libgotcha} could let you switch
+\thesis{It's been suggested that \texttt{libgotcha} could let you switch
 between multiple versions of the same library (e.g., different revisions, feature
 sets, or even release vs. debug).  This probably merits additional thought.}
 
-\solb{THESIS: Another possible use for (an enhanced) \textit{libgotcha} is some kind
+\thesis{Another possible use for (an enhanced) \textit{libgotcha} is some kind
 of scary runtime aspect-oriented programming thing (i.e., a generalization of
 ltrace).}
