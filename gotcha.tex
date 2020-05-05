@@ -138,7 +138,7 @@ statically-allocated thread-local storage area.  We work around this by rebuildi
 glibc with an increased \texttt{TLS\_STATIC\_SURPLUS}.  It is useful to also raise
 the maximum number of namespaces by increasing \texttt{DL\_NNS}.
 
-\solb{THESIS: Explain the trouble with COPY relocations and the need to use
+\solb{Explain the trouble with COPY relocations and the need to use
 \texttt{-fpic} as a workaround, ideally showing the performance ramifications
 (e.g., via the nginx experiment).}
 
