@@ -9,7 +9,7 @@ functions,'' each of which expresses its dependencies by ``awaiting'' a
 yield if the result is not yet available.
 
 Key to the popularity of this concurrency abstraction is the ease and seamlessness of
-parallelizing it.  Underlying every major futures runtime is a green threading
+parallelizing it.  Underlying every lightweight futures runtime is a green threading
 library, typically consisting of a scheduler that distributes work to a pool of
 OS-managed worker threads.  Without uncommon kernel
 support (e.g., scheduler activations~\cite{anderson:sosp1991}), however, this logical
