@@ -1,0 +1,28 @@
+strict digraph {
+	margin=0;
+
+	node [shape=box];
+
+	start [shape=none,label=""];
+	reentrant [label="Is the library reentrant?",width=2.75];
+	safe [label="Already safe to use"];
+	internal [label="Is all state internal to the library\n(e.g., global variables)?",width=2.75];
+	copying [label="Addressed by library copying"];
+	defer [label="Defer preemption."];
+
+	start -> reentrant;
+
+	{
+		rank=same;
+		reentrant -> safe [label="yes "];
+	}
+
+	reentrant -> internal [label=" no"];
+
+	{
+		rank=same;
+		internal -> copying [label="yes "];
+	}
+
+	internal -> defer [label=" no (e.g., shared storage/hardware resource)"];
+}
