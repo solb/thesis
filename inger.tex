@@ -95,15 +95,9 @@ routine in $L$.  This constituting a concurrency violation,
 \textit{libinger} must hide state modifications in $L$ by $F_0$
 from the execution of $F_0'$ to avoid undefined behavior.
 
-The problem is actually even worse.  Those familiar with POSIX signals may notice
-that, upon a function's timeout, its caller interrupts it.  \textit{The rest of the
-program} can therefore be viewed as a signal handler, and would normally be expected
-to restrict itself to calling async-signal-safe (roughly, nonreentrant)
-functions~\cite{signal-safety-manpage}.
-
-One non-solution to this problem is to instead prevent \textit{preemptible functions}
-from
-calling into third-party code, but doing so would
+One non-solution to this problem is to follow the approach taken by POSIX signal
+handlers and specify that preemptible functions may not
+call third-party code, but doing so would
 severely limit their usefulness (Section~\ref{sec:related}).  We opt instead
 to automatically and dynamically create copies of $L$ to
 isolate state from different timed functions.  Making this work on top of
