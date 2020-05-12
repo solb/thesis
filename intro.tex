@@ -75,7 +75,10 @@ a timeout, it is concurrency alone---and not parallelism---that is fundamental.
 Leveraging this key insight, we present a design that \textit{separates interruption
 from asynchrony} in order to provide \textit{preemption at granularities in the tens
 of microseconds}, orders of magnitude finer than contemporary OS schedulers'
-millisecond scale.  Our research prototype is implemented entirely in userland, and
+millisecond scale.  Our research prototype\footnote{Our system is open source; the
+code is available from
+\href{https://efficient.github.io/\#lpf}{\texttt{efficient.github.io/\#lpf}}.} is
+implemented entirely in userland, and
 requires neither custom compiler or runtime support nor managed runtime features such
 as garbage collection.
 
