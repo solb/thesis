@@ -16,7 +16,9 @@ interacts with (Section~\ref{sec:libinger:reentrancy}).  The result is that the 
 state shared across the boundary is that explicitly passed via arguments,
 return value, or closure---the same state the application programmer is responsible
 for protecting from concurrency violations (Section~\ref{sec:libinger:concurrency}).
-Listing~\ref{lst:exmplstate} shows the impact on an example program.
+Listing~\ref{lst:exmplstate} shows the impact on an example program, and
+Figure~\ref{fig:progsupport} classifies libraries by how \textit{libgotcha} supports
+them.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:exmplstate,caption=Demo of isolated \textnormal{(1)} vs.\ shared \textnormal{(2\&3)} state]
