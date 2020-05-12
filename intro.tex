@@ -14,12 +14,33 @@ library, typically consisting of a scheduler that distributes work to a pool of
 OS-managed worker threads.  Without uncommon kernel
 support (e.g., scheduler activations~\cite{anderson:sosp1991}), however, this logical
 threading model renders the operating system unaware of individual tasks, meaning
-context switches are purely cooperative.
+context switches are purely cooperative.  This limitation is common among userland
+thread libraries, and illustrates the need for a mechanism for \textit{preemptive}
+scheduling at finer granularity than the kernel thread.
 
-We propose an abstraction that is \textit{not} available in modern languages:\@
-an easy way of \textit{preemptively} scheduling functions (e.g., calling a function
-with a timeout).  An implementation of such \textbf{preemptible functions} based on
-OS threads suggests itself, where the function would run on a new thread that
+In this paper, we propose an abstraction for calling a function with a timeout:  Once
+invoked, the function runs on the same thread as the caller.  Should the function
+time out, it is preempted and its execution state is returned as a continuation in
+case the caller later wishes to resume it.  The abstraction is exposed via a wrapper
+function reminiscent of a thread spawn interface such as \texttt{pthread\_create()}
+(except \textit{synchronous}).  Despite their synchronous nature, \textbf{preemptible
+functions} are useful to programs that are parallel or rely on asynchronous I/O;
+indeed, we later demonstrate how our abstraction composes with futures and threads.
+
+Introducing preemption into the contemporary programming model is fundamentally
+challenging because the existing systems stack contains pervasive nonreentrancy,
+support for which requires special handling to maintain compatibility with existing
+code.  Those programmers who have written POSIX signal handlers have already grazed
+the issue:\@ because such functions interrupt the rest of the program, they can
+safely call only async-signal-safe (roughly, reentrant)
+functions~\cite{signal-safety-manpage}.  This restriction makes writing nontrivial
+signal handlers difficult, but it would be crippling if we had to extend it to
+preemptible functions, which interrupt the rest of the program.  In any na\"ive
+implementation, therefore, \textit{the rest of the program} would have to be written
+like a signal handler.
+
+The most obvious approach to implementing preemptible functions is to map them to
+OS threads, where the function would run on a new thread that
 could be cancelled upon timeout.  Unfortunately, the existence of nonreentrant
 functions makes cancelling a thread hard.  UNIX's pthreads provide
 asynchronous cancelability, but according to the Linux documentation, it ``is rarely
@@ -36,7 +57,7 @@ heap, the heap lock will not be released...'' and goes on from
 there~\cite{www-microsoft-terminatethread}.
 
 One might instead seek to implement preemptible functions via the UNIX
-\texttt{fork()} function.  Even ignoring the high overhead, this would require
+\texttt{fork()} call.  Even ignoring the high overhead, this would require
 careful configuration of shared memory
 to ensure that objects created outside the function were accessible inside, and worse
 yet, that allocations performed inside remained available after it exited.
@@ -51,30 +72,17 @@ preemptible functions to a problem of parallelism, they hurt performance by plac
 thread creation on the critical path and limit composability by increasing the
 abstraction's complexity.  We observe that, when calling a function with
 a timeout, it is concurrency alone---and not parallelism---that is fundamental.
+Leveraging this key insight, we present a design that \textit{separates interruption
+from asynchrony} in order to provide \textit{preemption at granularities in the tens
+of microseconds}, orders of magnitude finer than contemporary OS schedulers'
+millisecond scale.  Our research prototype is implemented entirely in userland, and
+requires neither custom compiler or runtime support nor managed runtime features such
+as garbage collection.
 
-\st{In this paper, we propose lightweight preemptible functions, a userland abstraction
-for making function calls with a timeout that differs significantly from the state of
-the art:  (1) Unlike threading abstractions such as coroutines, it \textit{runs
-functions synchronously on the caller's thread}.  (2) It supports \textit{preemption
-at granularities in the tens of microseconds}, orders of magnitude finer than
-contemporary OS schedulers' millisecond scale.  (3) It is \textit{language agnostic},
-being implemented in userland without relying on any particular compiler or managed
-runtime.}
-
-\solb{In this paper, we propose a mechanism for making function calls with a timeout,
-via a \textit{synchronous} wrapper function otherwise reminiscent of thread spawn
-functions.  Separating interruption from asynchrony in this way enables us to provide
-\textit{noncooperative} preemption at granularities in the tens of microseconds.
-However, our work is also applicable to programs that are parallel or use
-asynchronous I/O:\@ we demonstrate how it can be composed with existing abstractions
-such as futures and threads.}
-
-\solb{We believe supporting preemptible function calls in languages without a managed
-runtime to be a novel achievement.  The problem is fundamentally challenging because
-of nonreentrancy:\@ because the preemptible function is interrupted on timeout,
-\textit{the rest of the program} can be viewed as a signal handler, and would
-normally by restricted to calling async-signal-safe (roughly, nonreentrant)
-functions~\cite{signal-safety-manpage}.  Our second main contribution is selective
-relinking, a compiler-agnostic approach to automatically lifting this restriction.
-By default preemptible functions are paused on timeout and return a continuation;
-our final contribution, although more costly, is cancellation support.}
+This paper makes three primary contributions:  (1) It proposes function calls that
+return a continuation upon preemption, a novel primitive for unmanaged languages.
+(2) It introduces selective relinking, a compiler-agnostic approach to automatically
+lifting safety restrictions related to nonreentrancy.  (3) It demonstrates how to
+support asynchronous function cancellation, a feature missing from state-of-the-art
+approaches to preemption, even those that operate at the coarser granularity of a
+kernel thread.
