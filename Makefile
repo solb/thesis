@@ -1,5 +1,5 @@
 TARGET := paper
-EXTRAS := figs/architecture.pdf
+EXTRAS := figs/progsupport.pdf figs/architecture.pdf
 
 all: pdf
 

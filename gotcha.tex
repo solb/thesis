@@ -53,6 +53,7 @@ interfaces fail to provide the required type of isolation.
 
 
 \subsection{Library copying: namespaces}
+\label{sec:namespaces}
 
 Expanding a preemptible function's isolation boundary to include libraries requires
 providing it with private copies of those libraries.  POSIX has long provided a
@@ -77,6 +78,7 @@ cross-library symbols.}
 
 
 \subsection{Library copying: libsets}
+\label{sec:libsets}
 
 We just saw that namespaces provide too much isolation
 for our needs:\@ because of their completely independent dependency graphs, they
@@ -203,6 +205,7 @@ heuristics.}
 
 
 \subsection{Uninterruptible code: uncopyable}
+\label{sec:uncopyable}
 
 The library-copying approach to memory isolation works for the common case, and
 allows us to handle most third-party libraries with no configuration.  However, in

@@ -37,7 +37,21 @@ functions~\cite{signal-safety-manpage}.  This restriction makes writing nontrivi
 signal handlers difficult, but it would be crippling if we had to extend it to
 preemptible functions, which interrupt the rest of the program.  In any na\"ive
 implementation, therefore, \textit{the rest of the program} would have to be written
-like a signal handler.
+like a signal handler.  We avoid this limitation by automatically applying
+mitigations to support most nonreentrant code with no modification, as classified by
+the taxonomy in Figure~\ref{fig:progsupport}.
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/progsupport}
+\label{fig:progsupport}
+\caption{Taxonomy of support for library code.  \textnormal{In practice, we always
+apply one of the two mitigations.  Library copying is used by default, and is
+discussed in Sections \ref{sec:namespaces} and \ref{sec:libsets}.  Deferred
+preemption is needed to preserve the semantics of \texttt{malloc()} and users of
+uncopyable resources such as file descriptors or network adapters, and is applied
+according to a whitelist, as described in Section~\ref{sec:uncopyable}.}}
+\label{fig:progsupport}
+\end{figure}
 
 The most obvious approach to implementing preemptible functions is to map them to
 OS threads, where the function would run on a new thread that
