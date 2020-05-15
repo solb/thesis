@@ -60,7 +60,7 @@ could be cancelled upon timeout.  Unfortunately, cancelling a thread is also har
 UNIX's pthreads provide
 asynchronous cancelability, but according to the Linux documentation, it ``is rarely
 useful.  Since the thread could be cancelled at \textit{any} time, it cannot safely
-reserve resources (e.g.  allocating memory with \texttt{malloc()}), acquire mutexes,
+reserve resources (e.g., allocating memory with \texttt{malloc()}), acquire mutexes,
 semaphores, or locks, and so on... some internal data structures (e.g., the linked
 list of free blocks managed by the \texttt{malloc()} family of functions) may be left
 in an inconsistent state if cancellation occurs in the middle of the function
