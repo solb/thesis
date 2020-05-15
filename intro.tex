@@ -27,17 +27,18 @@ function reminiscent of a thread spawn interface such as \texttt{pthread\_create
 functions} are useful to programs that are parallel or rely on asynchronous I/O;
 indeed, we later demonstrate how our abstraction composes with futures and threads.
 
-Introducing preemption into the contemporary programming model is fundamentally
-challenging because the existing systems stack contains pervasive nonreentrancy,
-support for which requires special handling to maintain compatibility with existing
-code.  Those programmers who have written POSIX signal handlers have already grazed
-the issue:\@ because such functions interrupt the rest of the program, they can
-safely call only async-signal-safe (roughly, reentrant)
-functions~\cite{signal-safety-manpage}.  This restriction makes writing nontrivial
-signal handlers difficult, but it would be crippling if we had to extend it to
-preemptible functions, which interrupt the rest of the program.  In any na\"ive
-implementation, therefore, \textit{the rest of the program} would have to be written
-like a signal handler.  We avoid this limitation by automatically applying
+The central challenge of introducing preemption into the contemporary programming
+model is supporting existing code.  Despite decades of improvement focused on thread
+safety, modern systems stacks still contain critical nonreentrancy, ranging from
+devices to the dynamic memory allocator's heap region.
+Under POSIX, code that interrupts other user code is safe only if it restricts
+itself to calling async-signal-safe (roughly, reentrant)
+functions~\cite{signal-safety-manpage}.  This restriction is all too familiar to
+those programmers who have written signal handlers:\@ it is what makes it notoriously
+difficult to write nontrivial ones.  Preemption of a timed function constitutes its
+interruption by the rest of the program.  This implies that \textit{the rest of the
+program} should be restricted to calling reentrant functions; needless to say, such
+a rule would be crippling.  We avoid this limitation by automatically applying
 mitigations to support most nonreentrant code with no modification, as classified by
 the taxonomy in Figure~\ref{fig:progsupport}.
 
