@@ -56,8 +56,8 @@ according to a whitelist, as described in Section~\ref{sec:uncopyable}.}}
 
 The most obvious approach to implementing preemptible functions is to map them to
 OS threads, where the function would run on a new thread that
-could be cancelled upon timeout.  Unfortunately, the existence of nonreentrant
-functions makes cancelling a thread hard.  UNIX's pthreads provide
+could be cancelled upon timeout.  Unfortunately, cancelling a thread is also hard.
+UNIX's pthreads provide
 asynchronous cancelability, but according to the Linux documentation, it ``is rarely
 useful.  Since the thread could be cancelled at \textit{any} time, it cannot safely
 reserve resources (e.g.  allocating memory with \texttt{malloc()}), acquire mutexes,
