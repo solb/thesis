@@ -160,11 +160,11 @@ relinking, the mechanism underlying libset switches.
 Whenever a program uses a dynamic symbol, it looks up its address in a data structure
 called the Global Offset Table (GOT).  As it loads the program, \texttt{ld-linux.so}
 eagerly resolves the addresses of all global variables and some functions and stores
-them in the GOT\footnote{Some other functions are instead resolved lazily at their
-first invocation.}.
+them in the GOT.\footnote{Some other functions are instead resolved lazily at their
+first invocation.}
 
-Selective relinking works by shadowing the GOT\footnote{Hence the name
-\textit{libGOTcha}.}.  As soon as \texttt{ld-linux.so} finishes populating
+Selective relinking works by shadowing the GOT.\footnote{Hence the name
+\textit{libGOTcha}.}  As soon as \texttt{ld-linux.so} finishes populating
 the GOT, \textit{libgotcha} replaces every entry that should trigger a libset switch
 with a fake address, storing the original one in its shadow GOT, which is organized
 by the libset that houses the definition.  The fake address used depends upon the
@@ -189,18 +189,18 @@ Global variables' addresses are replaced with a unique address within a mapped b
 inaccessible page.  When the program tries to read or write such an address, a
 segmentation fault occurs; \textit{libgotcha} handles the fault, disassembles the
 faulting instruction to determine the base address register of its address
-calculation\footnote{Although it is possible to
+calculation,\footnote{Although it is possible to
 generate code sequences that are incompatible with this approach (e.g., because they
 perform in-place pointer arithmetic on a register rather than using displacement-mode
 addressing with a base address), we employ a few heuristics based on the context of
-the instruction and fault; in our experience, these cover the common cases.},
+the instruction and fault; in our experience, these cover the common cases.}
 loads the address from this register, computes the location of the
 shadow GOT entry based on the fake address, checks the thread's next libset, and
 replaces the register's contents with the appropriate resolved address.  It then
 returns, causing the faulting instruction to be reexecuted with the valid address
-this time\footnote{This does not break applications with existing segfault
+this time.\footnote{This does not break applications with existing segfault
 handlers:\@ we intercept their calls to \texttt{sigaction()}, and forward the signal
-along to their handler whenever we are unable to resolve an address ourselves.}.
+along to their handler whenever we are unable to resolve an address ourselves.}
 
 \thesis{Give more details on global variable interpositions, especially
 heuristics.}

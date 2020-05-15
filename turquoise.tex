@@ -11,8 +11,8 @@ nonreentrancy support makes it far from general purpose.)
 Although the preemptible function is a fundamentally synchronous abstraction, its
 simplicity makes it readily composable, and indeed, well-suited to implementing
 preemptive threading.  As a proof of concept, we have created a
-preemptively-scheduled userland thread library, \textit{libturquoise}\footnote{so
-called because it implements ``green threading with a twist''}, by modifying the
+preemptively-scheduled userland thread library, \textit{libturquoise},\footnote{so
+called because it implements ``green threading with a twist''} by modifying the
 \textit{tokio-threadpool}~\cite{www-tokio-threadpool} work-stealing scheduler from
 the Rust futures ecosystem.
 

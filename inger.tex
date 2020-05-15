@@ -2,9 +2,9 @@
 \label{sec:libinger}
 
 To address the literature's shortcomings, we have developed
-\textit{libinger}\footnote{In the style of GNU's \textit{libiberty}, we named our
+\textit{libinger},\footnote{In the style of GNU's \textit{libiberty}, we named our
 system for the command-line switch used to link against it.  As the proverb goes,
-``Don't want your function calls to linger?  Link with \texttt{-linger}.''},
+``Don't want your function calls to linger?  Link with \texttt{-linger}.''}
 a library providing a small API for timed function dispatch
 (Listing~\ref{lst:ingerapi}):
 \begin{itemize}
@@ -169,11 +169,11 @@ original call site, removing its own stack frame in the process.}}
 Whenever \textit{libinger} is executing a user-provided function, we
 enable fine-grained timer interrupts to
 monitor that function's elapsed running time.  A timer interrupt fires
-periodically\footnote{For simplicity, we use a fixed signal frequency for all
+periodically,\footnote{For simplicity, we use a fixed signal frequency for all
 preemptible functions, but this is not fundamental to the design.  In the future,
 we plan to adjust each function's frequency based on its timeout, and to delay the
 first signal until shortly before the time limit (in the case of longer-running
-functions).}, causing our signal
+functions).} causing our signal
 handler to be invoked.  If the function exceeds its timeout,
 this handler saves a continuation by dumping the machine's registers.  It then
 performs an unstructured jump out of the signal handler and back into the
