@@ -57,17 +57,25 @@ The most obvious approach to implementing preemptible functions is to map them t
 OS threads, where the function would run on a new thread that
 could be cancelled upon timeout.  Unfortunately, cancelling a thread is also hard.
 UNIX's pthreads provide
-asynchronous cancelability, but according to the Linux documentation, it ``is rarely
+asynchronous cancelability, but according to the Linux documentation, it
+\begin{quote}
+is rarely
 useful.  Since the thread could be cancelled at \textit{any} time, it cannot safely
 reserve resources (e.g., allocating memory with \texttt{malloc()}), acquire mutexes,
-semaphores, or locks, and so on... some internal data structures (e.g., the linked
+semaphores, or locks, and so on...\@ some internal data structures (e.g., the linked
 list of free blocks managed by the \texttt{malloc()} family of functions) may be left
 in an inconsistent state if cancellation occurs in the middle of the function
-call''~\cite{pthreadsetcanceltype-manpage}.  The same is true on Windows, whose API
-documentation warns that asynchronously terminating a thread ``can result in the
+call.
+\end{quote}
+\cite{pthreadsetcanceltype-manpage}.  The same is true on Windows, whose API
+documentation warns that asynchronously terminating a thread
+\begin{quote}
+can result in the
 following problems: If the target thread owns a critical section, the critical
 section will not be released.  If the target thread is allocating memory from the
-heap, the heap lock will not be released...'' and goes on from
+heap, the heap lock will not be released...
+\end{quote}
+and goes on from
 there~\cite{www-microsoft-terminatethread}.
 
 One might instead seek to implement preemptible functions via the UNIX
