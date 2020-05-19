@@ -1,49 +1,54 @@
 \section{Thread library: \textit{libturquoise}}
 \label{sec:libturquoise}
 
+Until now, we have limited our discussion to synchronous, single-threaded programs.
+In this section, we will show that the preemptible function abstraction is equally
+relevant to asynchronous and parallel programs, and that it composes naturally with
+both futures and threads.  To demonstrate this, we have created
+\textit{libturquoise},\footnote{so called because it implements ``green threading
+with a twist''} a preemptive userland thread library.
+
+That \textit{libturquoise} uses preemptive scheduling is a significant achievement:\@
 \textit{Shinjuku} observes that ``there have been several efforts to implement
 efficient, user-space thread libraries.  They all focus on cooperative
-scheduling''~\cite{Kaffes:nsdi2019}.  We agree that such libraries are rare, and
-attribute this to a lack of natural abstractions to support them.  (Though
-\textit{RT} from Section~\ref{sec:related} could be a counterexample, its lack of
-nonreentrancy support makes it far from general purpose.)
+scheduling''~\cite{Kaffes:nsdi2019}.  (Though \textit{RT} from
+Section~\ref{sec:related} could be a counterexample, its lack of nonreentrancy
+support renders it far from general purpose.)  We attribute the dearth of preemptive
+userland threading to a lack of natural abstractions to support them.
 
-Although the preemptible function is a fundamentally synchronous abstraction, its
-simplicity makes it readily composable, and indeed, well-suited to implementing
-preemptive threading.  As a proof of concept, we have created a
-preemptively-scheduled userland thread library, \textit{libturquoise},\footnote{so
-called because it implements ``green threading with a twist''} by modifying the
-\textit{tokio-threadpool}~\cite{www-tokio-threadpool} work-stealing scheduler from
-the Rust futures ecosystem.
+Before presenting the \textit{libturquoise} design, we begin with some context about
+futures.
 
-To migrate the thread pool workers to preemptive scheduling, we made them poll each
-task future from within a preemptible function.  We did this in
-just 120 new lines of Rust, 50 of them added to version 0.1.16 of the thread library
-and
-70 spent augmenting \textit{libinger}'s Rust API with a reusable \textbf{preemptible
-futures} adapter.
 
-Currently, \textit{libturquoise} assigns each future it launches or resumes the same
-fixed time budget, although this design could be extended to support
-multiple job priorities.  When a task times out, the scheduler pops it from its
-worker thread's job queue and pushes it to the incoming queue,
-offering it to any available worker for rescheduling after all other waiting jobs
-have had a turn.
+\subsection{Futures and asynchronous I/O}
+
+As mentioned in Section~\ref{sec:intro}, futures are a primitive for expressing
+asynchronous program tasks in a format amenable to cooperative scheduling.
+Structuring a program around futures makes it easy to achieve low latency by enabling
+the runtime to reschedule slow operations off the critical path.  Unfortunately,
+because blocking system calls cannot be rescheduled in userland, they threaten to
+erase this gain.
+
+The community has done extensive prior work to support asynchronous I/O via result
+callbacks~\cite{www-libevent, www-libev, www-libuv, www-mordor}.  Futures runtimes
+such as Rust's Hyper~\cite{www-hyper} have adapted this approach by providing I/O
+libraries whose functions return futures.  Rather than duplicate this work, we have
+integrated preemptible functions with futures so they can leverage it.
 
 
 \subsection{Preemptible futures}
 
 For seamless interoperation between preemptible functions and the futures ecosystem,
-we built a preemptible future adapter that wraps the \textit{libinger} API.  This
-can be used to pass preemptible functions into a platform designed to process
-futures.
+we built a preemptible future adapter that wraps the \textit{libinger} API.  Like a
+normal future, a preemptible future yields when its result is not ready, but it can
+also time out.
 
-Because
-of languages' differing futures, this integration is not portable like the core API.
-Fortunately, its implementation is a straightforward application of
+Each language has its own futures interface, so preemptible futures are not language
+agnostic like the preemptible functions API.  Fortunately, they are easy to implement
+by using
 \texttt{pause()} to propagate cooperative yields across the preemptive function
-boundary:\@ we present the general construction of the preemptible future
-type and an algorithm for polling one in Listing~\ref{lst:future}.
+boundary.  We give the type construction and polling algorithm in
+Listing~\ref{lst:future}; our Rust implementation is only 70 lines.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:future,caption=Futures adapter type (pseudocode)]
@@ -66,3 +71,18 @@ function poll(PreemptibleFuture fut):
     return NotReady
 \end{lstlisting}
 \end{figure}
+
+
+\subsection{Preemptive userland threading}
+
+We built the \textit{libturquoise} thread library by modifying the
+\textit{tokio-threadpool}~\cite{www-tokio-threadpool} work-stealing scheduler from
+the Rust futures ecosystem.  Starting from version 0.1.16 of the upstream project, we
+added 50 lines of code that wrap each incoming task in a preemptible future.
+
+Currently, \textit{libturquoise} assigns each future it launches or resumes the same
+fixed time budget, although this design could be extended to support
+multiple job priorities.  When a task times out, the scheduler pops it from its
+worker thread's job queue and pushes it to the incoming queue,
+offering it to any available worker for rescheduling after all other waiting jobs
+have had a turn.
