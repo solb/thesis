@@ -181,7 +181,12 @@ the affected functions, this intermediary checks the thread's next libset, looks
 the address of the appropriate definition in the shadow GOT, and jumps to it.
 Because \texttt{procedure\_linkage\_override()} runs between the caller's
 \texttt{call} instruction and the real function, it is written in assembly to avoid
-clobbering registers.
+clobbering registers.  Instead of being linked to their symbol definitions at load
+time, some function calls resolve lazily the first time they are called:\@ their GOT
+entries initially point to a special lookup function in the dynamic linker that
+rewrites the GOT entry when invoked.  Such memoization would remove our intermediary,
+so we alter the ELF relocation entries of affected symbols to trick the dynamic
+linker into updating our shadow GOT instead.
 
 \thesis{Cover trick for defeating lazy PLT relocations' memoization.}
 
