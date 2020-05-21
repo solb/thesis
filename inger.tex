@@ -169,11 +169,12 @@ original call site, removing its own stack frame in the process.}}
 Whenever \textit{libinger} is executing a user-provided function, we
 enable fine-grained timer interrupts to
 monitor that function's elapsed running time.  A timer interrupt fires
-periodically,\footnote{For simplicity, we use a fixed signal frequency for all
+periodically,\footnote{Signal arrival is accurate to microsecond timescales, but
+exhibits a warmup effect.  For simplicity, we use a fixed signal frequency for all
 preemptible functions, but this is not fundamental to the design.  In the future,
 we plan to adjust each function's frequency based on its timeout, and to delay the
-first signal until shortly before the time limit (in the case of longer-running
-functions).} causing our signal
+first signal until shortly before the prescribed timeout (in the case of
+longer-running functions).} causing our signal
 handler to be invoked.  If the function exceeds its timeout,
 this handler saves a continuation by dumping the machine's registers.  It then
 performs an unstructured jump out of the signal handler and back into the
