@@ -26,9 +26,8 @@ futures.
 As mentioned in Section~\ref{sec:intro}, futures are a primitive for expressing
 asynchronous program tasks in a format amenable to cooperative scheduling.
 Structuring a program around futures makes it easy to achieve low latency by enabling
-the runtime to reschedule slow operations off the critical path.  Unfortunately,
-because blocking system calls cannot be rescheduled in userland, they threaten to
-erase this gain.
+the runtime to reschedule slow operations off the critical path.  Alas, blocking
+system calls (which cannot be rescheduled by userland) defeat this approach.
 
 The community has done extensive prior work to support asynchronous I/O via result
 callbacks~\cite{www-libevent, www-libev, www-libuv, www-mordor}.  Futures runtimes
