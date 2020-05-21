@@ -50,8 +50,8 @@ We feel this restriction is reasonable because a programmer wishing to use
 project's build in order to add the dependency.
 
 Before introducing the \textit{libgotcha} API and explaining selective relinking, we
-now briefly motivate the need for libgotcha by demonstrating how existing system
-interfaces fail to provide the required type of isolation.
+now briefly motivate the need for \textit{libgotcha} by demonstrating how existing
+system interfaces fail to provide the required type of isolation.
 
 
 \subsection{Library copying: namespaces}
@@ -89,11 +89,11 @@ rules.  However, we can use namespaces to build the abstraction we need, which w
 term a \textbf{libset}.  A libset is like a namespace, except that the program can
 decide whether symbols referenced within a libset resolve to the same
 libset or a different one.  Control libraries such as \textit{libinger} configure such
-\textbf{libset switches} via \textbf{libgotcha}'s private control API, shown
+\textbf{libset switches} via \textit{libgotcha}'s private control API, shown
 in Listing~\ref{lst:gotchaapi}.
 
 \begin{figure}
-\begin{lstlisting}[label=lst:gotchaapi,caption=libgotcha C interface]
+\begin{lstlisting}[label=lst:gotchaapi,caption=\textit{libgotcha} C interface]
 typedef long libset_t;
 
 bool libset_thread_set_next(libset_t);
@@ -136,7 +136,8 @@ all objects in such a libset by calling \texttt{libset\_reinit()}.
 \thesis{Can we (re)initialize libsets more efficiently than that (e.g., by
 restoring only their writable sections)?}
 
-While libinger in principle runs on top of an unmodified \texttt{ld-linux.so}, in
+While \textit{libinger} in principle runs on top of an unmodified
+\texttt{ld-linux.so}, in
 practice initializing more than one namespace tends to exhaust the
 statically-allocated thread-local storage area.  We work around this by rebuilding
 glibc with an increased \texttt{TLS\_STATIC\_SURPLUS}.  It is useful to also raise
@@ -164,7 +165,7 @@ them in the GOT.\footnote{Some other functions are instead resolved lazily at th
 first invocation.}
 
 Selective relinking works by shadowing the GOT.\footnote{Hence the name
-\textit{libGOTcha}.}  As soon as \texttt{ld-linux.so} finishes populating
+\textit{lib\textbf{got}cha}.}  As soon as \texttt{ld-linux.so} finishes populating
 the GOT, \textit{libgotcha} replaces every entry that should trigger a libset switch
 with a fake address, storing the original one in its shadow GOT, which is organized
 by the libset that houses the definition.  The fake address used depends upon the
