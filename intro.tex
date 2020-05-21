@@ -65,9 +65,9 @@ reserve resources (e.g., allocating memory with \texttt{malloc()}), acquire mute
 semaphores, or locks, and so on...\@ some internal data structures (e.g., the linked
 list of free blocks managed by the \texttt{malloc()} family of functions) may be left
 in an inconsistent state if cancellation occurs in the middle of the function
-call.
+call~\cite{pthreadsetcanceltype-manpage}.
 \end{quote}
-\cite{pthreadsetcanceltype-manpage}.  The same is true on Windows, whose API
+The same is true on Windows, whose API
 documentation warns that asynchronously terminating a thread
 \begin{quote}
 can result in the
