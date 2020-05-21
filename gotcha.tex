@@ -150,6 +150,7 @@ library header rewriting trick I use to circumvent the issue.}
 
 
 \subsection{Selective relinking}
+\label{sec:relinking}
 
 Most of the complexity of \textit{libgotcha} lies in the implementation of selective
 relinking, the mechanism underlying libset switches.
@@ -243,6 +244,7 @@ an uncopyable function (say, malloc()).}
 
 
 \subsection{Limitations}
+\label{sec:limits}
 
 The current version of \textit{libgotcha} includes partial support for Thread-Local
 Storage (TLS).  Like other globals, TLS variables are copied along with the libset;
