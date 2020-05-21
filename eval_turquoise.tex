@@ -1,8 +1,12 @@
 To test whether our thread library could combat head-of-line blocking in a large
 system, we benchmarked
 \textit{hyper}, the highest-performing Web server in TechEmpower's plaintext
-benchmark as of July 2019~\cite{www-hyper}.  We built \textit{hyper} against
-\textit{libturquoise} configured with a task timeout of 2 ms, give or take a
+benchmark as of July 2019~\cite{www-hyper}.  The server uses
+\textit{tokio-threadpool} for scheduling; because the changes described in
+Section~\ref{sec:libturquoise} are transparent, making \textit{hyper} preemptive was
+as easy as building against \textit{libturquoise} instead.  In fact, we didn't even
+check out the \textit{hyper} codebase.  We configured \textit{libturquoise} with a
+task timeout of 2 ms, give or take a
 100-$\mu$s \textit{libinger} preemption interval, and configured it to serve
 responses only after spinning in a busy loop for a number of iterations specified in
 each request.  For our client, we modified version 4.1.0 of the
