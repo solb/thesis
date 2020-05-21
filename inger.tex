@@ -22,8 +22,8 @@ effect.
 \begin{figure}[t]
 \begin{lstlisting}[label=lst:ingerapi,caption=Preemptible functions core interface]
 struct linger_t {
-  bool is_complete;
-  cont_t continuation;
+	bool is_complete;
+	cont_t continuation;
 };
 
 linger_t launch(Function func,
@@ -34,9 +34,9 @@ void resume(linger_t *cont, u64 time_us);
 \begin{lstlisting}[label=lst:use, caption=Preemptible function usage example]
 linger = launch(task, TIMEOUT, NULL);
 if (!linger.is_complete) {
-  // Save @linger to a task queue to
-  // resume later
-  task_queue.push(linger);
+	// Save @linger to a task queue to
+	// resume later
+	task_queue.push(linger);
 }
 
 // Handle other tasks

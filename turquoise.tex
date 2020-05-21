@@ -54,23 +54,23 @@ Listing~\ref{lst:future}; our Rust implementation is only 70 lines.
 \begin{lstlisting}[label=lst:future,caption=Futures adapter type (pseudocode)]
 function PreemptibleFuture(Future fut,
                               Num timeout):
-  function adapt():
-    // Poll wrapped future in the usual way
-    while poll(fut) == NotReady:
-      pause()
-  fut.linger = launch(adapt, CREATE_ONLY)
-  fut.timeout = timeout
-  return fut
+	function adapt():
+		// Poll wrapped future in the usual way
+		while poll(fut) == NotReady:
+			pause()
+	fut.linger = launch(adapt, CREATE_ONLY)
+	fut.timeout = timeout
+	return fut
 
 // Custom polling logic for preemptible futures
 function poll(PreemptibleFuture fut):
-  resume(fut.linger, fut.timeout);
-  if has_finished(fut.linger):
-    return Ready
-  else
-    if called_pause(fut.linger):
-      notify_unblocked(fut.subscribers)
-    return NotReady
+	resume(fut.linger, fut.timeout);
+	if has_finished(fut.linger):
+		return Ready
+	else
+		if called_pause(fut.linger):
+			notify_unblocked(fut.subscribers)
+		return NotReady
 \end{lstlisting}
 \end{figure}
 

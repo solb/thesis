@@ -26,16 +26,16 @@ static bool two;
 bool three;
 
 linger_t caller(const char *s, u64 timeout) {
-  stdout = NULL;
-  two = true;
-  three = true;
-  return launch(timed, timeout, s);
+	stdout = NULL;
+	two = true;
+	three = true;
+	return launch(timed, timeout, s);
 }
 
 void timed(void *s) {
-  assert(stdout); // (1)
-  assert(two); // (2)
-  assert(three); // (3)
+	assert(stdout); // (1)
+	assert(two); // (2)
+	assert(three); // (3)
 }
 \end{lstlisting}
 \end{figure}
