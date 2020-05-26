@@ -23,7 +23,6 @@ strict graph {
 	}
 
 	{
-		serialclient [shape=oval,label="Your program\n(if synchronous)"];
 		clientlib [shape=oval,label="Your novel\npreemptive library"];
 		elipsis [shape=none,label="...",fontsize=18];
 		libturquoise [shape=box,label=<<i>libturquoise</i>>];
@@ -32,6 +31,7 @@ strict graph {
 	{
 		node [shape=oval];
 
+		serialclient [label="Your program\n(if synchronous)"];
 		parallelclient [label="Your program\n(if parallel)"];
 	}
 
@@ -48,5 +48,11 @@ strict graph {
 		parallelclient -- libturquoise;
 		elipsister -- libgotcha;
 		libassafe -- libgotcha;
+	}
+
+	{
+		edge [style=invisible];
+
+		serialclient -- elipsis;
 	}
 }
