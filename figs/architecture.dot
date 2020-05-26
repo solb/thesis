@@ -5,25 +5,35 @@ strict graph {
 	node [fontsize=10,margin=0.05];
 
 	{
-		node [shape=oval];
+		node [shape=hexagon];
 
-		serialclient [label="Your program\n(if synchronous)"];
-		clientlib [label="Your novel\npreemptive library"];
-		elipsis [shape=none,label="...",fontsize=18];
-		parallelclient [label="Your program\n(if parallel)"];
-		elipsister [shape=none,label="...",fontsize=18];
-		libassafe [label=<Other control lib.<br/>(e.g., <i>libas-safe</i>)>];
+		rtld [label="Dynamic linker"];
 	}
 
 	{
 		node [shape=box];
 
-		libturquoise [label=<<i>libturquoise</i>>];
-		libinger [label=<<i>libinger</i>>];
 		libgotcha [label=<<i>libgotcha</i>>];
 	}
 
-	rtld [shape=hexagon,label="Dynamic linker"];
+	{
+		libinger [shape=box,label=<<i>libinger</i>>];
+		elipsister [shape=none,label="...",fontsize=18];
+		libassafe [shape=oval,label=<Other control lib.<br/>(e.g., <i>libas-safe</i>)>];
+	}
+
+	{
+		serialclient [shape=oval,label="Your program\n(if synchronous)"];
+		clientlib [shape=oval,label="Your novel\npreemptive library"];
+		elipsis [shape=none,label="...",fontsize=18];
+		libturquoise [shape=box,label=<<i>libturquoise</i>>];
+	}
+
+	{
+		node [shape=oval];
+
+		parallelclient [label="Your program\n(if parallel)"];
+	}
 
 	libturquoise -- libinger;
 	libinger -- libgotcha;
