@@ -18,20 +18,20 @@ conditional \texttt{kill()}, then a \texttt{waitpid()} to reap the child.  We ra
 \texttt{pthread\_cancel()} both with and without asynchronous cancelability enabled,
 but the former always deadlocked.  The timeout was 10 ms in all cases.
 
-\begin{figure*}[t]
-	\begin{minipage}{0.46\textwidth}
+\begin{figure}
+	\begin{minipage}{0.23\textwidth}
 	\includegraphics[width=\textwidth]{figs/cerberus2_nns16_surplus256k_mirjam}
 	\subcaption{\texttt{openclipart-png} image}
 	\label{fig:libpng:benign}
 	\end{minipage}
 %
-	\begin{minipage}{0.48\textwidth}
+	\begin{minipage}{0.24\textwidth}
 	\includegraphics[width=\textwidth]{figs/cerberus2_nns16_surplus256k_10K}
 	\subcaption{\texttt{bomb.codes} image}
 	\label{fig:libpng:bomb}
 	\end{minipage}
 \caption{\textit{libpng} in-memory decode times for two different images}
-\end{figure*}
+\end{figure}
 
 Running on the benign RGB image \texttt{mirjam\_meijer\_mirjam\_mei.png} from version
 \texttt{1:0.18+dfsg-15} of Debian's \texttt{openclipart-png} package showed
