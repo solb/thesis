@@ -11,12 +11,12 @@
 &&& \multicolumn{2}{c|}{Dependencies} & \multicolumn{2}{c}{Third-party code support} \\
 System & Preemptive & Synchronous & In userland & Works without GC & Preemptible & Works without recompiling \\
 \hline
-\textit{Scheme engines} & \checkmark* & \checkmark & \checkmark && $\dagger$ & --- \\
-\textit{Lilt} && \checkmark & \checkmark && $\dagger$ & \\
+\textit{Scheme engines} & \checkmark* & \checkmark & \checkmark && $\dagger$ & \checkmark \\
+\textit{Lilt} && \checkmark & \checkmark && $\dagger$* & --- \\
 \textit{goroutines} &&& \checkmark && $\dagger$* & --- \\
 $C\forall$ & \checkmark && \checkmark & \checkmark & $\dagger$* & --- \\
-\textit{RT library} & \checkmark && \checkmark & \checkmark && --- \\
-\textit{Shinjuku} & \checkmark &&& \checkmark & $\dagger$ & --- \\
+\textit{RT library} & \checkmark && \checkmark & \checkmark && \checkmark \\
+\textit{Shinjuku} & \checkmark &&& \checkmark & $\dagger$ & \\
 \hline
 \textit{libinger} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark
 \end{tabular}
