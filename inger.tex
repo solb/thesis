@@ -206,6 +206,7 @@ handler's POSIX context without using \texttt{setcontext()}.}
 
 
 \subsection{Cancellation}
+\label{sec:libinger:cancel}
 
 Should a caller decide not to finish running a timed-out preemptible function, it
 must deallocate it.  In Rust this happens implicitly via the \texttt{linger\_t}

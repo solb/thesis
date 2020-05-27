@@ -1,41 +1,38 @@
 \section{Future work}
 
-Like \textit{Shinjuku} and \textit{RT} before us, we have presented a preemptive
-thread library; however, we have done so by building parallelism on top of
-preemption,
-not the other way around.  Our approach offers a more flexible abstraction that
-we intend to apply to other problems.  This also goes for our \textit{libgotcha}
-tool, whose potential usese we explored in Section~\ref{sec:assafe}.
+One of our contributions is asynchronous cancellation, something rarely supported by
+the state of the art.  In Section~\ref{sec:libinger:cancel}, we noted that we do not
+yet support automated resource cleanup; however, we outlined a possible approach for
+RAII languages, which we intend to investigate further.  Cancellation is currently
+our most expensive operation because of the libset reinitialization described in
+Section~\ref{sec:gotchainit}, but we plan to improve this by restoring only the
+writeable regions of each module.
 
-\solb{Mention other use cases, such as the continuation-memoizing RPC server?}
-
-We also diverge from \textit{Shinjuku} and \textit{RT}
-in another way:\@ unlike these systems, we make each thread responsible for
-its own preemption rather than serving preemption signals from a shared watchdog
-thread.  We informed this decision by back-of-the-envelope calculations based on
-Shinjuku's measurements of bare-metal interprocessor
-interrupts (IPIs) and Linux signals.
-
+In a significant divergence from the \textit{Shinjuku} design, we make each thread
+responsible for its own preemption rather than sending signals from a shared watchdog
+thread.  A back-of-the-envelope calculation based on \textit{Shinjuku}'s comparison of
+interprocessor interrupt (IPI) and Linux signal latencies suggests possible
+performance improvements enabled by our design.
 Although Shinjuku reports that IPIs take an average of only 1,993 cycles, compared to
 4,950 for signals (roughly 1:2.5), their sender/receiver breakdown of the latter
 number suggests significant latency savings by avoiding cross-core signaling:
 First, 343 of those cycles (6.9\%) are spent propagating the signal between the two
-cores; we expect this delay to be nearly absent for a timer interrupt originating at
-its destination core's own local interrupt controller.  Second, 2,084 cycles (42\%)
+cores; we do not expect our system to be affected.  Second, 2,084 cycles (42\%)
 are incurred by the sending core; assuming the interrupt controller supports
 periodic timer interrupts at the necessary frequency, this cost does not need to be
 paid between each interrupt, suggesting measurable savings here too.  Although
 our prototype is not yet optimized to this extent, we expect it is possible for a
 system built on intra-thread Linux signals to achieve an average preemption latency
-within 2x that of Shinjuku's custom operating system.  It is our hope that further
-optimization of our system, including through the adoption of some of Shinjuku's
-continuation optimizations, will allow us to meet this performance goal.
+within 2x that of Shinjuku's custom operating system.  The savings from such
+optimization could be used either to support finer preemption granularity or to
+reduce the timer-imposed throughput penalty during preemptible function execution.
 
-Of course, in our design, increasing the granularity of preemption is a tradeoff:\@ more
-frequent timer signals mean a tighter bound on timeout detection, but also a lower
-throughput of useful work.  The correct balance depends at least on the
-timeout value and size of the function, and also merits further study.
-
-\thesis{Might want to accelerate kernel signal handling?}
+We believe the lightweight preemptible function abstraction naturally supports
+common features of large-scale systems.  For example:  An ad renderer might implement
+graceful degradation by rendering frames of an animation in a preemptible function,
+dropping unfinished ones to meet its SLO.  An RPC server might preserve work by
+processing each request in a preemptible function and memoizing the continuations; if
+a request timed out but was later retried by the client, the server could resume
+executing it from where it left off.
 
 \solb{Might want to support nested preemptible functions?}

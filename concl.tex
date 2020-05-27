@@ -1,9 +1,13 @@
 \section{Conclusion}
 
 We presented the lightweight preemptible function, a composable new abstraction
-for invoking a function with a timeout.  The implementation, \textit{libinger},
-serves as the foundation of
-a first-in-class preemptive userland thread library.  Our evaluation shows that
-lightweight
+for invoking a function with a timeout.  This enabled us to build a first-in-class
+preemptive userland thread library by implementing preemption atop a cooperative
+scheduler, rather than the other way around.  Our evaluation shows that lightweight
 preemptible functions have overheads of a few percent (lower than similar OS
 primitives), yet enable new functionality.
+
+Underlying our interface is a general technique, selective relinking, that allows
+pausing or cancellation independent of preemption mechanism.  In lieu of a timeout,
+control transfer might result from a scheduling consideration such as real-time
+computing or task priority.
