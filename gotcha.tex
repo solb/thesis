@@ -202,7 +202,7 @@ replaces the register's contents with the appropriate resolved address.  It then
 returns, causing the faulting instruction to be reexecuted with the valid address
 this time.\footnote{This does not break applications with existing segfault
 handlers:\@ we intercept their calls to \texttt{sigaction()}, and forward the signal
-along to their handler whenever we are unable to resolve an address ourselves.}
+along to their handler when we are unable to resolve an address ourselves.}
 
 \thesis{Give more details on global variable interpositions, especially
 heuristics.}
