@@ -158,8 +158,7 @@ relinking, the mechanism underlying libset switches.
 Whenever a program uses a dynamic symbol, it looks up its address in a data structure
 called the Global Offset Table (GOT).  As it loads the program, \texttt{ld-linux.so}
 eagerly resolves the addresses of all global variables and some functions and stores
-them in the GOT.\footnote{Some other functions are instead resolved lazily at their
-first invocation.}
+them in the GOT.
 
 Selective relinking works by shadowing the GOT.\footnote{Hence the name
 \textit{lib\textbf{got}cha}.}  As soon as \texttt{ld-linux.so} finishes populating
