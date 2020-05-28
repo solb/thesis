@@ -31,12 +31,9 @@ latency:\@ by writing our signal handler very carefully, we should be able to ad
 the same optimizations they describe (skipping signal mask and floating-point
 register swaps).
 
-We believe the lightweight preemptible function abstraction naturally supports
-common features of large-scale systems.  For example:  An ad renderer might implement
-graceful degradation by rendering frames of an animation in a preemptible function,
-dropping unfinished ones to meet its SLO.  An RPC server might preserve work by
-processing each request in a preemptible function and memoizing the continuations; if
-a request timed out but was later retried by the client, the server could resume
-executing it from where it left off.
+Underlying our interface is a general technique, selective relinking, that allows
+pausing or cancellation independent of preemption mechanism.  In lieu of a timeout,
+control transfer might result from a scheduling consideration such as real-time
+computing or task priority.
 
 \solb{Might want to support nested preemptible functions?}
