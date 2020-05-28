@@ -31,9 +31,10 @@ latency:\@ by writing our signal handler very carefully, we should be able to ad
 the same optimizations they describe (skipping signal mask and floating-point
 register swaps).
 
-Underlying our interface is a general technique, selective relinking, that allows
-pausing or cancellation independent of preemption mechanism.  In lieu of a timeout,
-control transfer might result from a scheduling consideration such as real-time
-computing or task priority.
+The selective relinking technique that underlies our interface allows safe pausing
+and cancellation in the presence of shared state, \textit{independent of preemption
+mechanism}.  In lieu of a timeout,
+control transfer might result from another scheduling consideration, such as
+real-time computing or task priority.
 
 \solb{Might want to support nested preemptible functions?}
