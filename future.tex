@@ -9,24 +9,27 @@ our most expensive operation because of the libset reinitialization described in
 Section~\ref{sec:gotchainit}, but we plan to improve this by restoring only the
 writeable regions of each module.
 
-In a significant divergence from the \textit{Shinjuku} design, we make each thread
-responsible for its own preemption rather than sending signals from a shared watchdog
-thread.  A back-of-the-envelope calculation based on \textit{Shinjuku}'s comparison of
-interprocessor interrupt (IPI) and Linux signal latencies suggests possible
-performance improvements enabled by our design.
-Although Shinjuku reports that IPIs take an average of only 1,993 cycles, compared to
-4,950 for signals (roughly 1:2.5), their sender/receiver breakdown of the latter
-number suggests significant latency savings by avoiding cross-core signaling:
-First, 343 of those cycles (6.9\%) are spent propagating the signal between the two
-cores; we do not expect our system to be affected.  Second, 2,084 cycles (42\%)
-are incurred by the sending core; assuming the interrupt controller supports
-periodic timer interrupts at the necessary frequency, this cost does not need to be
-paid between each interrupt, suggesting measurable savings here too.  Although
-our prototype is not yet optimized to this extent, we expect it is possible for a
-system built on intra-thread Linux signals to achieve an average preemption latency
-within 2x that of Shinjuku's custom operating system.  The savings from such
-optimization could be used either to support finer preemption granularity or to
-reduce the timer-imposed throughput penalty during preemptible function execution.
+Another area for improvement is signal-handling performance optimization: whereas
+\textit{Shinjuku} is able to preempt every 5 $\mu$s with a 10\% throughput
+penalty~\cite{Kaffes:nsdi2019}, we have observed a similar throughput drop while only
+preempting every 20 $\mu$s via our technique~\cite{boucher:atc2018}.  We have not yet
+heavily optimized \textit{libinger}, and have reason to believe that doing so will
+allow our design to achieve a preemption granularity midway between those figures
+for the same throughput cost.  Because \textit{Shinjuku} executes in privilege ring
+0, they preempt by issuing interprocessor interrupts (IPIs) directly rather than
+using Linux signals.  Their microbenchmarks reveal an IPI:signal latency ratio of
+roughly 1:2.5 (1,993 vs.\@ 4,950 CPU cycles), indicating that we are not achieving
+peak performance.  Furthermore, a key design difference between our systems suggests
+that this ratio probably understates the performance we could achieve.  In their
+benchmark, roughly 42\% of cycles are spent sending each signal, a cost we can
+amortize because our design uses recurring timer signals to counter warmup effects.
+A further 6.9\% of benchmarked cycles are spent propagating the signal between cores,
+which should not affect our system because we request the timer signals on the same
+core that will receive them rather than using a central watchdog thread to preempt
+all workers.  Context switching is likely responsible for most of our unexpected
+latency:\@ by writing our signal handler very carefully, we should be able to adopt
+the same optimizations they describe (skipping signal mask and floating-point
+register swaps).
 
 We believe the lightweight preemptible function abstraction naturally supports
 common features of large-scale systems.  For example:  An ad renderer might implement
