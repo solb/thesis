@@ -41,7 +41,7 @@ strict graph {
 	libgotcha -- rtld;
 
 	{
-		edge [style=dashed];
+		edge [color=lightslategray];
 
 		serialclient -- libinger;
 		clientlib -- libinger;
