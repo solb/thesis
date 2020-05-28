@@ -8,9 +8,9 @@ preemptible functions have overheads of a few percent (lower than similar OS
 primitives), yet enable new functionality.
 
 We believe the lightweight preemptible function abstraction naturally supports
-common features of large-scale systems.  For example:  An ad renderer might implement
-graceful degradation by rendering frames of an animation in a preemptible function,
-dropping unfinished ones to meet its SLO.  An RPC server might preserve work by
+common features of large-scale systems.  For example:  In support of graceful
+degradation, a system might use a preemptible function to abort the rendering of a
+frame in order to ensure SLA adherance.  An RPC server might preserve work by
 processing each request in a preemptible function and memoizing the continuations; if
 a request timed out but was later retried by the client, the server could resume
 executing it from where it left off.
