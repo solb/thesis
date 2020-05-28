@@ -157,7 +157,7 @@ Most of the complexity of \textit{libgotcha} lies in the implementation of selec
 relinking, the mechanism underlying libset switches.
 
 Whenever a program uses a dynamic symbol, it looks up its address in a data structure
-called the Global Offset Table (GOT).  As it loads the program, \texttt{ld-linux.so}
+called the global offset table (GOT).  As it loads the program, \texttt{ld-linux.so}
 eagerly resolves the addresses of all global variables and some functions and stores
 them in the GOT.
 
@@ -246,8 +246,8 @@ an uncopyable function (say, malloc()).}
 \subsection{Limitations}
 \label{sec:limits}
 
-The current version of \textit{libgotcha} includes partial support for Thread-Local
-Storage (TLS).  Like other globals, TLS variables are copied along with the libset;
+The current version of \textit{libgotcha} includes partial support for thread-local
+storage (TLS).  Like other globals, TLS variables are copied along with the libset;
 this behavior is correct because a thread might call into the same library from
 multiple preemptible functions.  However, we do not yet support migrating TLS
 variables between threads along with their preemptible function.  This restriction is
