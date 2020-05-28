@@ -218,8 +218,9 @@ Cancellation cleans up the \textit{libinger} resources allocated by
 however, the current implementation
 does not automatically release resources already claimed by the
 preemptible function itself.  While the lack of a standard resource deallocation API
-makes this inherently hard to do in C, it is possible in languages
-such as Rust that support destructors.  For instance, the approach proposed by
+makes this inherently hard to do in C, it is possible in Rust and other languages in
+which
+destructor calls are ostensibly guaranteed.  For instance, the approach proposed by
 Boucher et al.~\cite{boucher:atc2018} could be employed to raise a panic
 (exception) on the preemptible function's stack.  This in turn would cause the
 language runtime
