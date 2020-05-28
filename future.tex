@@ -3,7 +3,8 @@
 One of our contributions is asynchronous cancellation, something rarely supported by
 the state of the art.  In Section~\ref{sec:libinger:cancel}, we noted that we do not
 yet support automated resource cleanup; however, we outlined a possible approach for
-RAII languages, which we intend to investigate further.  Cancellation is currently
+languages such as Rust, which we intend to investigate further.  Cancellation is
+currently
 our most expensive operation because of the libset reinitialization described in
 Section~\ref{sec:gotchainit}, but we plan to improve this by restoring only the
 writeable regions of each module.
