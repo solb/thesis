@@ -4,7 +4,7 @@ system, we benchmarked
 benchmark as of July 2019~\cite{www-hyper}.  The server uses
 \textit{tokio-threadpool} for scheduling; because the changes described in
 Section~\ref{sec:libturquoise} are transparent, making \textit{hyper} preemptive was
-as easy as building against \textit{libturquoise} instead.  In fact, we didn't even
+as easy as building against \textit{libturquoise} instead.  In fact, we did not even
 check out the \textit{hyper} codebase.  We configured \textit{libturquoise} with a
 task timeout of 2 ms, give or take a
 100-$\mu$s \textit{libinger} preemption interval, and configured it to serve
