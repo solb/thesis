@@ -38,9 +38,11 @@ those programmers who have written signal handlers:\@ it is what makes it notori
 difficult to write nontrivial ones.  Preemption of a timed function constitutes its
 interruption by the rest of the program.  This implies that \textit{the rest of the
 program} should be restricted to calling reentrant functions; needless to say, such
-a rule would be crippling.  We avoid this limitation by automatically applying
-mitigations to support most nonreentrant code with no modification, as classified by
-the taxonomy in Figure~\ref{fig:progsupport}.
+a rule would be crippling.  Addressing this problem is one of the main contributions
+of this paper.  Our main insight here, as shown in Figure~\ref{fig:progsupport}, is
+that some libraries are naturally reentrant, while many others can be made reentrant
+by automatically cloning their internal state so that preempting one invocation does
+not leave the library ``broken'' for concurrent callers.
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/progsupport}
