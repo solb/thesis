@@ -61,6 +61,7 @@ could be cancelled upon timeout.  Unfortunately, cancelling a thread is also har
 UNIX's pthreads provide
 asynchronous cancelability, but according to the Linux documentation, it
 \begin{quote}
+\vspace{-3pt}
 is rarely
 useful.  Since the thread could be cancelled at \textit{any} time, it cannot safely
 reserve resources (e.g., allocating memory with \texttt{malloc()}), acquire mutexes,
