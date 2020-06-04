@@ -136,7 +136,7 @@ def main():
 			label_ax = ax1
 
 		# Set figure title and axes labels.
-		fig.suptitle(title[0])
+		fig.suptitle('\n\n' + title[0])
 		ax1.set_ylabel(ylabel)
 		label_ax.set_xlabel(xlabel)
 		if ymax:
