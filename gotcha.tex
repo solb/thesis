@@ -264,7 +264,7 @@ model works by allocating space for all libraries' globals in the executable,
 enabling static linking from the program's code (but not its dynamic libraries').
 This transformation defeats selective relinking for two reasons:\@ the use of static
 linking prevents identifying symbol uses in the executable, and the cross-module
-migration causes breakage such as failing assertion (3) from
+migration causes breakages such as failing assertion (3) from
 Listing~\ref{lst:exmplstate}.  When building a program that depends on
 \textit{libgotcha}, programmers must instruct their compiler to disable \texttt{COPY}
 relocations, as with the \texttt{-fpic} switch to GCC and Clang.  If

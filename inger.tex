@@ -8,11 +8,13 @@ system for the command-line switch used to link against it.  As the proverb goes
 a library providing a small API for timed function dispatch
 (Listing~\ref{lst:ingerapi}):
 \begin{itemize}
-\item \texttt{launch()} invokes an ordinary function $F$ with an
-execution time cap of $T$.  The call to \texttt{launch()} returns when $F$
-completes, or after approximately $T$ microseconds if $F$ has not returned
+\item \texttt{launch()} invokes an ordinary function \texttt{func} with a
+time cap of \texttt{time\_us}.  The call to \texttt{launch()} returns when
+\texttt{func}
+completes, or after approximately \texttt{time\_us} microseconds if \texttt{func} has
+not returned
 by then.  In the latter case, \textit{libinger} returns an opaque continuation
-object recording the intermediate execution state.
+object recording the execution state.
 \item \texttt{resume()} causes a preemptible function to continue after a timeout.
 If execution again times out, \texttt{resume()} updates its continuation so the
 process may be repeated.  Resuming a function that has already returned has no
@@ -65,8 +67,10 @@ Figure~\ref{fig:architecture} shows a dependency graph of the software component
 comprising the preemptible functions stack.  The \textit{libinger} library itself is
 implemented in approximately 2,500 lines of Rust.  To support calls to nonreentrant
 functions, it depends on another library, \textit{libgotcha}, which consists of
-another 3,000 lines of C, Rust, and x86-64 assembly.  We now describe the
-implementation of \textit{libinger}, beginning with shared state handling.
+another 3,000 lines of C, Rust, and x86-64 assembly.  We cover the details in
+Section~\ref{sec:libgotcha}.
+
+We now examine \textit{libinger}, starting with shared state.
 
 \begin{figure}
 \begin{center}
@@ -75,7 +79,8 @@ implementation of \textit{libinger}, beginning with shared state handling.
 \caption{Preemptible functions software stack.  \textnormal{Hexagonal boxes show
 the required runtime environment.  Rectangular boxes represent components
 implementing the preemptible functions abstraction.  Ovals represent components built
-on top of these.  A preemptible function's body (e.g., $F$) may be defined directly in
+on top of these.  A preemptible function's body (i.e., \texttt{func}) may be defined
+directly in
 your program, or in some other loaded library.}}
 \label{fig:architecture}
 \end{figure}
@@ -88,12 +93,12 @@ your program, or in some other loaded library.}}
 
 As we found in Section~\ref{sec:intro}, a key design challenge facing
 \textit{libinger} is the shared state problem:  Suppose a preemptible function
-$F_0$ calls a stateful routine in a third-party library $L$, and
-that $F_0$ times out and is preempted by \textit{libinger}.  Later, the
-user invokes another timed function $F_0'$, which also calls a stateful
+$F$ calls a stateful routine in a third-party library $L$, and
+that $F$ times out and is preempted by \textit{libinger}.  Later, the
+user invokes another timed function $F_0$, which also calls a stateful
 routine in $L$.  This pattern involves an unsynchronized concurrent access to $L$.
 To avoid introducing such bugs, \textit{libinger} must hide state modifications in
-$L$ by $F_0$ from the execution of $F_0'$.
+$L$ by $F$ from the execution of $F_0$.
 
 One non-solution to this problem is to follow the approach taken by POSIX signal
 handlers and specify that preemptible functions may not
@@ -177,7 +182,8 @@ longer-running functions).} causing our signal
 handler to be invoked.  If the function exceeds its timeout,
 this handler saves a continuation by dumping the machine's registers.  It then
 performs an unstructured jump out of the signal handler and back into the
-\texttt{launch()} or \texttt{resume()} function, switching stacks as it does so.
+\texttt{launch()} or \texttt{resume()} function, switching back to the caller's stack
+as it does so.
 Figure~\ref{fig:twostacks} shows the two stacks of execution
 that are present while the
 signal handler is running.
@@ -192,7 +198,7 @@ installing the signal handler to instruct libc to restart system calls that are
 interrupted by the signal~\cite{sigaction-manpage}.  We direct signals at the
 process's specific threads that are running preemptible functions by allocating
 signal numbers from a pool, an approach that limits the number of simultaneous
-invocations based to the number of available signals; this restriction could be
+invocations to the number of available signals; this restriction could be
 lifted by instead using the Linux-specific \texttt{SIGEV\_THREAD\_ID} timer
 notification feature~\cite{timercreate-manpage}.
 

@@ -8,7 +8,7 @@
 	lazy (runtime) & $100 \pm 1$ & $125 \pm 0$ \\
 	global variable & $0 \pm 0$ & $3438 \pm 13$
 	\end{tabular}
-	\subcaption{Generic symbols, with and without \textit{libgotcha}}
+	\subcaption{Generic symbols, without and with \textit{libgotcha}}
 	\label{tab:libgotcha:symb}
 	\end{minipage}
 
@@ -46,10 +46,10 @@ time a module calls a particular function (Section~\ref{sec:relinking}) and glob
 are becoming rare (Section~\ref{sec:limits}).
 
 Table~\ref{tab:libgotcha:baseline} shows that the \textit{libgotcha} eager function
-call overhead of 14 ns is on par with the cost of a trivial C library function and
-one-third
-that of a simple system call.  This overhead affects the entire program, regardless
-of the
+call overhead of 14 ns is on par with the cost of a trivial C library function
+(\texttt{gettimeofday()}) and one-third
+that of a simple system call (\texttt{getpid()}).  This overhead affects the entire
+program, regardless of the
 current libset at the time of the call.  Additionally, calls to
 uncopyable functions from within a preemptible function incur several extra
 nanoseconds of latency to switch back to the main namespace as described in

@@ -96,7 +96,7 @@ plague thread cancellation~\cite{baumann:hotos2019}.
 These na\"ive designs share another shortcoming:\@ in reducing
 preemptible functions to a problem of parallelism, they hurt performance by placing
 thread creation on the critical path.  Thus, the state-of-the-art abstractions' high
-cost limits their composability.  We observe that, when calling a function with
+costs limit their composability.  We observe that, when calling a function with
 a timeout, it is concurrency alone---and not parallelism---that is fundamental.
 Leveraging this key insight, we present a design that \textit{separates interruption
 from asynchrony} in order to provide \textit{preemption at granularities in the tens

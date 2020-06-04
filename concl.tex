@@ -1,6 +1,6 @@
 \section{Conclusion}
 
-We presented the lightweight preemptible function, a composable new abstraction
+We presented the lightweight preemptible function, a new composable abstraction
 for invoking a function with a timeout.  This enabled us to build a first-in-class
 preemptive userland thread library by implementing preemption atop a cooperative
 scheduler, rather than the other way around.  Our evaluation shows that lightweight
@@ -10,7 +10,7 @@ primitives), yet enable new functionality.
 We believe the lightweight preemptible function abstraction naturally supports
 common features of large-scale systems.  For example:  In support of graceful
 degradation, a system might use a preemptible function to abort the rendering of a
-frame in order to ensure SLA adherance.  An RPC server might preserve work by
+video frame in order to ensure SLA adherance.  An RPC server might preserve work by
 processing each request in a preemptible function and memoizing the continuations; if
 a request timed out but was later retried by the client, the server could resume
-executing it from where it left off.
+executing from where it left off.
