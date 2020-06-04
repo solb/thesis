@@ -34,8 +34,8 @@ A number of past projects (Table~\ref{tab:related}) have sought to provide
 bounded-time execution of chunks of code at sub-process granularity.
 For the purpose of our discussion, we
 refer to a portion of the program whose execution should be bounded as \textbf{timed
-code} (a generalization of a preemptible function); exactly what form this takes
-depends on the system's interface.
+code} (a generalization of a preemptible function); exactly how such code is
+delineated depends on the system's interface.
 
 Interface notwithstanding, the systems' most distinguishing
 characteristic is the mechanism by which they enforce execution bounds.  At one end
@@ -61,7 +61,8 @@ handling both
 cases.
 
 One early instance of timed code support was the \textit{engines} feature of
-the Scheme 84 language~\cite{haynes:iucs1984}.  This added a new \texttt{engine}
+the Scheme 84 language~\cite{haynes:iucs1984}.  Its interface was a new
+\texttt{engine}
 keyword that behaved similarly to \texttt{lambda}, but created a special ``thunk''
 accepting as an argument the number of ticks (abstract time units) it should run for.
 The caller also supplied a callback function to receive the
@@ -70,8 +71,8 @@ Scheme language, engines were stateless:\@ whenever one ran out of computation t
 it would return a replacement engine recording the point of interruption.  Engines'
 implementation relied heavily on Scheme's managed runtime, with ticks
 corresponding to virtual machine instructions and cleanup handled by the garbage
-collector.  Although the authors mention timer interrupts as an
-alternative, this was apparently never tried.
+collector.  Although the paper mentions timer interrupts as an alternative, it does
+not evaluate such an approach.
 
 \textit{Lilt}~\cite{vanderwaart:cmucs2006} introduced a language for writing
 programs with statically-enforced timing policies.
@@ -126,8 +127,9 @@ The C$\forall$ language's preemption model is only safe for functions guarded
 by its novel monitors:\@ the authors caution that ``any challenges that are not [a
 result of extending monitor semantics] are considered as solved problems and
 therefore not discussed.''
-Due to its focus on realtime embedded systems, RT assumes
-that the timed code in its threads will avoid shared state; this mostly precludes
+With its focus on realtime embedded systems, RT assumes
+that the timed code in its threads will avoid shared state; this assumption mostly
+precludes
 calls to third-party libraries, though the system supports the dynamic memory
 allocator by treating it as specifically nonpreemptible.  Rather than dealing with
 shared state itself, Shinjuku asks application authors to annotate any code with

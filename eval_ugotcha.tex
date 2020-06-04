@@ -53,6 +53,7 @@ of the
 current libset at the time of the call.  Additionally, calls to
 uncopyable functions from within a preemptible function incur several extra
 nanoseconds of latency to switch back to the main namespace as described in
-Section~\ref{sec:libgotcha}; Table~\ref{tab:libgotcha:whitelist} breaks this down to
+Section~\ref{sec:libgotcha}; Table~\ref{tab:libgotcha:whitelist} breaks this overhead
+down to
 show the cost of notification callbacks at the conclusion of such a call (always
 required by \textit{libinger}).

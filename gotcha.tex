@@ -140,7 +140,7 @@ restoring only their writable sections)?}
 While \textit{libinger} in principle runs on top of an unmodified
 \texttt{ld-linux.so}, in
 practice initializing more than one namespace tends to exhaust the
-statically-allocated thread-local storage area.  We work around this by rebuilding
+statically-allocated thread-local storage area.  As a workaround, we build
 glibc with an increased \texttt{TLS\_STATIC\_SURPLUS}.  It is useful to also raise
 the maximum number of namespaces by increasing \texttt{DL\_NNS}.
 

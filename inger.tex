@@ -91,16 +91,16 @@ As we found in Section~\ref{sec:intro}, a key design challenge facing
 $F_0$ calls a stateful routine in a third-party library $L$, and
 that $F_0$ times out and is preempted by \textit{libinger}.  Later, the
 user invokes another timed function $F_0'$, which also calls a stateful
-routine in $L$.  This constituting a concurrency violation,
-\textit{libinger} must hide state modifications in $L$ by $F_0$
-from the execution of $F_0'$ to avoid undefined behavior.
+routine in $L$.  This pattern involves an unsynchronized concurrent access to $L$.
+To avoid introducing such bugs, \textit{libinger} must hide state modifications in
+$L$ by $F_0$ from the execution of $F_0'$.
 
 One non-solution to this problem is to follow the approach taken by POSIX signal
 handlers and specify that preemptible functions may not
 call third-party code, but doing so would
 severely limit their usefulness (Section~\ref{sec:related}).  We opt instead
 to automatically and dynamically create copies of $L$ to
-isolate state from different timed functions.  Making this work on top of
+isolate state from different timed functions.  Making this approach work on top of
 existing systems software required solving many
 design and implementation challenges, which we cover when we introduce
 \textit{libgotcha} in Section~\ref{sec:libgotcha}.
@@ -125,16 +125,16 @@ language's first-class concurrency support to prevent such mistakes from compili
 
 While the Rust compiler rejects all code that shares state unsafely, it is still
 possible to introduce
-correctness bugs such as deadlock~\cite{www-rustlang-nu}.  One way to do this is to
-block on a mutex held by
+correctness bugs such as deadlock~\cite{www-rustlang-nu}.  For example, a program
+might block on a mutex held by
 the preemptible function's caller (recall that invocation is synchronous, so blocking
 in a preemptible function does not cause it to yield!).  It is sometimes necessary to
 acquire such a mutex, so \textit{libinger} provides a way to do it:  The API has an
 additional function, \texttt{pause()}, that is a rough analog of yield.  After
 performing a
-try-lock operation, a preemptible function can call this function to immediately
-return to its caller as if it had timed out.  The caller can detect this by checking
-a flag on the continuation.
+try-lock operation, a preemptible function can call \texttt{pause()} to immediately
+return to its caller as if it had timed out.  The caller can tell whether a function
+paused via a flag on its continuation.
 
 
 \subsection{Execution stacks}
@@ -209,17 +209,18 @@ handler's POSIX context without using \texttt{setcontext()}.}
 \label{sec:libinger:cancel}
 
 Should a caller decide not to finish running a timed-out preemptible function, it
-must deallocate it.  In Rust this happens implicitly via the \texttt{linger\_t}
+must deallocate it.  In Rust, deallocation happens implicitly via the
+\texttt{linger\_t}
 type's destructor, whereas users of the C interface are responsible for explicitly
 calling the \textit{libinger} \texttt{cancel()} function.
 
-Cancellation cleans up the \textit{libinger} resources allocated by
+Cancellation cleans up \textit{libinger} resources allocated by
 \texttt{launch()};
 however, the current implementation
 does not automatically release resources already claimed by the
 preemptible function itself.  While the lack of a standard resource deallocation API
-makes this inherently hard to do in C, it is possible in Rust and other languages in
-which
+makes such cleanup inherently hard to do in C, it is possible in Rust and other
+languages in which
 destructor calls are ostensibly guaranteed.  For instance, the approach proposed by
 Boucher et al.~\cite{boucher:atc2018} could be employed to raise a panic
 (exception) on the preemptible function's stack.  This in turn would cause the

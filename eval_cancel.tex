@@ -52,7 +52,7 @@ addition to \textit{libinger}'s own overhead.  It again had the lowest variance.
 Applying preemptible functions to this problem proved easy:\@ the
 \texttt{launch()}/\texttt{cancel()} approach took just 20 lines of Rust, including
 the implementation of a reaper thread to move libset reinitialization off the
-critical path.  This was compared to the 25 lines of Rust required for the
-\texttt{fork()}/\texttt{sigtimedwait()} approach.  Note that due to their use of the
+critical path.  In comparison, the \texttt{fork()}/\texttt{sigtimedwait()} approach
+required 25 lines of Rust.  Note that due to their use of the
 \textit{libpng} C library and use of zero-copy buffers, both benchmarks include
 blocks of unsafe Rust.

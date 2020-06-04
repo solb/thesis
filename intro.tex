@@ -5,8 +5,8 @@ After years of struggling to gain adoption, the coroutine has finally become a
 mainstream abstraction for cooperatively scheduling function invocations.  Languages
 as diverse as C\#, JavaScript, Kotlin, Python, and Rust now support ``async
 functions,'' each of which expresses its dependencies by ``awaiting'' a
-\textbf{future} (or promise); rather than polling, the language translates this to a
-yield if the result is not yet available.
+\textbf{future} (or promise); rather than polling, the language yields if the awaited
+result is not yet available.
 
 Key to the popularity of this concurrency abstraction is the ease and seamlessness of
 parallelizing it.  Underlying most futures runtimes is some form of green threading
