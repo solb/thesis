@@ -1,3 +1,3 @@
 Runtime on 309-KB malicious image,
-Decompression bomb mitigation strategy,none,,pthread_create(),,fork(),,launch(),
+Decompression bomb mitigation strategy,none,,pthread_create,,fork,,launch,
 ,868.653430,1.883324,880.535580,7.946721,10.453864,0.059686,10.099894,0.000268

@@ -147,8 +147,8 @@ def main():
 		# clusters. Therefore, a cluster is a set of one bar from each bar
 		# series. We plot each bar series separately.
 
-		idx = slabels.index('pthread_create()') + 1
-		slabels.insert(idx, 'pthread_create()+async')
+		idx = slabels.index('pthread_create') + 1
+		slabels.insert(idx, 'pthread_create+async')
 		bar_labels = []
 		for i in range(len(series)):
 			series[i].insert(idx, 0)
