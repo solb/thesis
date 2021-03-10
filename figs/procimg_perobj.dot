@@ -1,0 +1,32 @@
+strict graph {
+	nodesep=0;
+	rankdir=LR;
+	node [fontcolor=darkgreen];
+	node [shape=box];
+	node [width=4.5];
+
+	ehdr [label=<<i>Ehdr</i> (ELF object file header)>];
+	phdr [label=<<i>Phdr</i> (ELF program header/segment table)>];
+	dynsym [label=<<i>.dynsym</i> (dynamic symbol table)>];
+	dynstr [label=<<i>.dynstr</i> (dynamic string table)>];
+	reladyn [label=<<i>.rela.dyn</i> (table of GLOB_DAT relocations)>];
+	relaplt [label=<<i>.rela.plt</i> (table of JUMP_SLOT relocations)>]; 
+	init [label=<<i>.init</i> (platform initialization code)>, fontcolor=blue];
+	plt [label=<<i>.plt</i> (procedure call stubs, lazily-resolved portion)>, fontcolor=blue];
+	pltgot [label=<<i>.plt.got</i> (procedure call stubs, eagerly-resolved portion)>, fontcolor=blue];
+	text [label=<<b>.text</b> (program code)>, fontcolor=blue];
+	fini [label=<<i>.fini</i> (platform termination code)>, fontcolor=blue];
+	rodata [label=<<b>.rodata</b> (static storage, compile-time constant portion)>];
+	eh_frame_hdr [label=<<i>.eh_frame_hdr</i> (exception-handling header)>];
+	eh_frame [label=<<i>.eh_frame</i> (exception-handling stack-unwind metadata)>];
+	tdata [label=<<b>.tdata</b> (TLS initialization image, initialized portion)>, fontcolor=goldenrod];
+	tbss [label=<<b>.tbss</b> (TLS initialization image, zero-filled portion)>, fontcolor=goldenrod];
+	init_array [label=<<i>.init_array</i> (constructor pointer table)>, fontcolor=goldenrod];
+	fini_array [label=<<i>.fini_array</i> (destructor pointer table)>, fontcolor=goldenrod];
+	datarelro [label=<<b>.data.rel.ro</b> (static storage, relocated constant portion)>, fontcolor=goldenrod];
+	dynamic [label=<<i>.dynamic</i> (dynamic linking/loading header)>, fontcolor=goldenrod];
+	got [label=<<i>.got</i> (global offset table, eagerly-resolved part)>, fontcolor=goldenrod];
+	gotplt [label=<<i>.got.plt</i> (global offset table, lazily-resolved part)>, fontcolor=goldenrod];
+	data [label=<<b>.data</b> (static storage, mutable initialized portion)>, fontcolor=red];
+	bss [label=<<b>.bss</b> (static storage, mutable zero-filled portion)>, fontcolor=red];
+}
