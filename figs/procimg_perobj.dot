@@ -31,6 +31,6 @@ strict digraph {
 	data [label=<<b>.data</b> (static storage, mutable initialized portion)>, fontcolor=red];
 	bss [label=<<b>.bss</b> (static storage, mutable zero-filled portion)>, fontcolor=red];
 
-	0 [shape=none, width=default, label="base address", fontcolor=default];
+	0 [shape=none, width=default, label="base address", fontcolor=none];
 	zero -> 0 [dir=back];
 }
