@@ -27,7 +27,7 @@ strict digraph {
 	datarelro [label=<<b>.data.rel.ro</b> (static storage, relocated constant portion)>, fontcolor=goldenrod];
 	dynamic [label=<<i>.dynamic</i> (dynamic linking/loading header)>, fontcolor=goldenrod];
 	got [label=<<i>.got</i> (global offset table, eagerly-resolved part)>, fontcolor=goldenrod];
-	gotplt [label=<<i>.got.plt</i> (global offset table, lazily-resolved part)>, fontcolor=goldenrod];
+	gotplt [label=<<i>.got.plt</i> (global offset table, lazily-resolved part)>, fontcolor=red];
 	data [label=<<b>.data</b> (static storage, mutable initialized portion)>, fontcolor=red];
 	bss [label=<<b>.bss</b> (static storage, mutable zero-filled portion)>, fontcolor=red];
 
