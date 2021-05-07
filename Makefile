@@ -4,7 +4,7 @@ DOT := dot
 GIT := git
 TEX := pdflatex
 
-proposal.pdf: functions/figs/architecture.pdf microservices/figs/fancy_system-crop.pdf
+thesis.pdf: functions/figs/architecture.pdf microservices/figs/fancy_system-crop.pdf
 
 .PHONY: clean
 clean:
