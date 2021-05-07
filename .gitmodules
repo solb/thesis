@@ -1,6 +1,8 @@
 [submodule "functions"]
 	path = functions
-	url = ../libinger_paper
+	url = ../thesis
+	branch = functions
 [submodule "microservices"]
 	path = microservices
-	url = ../microservices_paper
+	url = ../thesis
+	branch = microservices
