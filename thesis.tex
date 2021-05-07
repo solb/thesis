@@ -13,12 +13,8 @@
 \usepackage{subcaption}
 \usepackage[svgnames]{xcolor}
 
-\ifdefined\thisisathesis
-	\newcommand{\chapquotes}{}
-	\newcommand{\solb}[1]{{\color{magenta} TODO #1}}
-\else
-	\newcommand{\solb}[1]{}
-\fi
+\newcommand{\chapquotes}{}
+\newcommand{\solb}[1]{{\color{magenta} TODO #1}}
 
 \renewcommand{\contentsname}{Table of Contents}
 \renewcommand{\lstlistlistingname}{List of Listings}
