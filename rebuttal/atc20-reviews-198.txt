@@ -1,0 +1,375 @@
+﻿USENIX ATC '20 Paper #198 Reviews and Comments
+===========================================================================
+Paper #198 Lightweight Preemptible Functions
+
+
+Review #198A
+===========================================================================
+
+Overall merit
+-------------
+3. Weak accept - Suitable for ATC with some shepherding, and I may advocate
+   for it
+
+
+Paper summary
+-------------
+The paper introduces "lightweight preemptible functions" in Linux.
+These operate as a kind of middle-ground between function calls and
+sub-processes.  As with a function call, the invocation is a fast
+user-mode operation.  As with a sub-process, the call can be canceled
+without corrupting the state of the caller (unlike canceling a
+thread).  The paper introduces the implementation techniques used,
+based on having separate stacks for the callee, and replicating local
+state in libraries that the callee uses.  The paper illustrates the
+use of preemptible functions in workloads such as defending a web
+server against head-of-line blocking of long-running requests.
+
+
+Strengths
+---------
+Well motivated by practical concerns in server workloads
+
+Impressive to see the different issues that occur with library code
+being addressed
+
+
+Weaknesses
+----------
+Complex semantics would make me concerned about using the abstraction
+in production
+
+For the timescales illustrated in the examples, I think simpler
+solutions would apply
+
+
+Detailed feedback
+-----------------
+There's impressive work involved here, and given the practical
+low-level focus Usenix ATC is a good venue.  While I have some
+concerns about the approach taken, I would tend toward "accept".
+
+As in prior work, the paper correctly identifies the tension between
+letting code be canceled and the ability for the code to share
+resources with ongoing parts of the process.  I think the approach of
+selectively providing local copies of dynamically-loaded libraries is
+new, and seems effective for the workloads studied.
+
+There are sharp edges though in that the programmer must be sure that
+the kinds of sharing between a caller and a function are going to be
+managed correctly.  For instance, when the function accesses objects
+passed in to it, then hand-built spin-locks on fields within those
+objects will be subject to the usual problems that prevent
+cancellation of threads being permitted.  In addition, care will be
+needed around state maintained in the kernel, such as file descriptors
+allocated, memory mappings established, and so on.
+
+I would encourage you to set out explicitly in the paper a set of
+criteria by which programmers can depend on pre-emption working as
+intended -- or at least a conservative approximation to this, which
+can be considered independently from the details of the current
+implementation.
+
+Looking at the case studies, both involve running operations that are
+expected to be short, but which may sometimes extend to unexpected
+durations based on external input.  For these workloads I would tend
+toward using a pool of separate server processes.  Each server would
+handle a stream of requests (avoiding per-request costs from fork),
+and a server would be torn down and restarted upon timeout (readily
+amortized in the ms-level timeouts used).  Using a separate process
+provides the ability to rely on existing OS-level resource
+de-allocation mechanisms, and it enables pre-emption based on the
+consumption of memory and other resources in addition to execution
+time.
+
+
+Review #198B
+===========================================================================
+
+Overall merit
+-------------
+4. Accept - Suitable for ATC, and I will advocate for it
+
+
+Paper summary
+-------------
+Co-routines with preemption typically cannot deal with invocation of async unsafe functions. This paper presents an approach to deal with this limitation, by introducing copies of global state through global offset table (GOT) manipulation. The paper shows how this allows co-routine launches that are preemptively, rather than cooperatively, scheduled. Evaluation results demonstrate that this can greatly reduce response times because slow requests are rescheduled.
+
+
+Strengths
+---------
+New idea to address a significant, low-level limitation of co-routines and fine-grained parallelism in userspace.
+
+
+Weaknesses
+----------
+Writing could be improved: some points are not made where they said they are, etc. Could use more technical detail.
+
+
+Detailed feedback
+-----------------
+Overall, I like this paper. It's very practice-oriented, and introduces a new idea which may (or may not) turn out to be worthwhile. It seems like a very old-school ATC style submission, which is great. When I was teaching undergraduates about high-concurrency userspace services and the tradeoffs between coroutines and event-driven programming, this would have been a nice approach to present.
+
+On one hand, the key premise -- timer-interruptible code -- is seemingly narrow. On the other, I think the approaches described are actually more general. I.e., the reason for preemption doesn't need to be a timeout, but could be real-time scheduling or priority preemption. Am I mistaken? If not, generalizing the point (and perhaps using timer-preemption as a simple use case) would be helpful.
+
+Section 2 says "As seen in Section 1, non-reentrant interfaces are incompatible with externally-imposed time limits." I don't agree! This point is not actually made until 3.1. Section 1 says it (sort of), but 3.1 (second paragraph) explains it. Please move the explanation to 1.
+
+The abstraction seems a lot like Rust futures, with the exception that they are preemptible at arbitrary points (i.e., the polling resembles futures). This parallelism and similarity should be made clearer (and the differences should be described).
+
+A figure showing an example setup with lib sets and which code points to which GOTs would have been valuable. It took me several reads to understand 5.2 and why the current libset remains unchanged, but functions called by the preemptible function use the new lib set. Please walk through a concrete example.
+
+What is a worst-case execution for libgotcha? Would it be cases when there are deep call stacks of different lib sets? The evaluation shows situations when libturquoise provides benefits. Are there (synthetic, even?) cases when it doesn't? E.g., if calls are never preempted?
+
+There are some good analogies between this work (e.g., the PNG example) and load shedding from early Internet services work. SEDA (Welch), for example, looked at how to shed load by cancelling or truncating operations on bottleneck queues.
+
+I do not feel 100% confident that the library copying approach preserves execution. Are there examples where shared state in library functions introduces (intended, or accommodated) dependencies in higher-level software, such that adding this isolation will lead to (erroneous) changes in behavior? E.g., I worry about serialization and output ordering. Is it possible for previously serialized output to be interleaved? Given the weak promises of printf, I assume yes, but it would be good for the paper to note this explicitly.
+
+
+Review #198C
+===========================================================================
+
+Overall merit
+-------------
+2. Weak reject - May be suitable for ATC with significant revisions, but I
+   will not advocate for it
+
+
+Paper summary
+-------------
+This paper argues at its core that preemptible functions should be a first-class user-abstraction.  It presents a library named libinger, with a simple interface to create these "timed" preemptible functions, and to resume them after timeout.  The authors claim this work provides a great deal of generality, while exposing an efficient and simple interface.  They proceed to show the generality of this interface with the construction of an entirely user-space pre-emptible threading library (libturqouise), and several other isolation examples in their evaluation section.
+
+Beyond prior works in creating preemptive function environments, such as co-routine work, or scheduler activations, libinger carefully monitors the shortcomings of other works, such as interacting with shared library code, and develop libgotcha to provide global data isolation between different preemptible functions calling the same dynamically linked library.  This allows a preemptible function to transparently call a non-reentrant piece of library code without worrying about being preempted within the routine.
+
+Overall, the authors demonstrate that libinger is relatively efficient, has potential real-world isolation and concurrency applications, and easily enables a user-space threading library.
+
+
+Strengths
+---------
+- libinger provides a simple, yet effective interface
+- The work is relatively comprehensive, considering third party library applications with libgotcha
+
+
+Weaknesses
+----------
+- The work doesn't really stress a novel technique or insight, what made this impossible before that makes it possible now?
+- The work doesn't clearly resolve many concerns about user-level concurrency, such as blocking system calls
+
+
+Detailed feedback
+-----------------
+I like the overall idea and direction of this particular work, and it seems like the implementation is well done and thoroughly thought out.  The interface if libinger is simple, clean, and clearly effective at a variety of applications.  Additionally, libturquoise and libgotcha compliment libinger well.  I particularly like the linking tricks used by libgotcha to enable transparent re-entrant calls to third party libraries (when appropriate), although I think the paper could be improved with some discussion about the trade-offs of the use of libgotcha.  The desired behavior when working with libraries isn't always total isolation.
+
+However, threading, co-routines, preemption, and concurrency have been well explored in prior works, and when I read this work I find it hard to spot the exact novel techniques and ideas brought forth by this work.  More specifically put, what new insights or ideas made this work feasible, where it was infeasible without them?
+
+I also have a concern regarding the evaluation:
+ - For your pthread_create test, do you allow pthread_create to use pre-allocated heaps, similarly to how launch pre-allocates heaps?
+
+Questions:
+
+- What novel techniques or ideas do you view as the contribution of this work?
+- Are nested preemptible functions supported?  What would happen if a preemptible function were to launch another preemptible funciton, then the outer function timeout?
+ - For your pthread_create test, do you allow pthread_create to use pre-allocated heaps, similarly to how launch pre-allocates heaps?
+
+
+Review #198D
+===========================================================================
+
+Overall merit
+-------------
+2. Weak reject - May be suitable for ATC with significant revisions, but I
+   will not advocate for it
+
+
+Paper summary
+-------------
+This paper proposed lightweight preemptible functions. The idea is to make functions synchronously run on the caller's thread unlike coroutines. It supports preemtion in tens of microseconds granularities. Also, this approach is language agnostic, so it doesn't need to rely on a particular compiler or a managed runtime---thus it can be implemented on userland.
+To reliaze the proposed approach, the authors developed libinger, a library providing an API for timed function dispatch. With launch and resume function in libinger, users can start function preemtively in caller and set termination time of function. Libinger provides a way to handle shared states between two preemptive functions by automatically and dynamically creating the copies of the caller with libgotcha. Also, it provides safe concurrency for each preemtive function with pause function in libinger and manages execution stack of timed-out preemptible function with launch function in libinger. Lastly, the caller can finish a timed-out preemptible function by deallocating the resource with cancle function.
+The latency of preemptible core function interface is evaluated and compared to that of fork function and pthread_create function. Finally, the authors evalulate the performance of software stack for hyper benchmark and libpng when head-of-line blocking and time-based DoS attacks are happening, repectively.
+
+
+Strengths
+---------
++ It is an interesting idat to realize preemptive functions and run them through caller's thread.
++ The libinger library can launch and time out preemptive function in tens of microseconds granularities.
+
+
+Weaknesses
+----------
+- Libinger allocates 2MB fixed-size stack on heap in advance; thus it hurts memory space utilization despite reusable stack. Also, the big fixed-size stack can be an open door to stack overflow-type attacks.
+- Preemptible function interfaces are only compared and evaluated with existing POSIX function; there is no evaluation with prior work.
+
+
+Detailed feedback
+-----------------
+This paper presents novel lightweight preemptive function libraries which can be compatible with non-reentrant interfaces.
+
+That being said, maintaining execution stack of timed function is coarse-grained. The 2MB fixed-size stack on heap can be easily exploited for some malicious attacks, e.g., stak overflow. Also, if many timed codes are generated simultaneously, memory utilization becomes poor possibly causing a performance issue.
+
+Evaluations were only done with the Linux POISX system calls, though the authors compared sub-process with many prior works (systems) in the related work section. It would have beeen better if the authors had conducted their performance evalulation with the prior works.
+
+In summary, although the proposed work is well motivated to support preemption for non-reentrant interface in a synchronous manner, I doubt that this system is really necessary, because the synchronous preemptive function interface on the caller's thread is only better for non-reentrant function, not the other functions.
+
+
+Review #198E
+===========================================================================
+
+Overall merit
+-------------
+3. Weak accept - Suitable for ATC with some shepherding, and I may advocate
+   for it
+
+
+Paper summary
+-------------
+This paper introduces lightweight preemptible functions, a userspace facility to perform function calls that are preemptible using a timeout. These functions are called synchronously. When functions timeout, return a context wrapper that can be resumed later elsewhere in the program. The paper presents the design of a library that implements this abstraction (libinger) as well as a userspace preemptive library. Results demonstrate that this new abstraction performs better than number of competing solutions.
+
+
+Strengths
+---------
+- Comprehensive design that satisfies many desirable properties of timed functions such as preemptive and synchronous design and no need for recompilation
+- Impressive engineering effort
+- Initial performance numbers look good.
+
+
+Weaknesses
+----------
+- The paper is written more like a detailed implementation description rather than a research paper. In particular, it is hard to grasp the challenges that the authors faced and the insights that allowed them to overcome these challenges.
+- The scope of the evaluation is limited and does not account key metrics such as ease of use and the effort required to port existing applications to the proposed paradigm.
+- It seems like your proposed abstractions are useful but also not user friendly and hence error-prone.
+
+
+Detailed feedback
+-----------------
+Thanks for submitting to USENIX ATC. I thought that the paper was well written and easy to follow. However, I didn't get a good sense of the challenges you faced and your key contributions. I am not very knowledgeable in the area, so I would appreciate if you can clarify these points for me in your response.
+
+I also found the scope of your evaluation quite limited. How did you choose your evaluation targets and why is your evaluation comprehensive enough (if you think that it is)?
+
+I also found that you could perhaps provide a more quantitative comparison to Shinjuku and/or RT. I realize this might require a contrived setup and experiments, but this can be presented along with your microbenchmark results.
+
+Finally, I am wondering to what extent you propose to alter the current programming paradigm of the languages you target. It is clearly useful that you can have a timed function that returns a context that can later be resumed. It also seems like it complicates programming substantially without additional safeguards. Can you speculate/discuss implications on bug density/ software reliability?
+
+
+Review #198F
+===========================================================================
+
+Overall merit
+-------------
+2. Weak reject - May be suitable for ATC with significant revisions, but I
+   will not advocate for it
+
+
+Paper summary
+-------------
+The authors introduce the concept of "preemptible functions", which are initially normal synchronous calls, but, if the execution duration exceeds some timeout limit, the execution context is suspended and a future representing that context is returned.  The call resume() that future at their leisure.
+
+The paper describes the implementation, and provides 2 examples in the evaluation section to motivate their new construct.
+
+
+Strengths
+---------
+The broad idea of having a function that starts out with normal synchronous execution, potentially times out, and then returns a future, is novel (in the context of modern unmanaged languages) and would appear useful.
+
+
+Weaknesses
+----------
+It's something of a struggle to read the paper.  This reviewer didn't develop a clear view of the facility being proposed until the middle of Section 3.
+
+The related work section seems muddled.
+
+The evaluation section (with 2 examples) is sparse.
+
+
+Detailed feedback
+-----------------
+*  "Underlying every major futures runtime is a green threading library...".  First, we need an inline definition of green threads for those not acquainted.   Second, How about modern libstc++v3 (a modern C++ implementation) which has futures (futures/async/promise) that are implemented directly on pthreads with no intervening green thread library or thread pool?
+
+* It would be prudent to cite and examine works such as https://uwspace.uwaterloo.ca/handle/10012/12888, which provides futures, a green M:N threading model and preemption of user-mode threads via SIGALRM.   See also https://cs.uwaterloo.ca/~mkarsten/papers/sigmetrics2020.html.   (There are other similar projects that predate the above).    Please explain or qualify the claim in the abstract of "arguably the first general-purpose thread library implemented entirely in user-land".   Curiously, the authors go on to cite similar works (Mollison et al.) in the related work section.  Perhaps one source of confusion is the definition of "preemptible" and exactly what is meant by the term "preemptible function".
+
+* Does the implementation support thread_local/__thread ?
+
+* The distinction and division of responsibility between libinger and libturquoise (and libgotcha) is not immediately clear.
+
+* If library M depends on library N, then, transitively, N's data must be cloned when M is cloned?   Is libc itself also cloned (copied for isolation)?   And if so, how are multiple malloc() allocators allowed?
+
+* Following up on the ideas in section 3.1, presumably there must be other global shared state at risk other than just library globals.    Say, for instance, a key-value store implemented in a library.   That is, creating a copy of L (L's data) would appear necessary but not sufficient.   Put another way, it would seem a deep copy is required but only a shallow copy is feasible with the information at hand.
+
+* Are there any synchronization constructs or system calls that don't readily respond to asynchronous timer signals or, if the signal is delivered, can't be safely longjmp()ed out of?
+
+* Minor complaint: the word pause() is already well established as referring to the Intel x86 instruction of the same name.
+
+* Is "selective relinking" accomplished via the rtld.so "audit" facility?
+
+
+Rebuttal Response by Sol Boucher <sboucher@cs.cmu.edu>
+---------------------------------------------------------------------------
+Thanks for the thorough reviews. Several reviewers requested we clarify the paper’s contributions. First, emphasizing reviewer F’s observation, synchronous function calls that can time out and return a continuation are new to unmanaged languages. Second, selective relinking and libset-granularity isolation are novel and enable us to support sub-process cancellation, something that is difficult atop today’s systems stack. Third, unlike prior efforts towards preemptive userland thread libraries (i.e., many-to-many noncooperative schedulers), ours eschews limitations such as disallowing legacy code (RT) or disabling preemption during legacy code (Shinjuku).
+
+Our heap model was a common source of confusion, possibly because we split discussion of it between sections 1 and 5.5. To avoid the object lifetime challenges arising from maintaining multiple heaps, we use a single shared heap for the entire program. We implement this by whitelisting libc’s allocator-related functions as uncopyable so all calls thereto are routed to the starting libset. In contrast, each libset uses its own private copy of most of libc. We will clarify this.
+
+Two reviewers asked where library copying may alter program semantics. This can happen whenever a library is used to share a resource that cannot be cloned, whether internal to the library (e.g., an in-memory data structure) or external to the process (e.g., a network adapter). The reviews identified examples of each case:  To the first, we note that a library implementing a key-value store only provides a shared resource if its interface is nonreentrant; otherwise, the application may share the pointer or handle between libsets. As a concrete example, modern data structures such as glibc’s hsearch_r() may be shared between libsets, whereas legacy global ones such as POSIX’s hsearch() appear disjoint when viewed from each scope; the latter interface style is rare today. Second, libc’s stdio.h exemplifies sharing a device: the file descriptor. This does mean that performing I/O from multiple libsets can introduce interleaving.  It is rare, because each libc will use a separate buffer, but could require special handling to guard the underlying file descriptor.
+
+Re: questions about the evaluation: We believe it infeasible to comprehensively evaluate all preemptible function use cases within the conference paper format precisely because they represent such a broadly-applicable abstraction. We presented thorough microbenchmarks and devoted our additional evaluation effort to situations where preemptible functions enable functionality difficult or impossible to achieve otherwise. These are function cancellation and preemptive userland scheduling, hence our choice of long-running image decoding and bimodally-distributed Web requests, respectively.
+
+Below we enclose additional responses to reviewers’ specific questions and comments in case they are useful, but are beyond the response limit for the rebuttal, so you can stop here!
+
+**Reviewer A: I would encourage you to set out explicitly in the paper a set of criteria by which programmers can depend on pre-emption working as intended -- or at least a conservative approximation to this, which can be considered independently from the details of the current implementation.**
+The library copying approach preserves program semantics if there is not an underlying shared object (whether it be data or external) hidden behind the scenes, as described in the rebuttal proper.
+
+**Reviewer B: I think the approaches described are actually more general. I.e., the reason for preemption doesn’t need to be a timeout, but could be real-time scheduling or priority preemption. Am I mistaken? If not, generalizing the point (and perhaps using timer-preemption as a simple use case) would be helpful.**
+Yes, they are indeed more general. Libset isolation works regardless of the preemption mechanism, and any external source of control transfer can be used to invoke the machinery we describe herein.
+
+**Reviewer B: What is a worst-case execution for libgotcha? Would it be cases when there are deep call stacks of different lib sets?**
+Data, not instructions, have the biggest effect on libgotcha’s overhead. As shown in Table 3, global variable accesses currently incur high latency under libgotcha; as such, any workload whose critical path involves frequent accesses to non-static globals via dynamic symbols is likely to perform poorly. That is not to say we do not add overhead to functions: the table shows that we raise the latency of each dynamically-resolved function call by an order of magnitude. In terms of multiple libsets, the table also shows that the implicit libset switch due to an uncopyable/whitelisted function costs about the same as a function call. So roughly speaking, the overhead we impose on a deeply-nested call stack is proportional to the sum of the number of dynamically-resolved calls and the number of libsets traversed.
+
+**Reviewer B: The evaluation shows situations when libturquoise provides benefits. Are there (synthetic, even?) cases when it doesn't? E.g., if calls are never preempted?**
+Given that libturquoise exists to add preemption to an otherwise unchanged tokio-threadpool, you are correct to identify that it is not useful in cases where tasks are never preempted.
+
+**Reviewer C: The work doesn't clearly resolve many concerns about user-level concurrency, such as blocking system calls.**
+Our main goal is to provide pausing and cancellation without requiring asynchrony. A preemptible function that makes blocking system calls is an example of a situation where asynchrony is probably desired; this is possible by using a thread library in concert with libinger. Our own libturquoise benefits from the Rust Tokio project’s prior work on blocking syscalls: whenever a worker thread makes a blocking call, its kernel thread is reclassified as a special blocking thread and a new kernel thread is allowed to join the pool to maintain the prescribed number of active threads. Of course, Tokio can only identify such blocking calls if the user calls them via its own future-based wrappers; doing so in the general case would require an active kernel notification mechanism such as scheduler activations. Although unable to catch direct uses of the syscall instruction, one potential area of future work might be to extend libgotcha with another whitelist so that it could issue a callback to warn compatible thread libraries when a library function was about to block, in a simpler version of what is described in section 5.5.
+
+**Reviewer C: For your pthread_create test, do you allow pthread_create to use pre-allocated heaps, similarly to how launch pre-allocates heaps?**
+It is stacks, not heaps, that we pre-allocate for use by launch(); we will make sure to clarify this. See also our discussion of the shared heap in the rebuttal proper.
+
+**Reviewer D: Libinger allocates 2MB fixed-size stack on heap in advance; thus it hurts memory space utilization despite reusable stack. Also, the big fixed-size stack can be an open door to stack overflow-type attacks.**
+Preallocating the stacks was an implementation shortcut taken to accelerate prototyping, and is not fundamental. We plan to replace it with a pool allocator.
+Should physical memory utilization or stack overflows become a major concern, one could easily replace the 2MB stack allocations with mmap() calls for significantly larger but non-prefaulted regions; in this way, the stacks would be able to grow via demand paging.
+
+**Reviewer D: I doubt that this system is really necessary, because the synchronous preemptive function interface on the caller's thread is only better for non-reentrant function, not the other functions.**
+On the contrary, it gives you a mechanism to easily pause and cancel any synchronous function call without involving a thread scheduler, thereby saving you the loss of control and internal overhead inherent to the state of the art approach. This is equally relevant to reentrant functions.
+
+**Reviewer E: The scope of the evaluation is limited and does not account for key metrics such as ease of use and the effort required to port existing applications to the proposed paradigm. It seems like your proposed abstractions are useful but also not user friendly and hence error-prone.**
+The hyper Web server uses tokio-threadpool for scheduling; because the changes we made to the thread library are transparent, making it preemptive was as easy as building against libturquoise instead. In fact, we didn’t even check out the hyper codebase.
+In the libpng benchmark, calling the decode functions using the fork()/sigtimedwait() approach took 25 lines of Rust code; this was without implementing any mechanism for communicating the resulting buffers back to the main process. The launch()/cancel() approach took 20 lines, including implementing a reaper thread to move libset reinitialization off the critical path. Note that due to their use of the libpng C library and in order to achieve peak performance, both benchmarks include blocks of unsafe Rust.
+
+**Reviewer E: I am wondering to what extent you propose to alter the current programming paradigm of the languages you target. It is clearly useful that you can have a timed function that returns a context that can later be resumed. It also seems like it complicates programming substantially without additional safeguards. Can you speculate/discuss implications on bug density/ software reliability?**
+From the programmer’s perspective, most of the complexity we introduce is no different than that present in any concurrent program: barring some incompatible library, the only exception is the pause() discussion in section 3.2. Although less language agnostic, it would be easy to hide this new complexity from the programmer by providing a mutex wrapper implementing the familiar lock operation with a call to pause(). Admittedly, concurrent programming has posed challenges for the community for decades, but recent languages such as Rust have made strides in statically identifying concurrency bugs, and we benefit from this prior work.
+
+**Reviewer E: I didn't get a good sense of the challenges you faced and your key contributions.**
+See the rebuttal proper for a list of our contributions. A common theme of the challenges we faced was that the system interacts with low-level details of the POSIX API, the AMD64 ABI (application binary interface), ELF (executable and linkable format) binaries and libraries, and dynamic linking. This required developing great familiarity with their intricacies. To name a few examples: Central to libinger is the need to restore a POSIX context (continuation) saved from within the preempting signal handler, but this is not directly allowed due to a corner case in the specification of the context API and a resulting lack of support by implementations including glibc; we devised an alternate scheme of indirecting through an intermediate signal handler. We also needed to receive timer signals on specific threads, but the kernel directs them to an arbitrary thread within the process; we addressed this by allocating signal numbers from a pool. Section 5.2 observes that achieving proper scoping semantics requires selectively relinking only those dynamic symbol references that occur outside the defining library, but some function calls are resolved lazily the first time they are called; implementing this requirement involved devising an algorithm that resolves such functions early when this is necessary to disambiguate their location. On the topic of lazy symbol resolution, the dynamic linker was initially clobbering our modified GOT entries when memoizing lazy bindings, and fixing this problem required rewriting the ELF relocation table to trick the linker into saving the resolved address in a shadow table instead. When implementing selective relinking, we had to be careful to preserve pointer comparison semantics when a program passes pointers to dynamically-resolved symbols between libraries; a past related bug caused a glibc security feature to abort the program due to discrepancies in FILE objects.
+
+**Reviewer F: Does the implementation support thread_local/__thread?**
+Yes, with the following caveat: Ulrich Drepper’s specification ELF Handling for Thread-Local Storage defines the AMD64 ABI’s four TLS access models. Of these, the general dynamic and local dynamic model assign module identifiers at library load time, which means that each copy of a library has a different such identifier. In order to support cross-module symbol references, these models use a support function called __tls_get_addr() to resolve addresses; this function is whitelisted as part of the dynamic linker, making it uncopyable so that preemption will not corrupt the TLS metadata. There are two other models, initial exec and local exec, that omit dynamic module addressing as an optimization, which means using them to access TLS variables does not respect libgotcha’s next libset setting. However, initial exec is not general enough to be used by libraries that do not request it; and local exec is only applicable to the executable itself, and is only the default when the application is compiled with COPY relocations enabled, as documented in the -ftls-model discussion in gcc(1). An earlier version of section 5 explained that COPY relocations are an optimization incompatible with our desired global variable semantics and mentioned that upon detecting any, libgotcha issues a warning that the executable must be recompiled with the -fpic flag to disable them. This discussion was removed for space reasons, but we can restore and expand it with details about the TLS.
+
+**Reviewer F: The distinction and division of responsibility between libinger and libturquoise (and libgotcha) is not immediately clear.**
+We are sorry we failed to articulate this, and will try to clarify in the next revision. libinger implements preemptible functions: launch(), resume(), cancel(), and pause(). libturquoise is a preemptive version of the tokio-threadpool (futures) thread library. libgotcha implements library isolation at the granularity of libsets, which makes it possible to provide abstractions such as libinger’s without having to treat “the rest of the program… as a signal handler,” as discussed in section 3.1.
+
+**Reviewer F: If library M depends on library N, then, transitively, N's data must be cloned when M is cloned?**
+Yes, cloning occurs at libset granularity. This is necessary because we defer library loading to the dynamic linker, and it loads all dependencies of a given library before initializing it.
+
+**Reviewer F: … it would seem a deep copy is required but only a shallow copy is feasible with the information at hand.**
+Characterizing library copying as a question of deep vs. shallow copying seems to miss the point: what we do is copy the library as it appears immediately after loading by the dynamic linker, not as it appears after the application has used it. Keep in mind that any structures a library allocates on the caller stack or the shared heap are owned by the process as a whole, and not any individual libset or library.
+
+**Reviewer F: Are there any synchronization constructs or system calls that don't readily respond to asynchronous timer signals or, if the signal is delivered, can't be safely longjmp()ed out of?**
+As far as we know, the only way to stop a timer signal is via the facilities of signal.h or time.h, and their corresponding system calls. The signal(7) manpage assures us, “If a signal handler is invoked while a system call or library function call is blocked, then either: the call is automatically restarted after the signal handler returns; or the call fails with the error EINTR.” We install our signal handler with the SA_RESTART flag to sigaction() to request the former behavior and make the syscall interruptions we cause as transparent as possible. By definition, any correct synchronization construct should protect against any preemption point. We have striven to whitelist as uncopyable all glibc interfaces that manipulate process-wide state, so these will never be preempted. Because selective relinking isolates nonreentrant state, any concurrency bugs introduced by using preemptible functions should be the result of either incorrect synchronization by the programmer or underlying shared resources external to the program.
+
+**Reviewer F: Is "selective relinking" accomplished via the rtld.so "audit" facility?**
+No. We considered using the interface described in rtld-audit(7), but doing so requires defining the LD_AUDIT environment variable before invoking your program. We view selective relinking as an implementation detail (albeit a novel one) underlying the preemptible functions abstraction, and therefore felt that launching libinger-based programs should not require the user to do anything special. As such, libgotcha uses a shared library constructor to implement selective relinking manually as soon as the dynamic linker loads it into the process image.
+
+
+Comment @A1 by Shepherd
+---------------------------------------------------------------------------
+We discussed the paper at length online and during the PC meeting. The PC thought that the work was well motivated by practical concerns on tail latency in server workloads, and that it was a novel approach. The implementation work was impressive, and the topic was a good fit for the conference. In preparing the camera-ready version of the paper, please can you pay particular attention to the following two points during shepherding:
+
+Several reviewers felt that the presentation could be improved, for instance in giving a clearer description of the facility provided earlier in the paper, and in identifying the specific research contributions and new ideas developed. Some reviews also highlighted additional related work.
+
+The precise requirements for using preemptible functions correctly should be written out more directly -- particularly in terms of the management of external shared state, and the need to control pre-emption during critical sections, and to consider blocking external operations.
