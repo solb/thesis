@@ -4,6 +4,9 @@ DOT := dot
 GIT := git
 TEX := pdflatex
 
+thesis.pdf: figs/procimg_perobj.pdf
+thesis.pdf: figs/procimg_perthd.pdf
+thesis.pdf: figs/reinit.pdf
 thesis.pdf: functions/figs/architecture.pdf
 thesis.pdf: functions/figs/progsupport.pdf
 thesis.pdf: microservices/figs/fancy_system-crop.pdf
