@@ -114,6 +114,215 @@
 \newpage
 \pagenumbering{arabic}
 
+\chapter*{TODOs THESIS}
+
+\section{POSIX contexts self-signaling trick (897fe6b)}
+
+The handler's logic is as follows:  It checks whether
+the preemptible function has exceeded its timeout; if so, it swaps the contents
+of the signal handler's continuation (accessible via the final argument to the
+function~\cite{sigaction-manpage}) with a checkpoint continuation saved by
+\texttt{launch()}.  This causes the subsequent return from the signal handler
+to jump back to \texttt{launch()}, which then returns a \texttt{linger}
+structure containing the signal handler's original context.  A subsequent
+\texttt{resume()} call on this packaged continuation proceeds in much the same
+way as \texttt{launch()}, but resumes the original computation by sending
+itself a special signal with \texttt{pthread\_kill()}, then swapping the saved
+context with the contents of that handler's context\footnote{This is necessary
+because POSIX left the semantics of calling \texttt{setcontext()} on the
+continuation saved by a signal handler invocation unspecified, leading
+implementations such as GNU not to handle this
+case~\cite{getcontext-manpage}.}.
+
+Signal pool trick:\@ see 17b86d2.
+
+
+\section{Cross-library symbol detection algorithm (7aa3541)}
+
+Identifying which GOT entries correspond to cross-library symbol uses
+is is a multi-step process:
+First, we traverse the relocation table for each loaded object file, cross
+referencing each of its relocation entries against the local object file's symbol
+table.  If the symbol table does not contain a definition matching the relocation
+entry's target, we conclude that the relocation must correspond to a cross-library
+call.  Otherwise, we check the address in the GOT entry corresponding to the
+relocation entry:  If this address is outside the bounds of the current object file,
+it is a cross-library call.  Otherwise, if this address matches the one from the
+symbol table entry, it is not a cross-library call, and should be skipped.  The last
+case is the trickiest, since the GOT entry probably still refers to the PLT stub
+(because the symbol reference has not yet been resolved).  In this case, we resolve
+the symbol
+early, update the GOT entry, and recheck whether it resolved to the local definition
+to determine whether it is a cross-library call.
+
+
+\section{ELF \textit{NODELETE} dynamic flag workaround (8dcf62b)}
+
+Some shared libraries are marked with a special configuration flag,
+\texttt{DF\_1\_NODELETE}, which prevents the dynamic linker from ever removing them
+once they have been loaded.  Because almost all libraries depend on libc, the
+presence of even one such library prevents us from reinitializing a libset for reuse
+after its preemptible function has been canceled!  The flag is mostly used on
+libraries that need
+to monkey-patch some other loaded library, such that the two subsequently have a
+circular dependency.  Fortunately, this is not usually a problem because when we
+unload one library from a libset, we then unload the rest, so whenever we encounter a
+\texttt{NODELETE} object file, we make a special copy with the flag cleared, for
+loading into every namespace except the main one.  The one place this does not work
+is when a library monkey-patches the dynamic linker itself.  This
+requires the use of a private interface, and the only offending library to our
+knowledge is GNU libpthread, which replaces function pointers in order to cause the
+dynamic linker to take locks when performing potentially concurrent operations; we
+handle this by preventing the monkey-patching constructor code from running in our
+modified copy of that library.
+
+
+\section{Preserving pointer equality (5d4b902)}
+
+A subtle but important point in the semantics of dynamic linking is that pointers to
+the same definition must compare equal, regardless of where they are obtained.  For
+instance,
+the reader might notice that invocation is not the only thing a program can do with a
+function:\@ it might also pass around the function's address.  In fact, after taking
+the address, it could pass it to code within a different object file, which might
+compare it\footnote{In order for such comparisons to correctly indicate whether the
+same code will be run, the compiler loads such addresses directly from the GOT via
+instructions of the special position-independent relocation form
+\texttt{mov~\textit{symbol}@gotpcrel(\%rip),~\%\textit{dest}}, and the dynamic linker
+resolves the calls and populates their GOT entries eagerly at load time.}.  To avoid
+breaking pointer comparison, libgotcha makes sure to share the same PLOT
+stub between all GOT entries to a given symbol that use this type of
+relocation.  As long as the current libset remains the same between the time of a
+function pointer comparison and the time of its invocation, such a comparison
+guarantees that \texttt{procedure\_linkage\_override()} will dispatch to the same
+copy when invoked using either pointer.
+
+
+\section{Lazy PLT relocation memoization trick (154d76e)}
+
+The setup procedure described so far has one significant problem:\@ recall that a PLT
+call memoizes the real address of its symbol by replacing the GOT entry, which should
+cause subsequent calls to skip libgotcha's \texttt{procedure\_linkage\_override()}
+codepath.  In order to prevent this, the constructor updates the relocation entries
+corresponding to cross-library calls to point at \textit{shadow} GOT entries.  This
+fools the dynamic linker into updating the shadow entry instead, meaning that
+memoization still works, as shown in Figure~\ref{fig:override}.
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{functions/figs/tables}
+\caption{\texttt{procedure\_linkage\_override()} tables}
+\label{fig:override}
+\end{figure}
+
+
+\section{Global variable interception heuristics (gotcha ebef4e0)}
+
+Woah!  The error was in executing this instruction, which probably means it's
+unreadable.  Let's *not* try to disassemble it; instead, we'll see whether we
+just followed a misguided indirect call instruction.  First search backward from
+the return address for such an instruction...
+
+It looks like the base of the displacement-mode address calculation isn't one we
+instrumented.  Maybe the code computed a custom base address using a register
+that we've since updated due to a separate (but nearby) dereference?
+
+See whether we can apply one of our heuristics.  Note that they currently assume
+that the code applied a *linear* offset to the last address we resolved.
+
+Let's try adding the same offset we did last time we resolved an address,
+because we're in one of the following common situations:
+\begin{itemize}
+\item The client code is using the same base address register as it was
+	during our last trip through this function.  This might indicate that
+	said code is using the register as an address accumulator, but doing
+	so in concert with some other temporary register: because of this
+	indirection, overwriting the register with the temporary after we
+	had preformed the original address resolution would have left us
+	unable to process any subsequent values accumulated into the register.
+\item The base address register is different than the one updated during our
+	last trip through this function, but the value of the latter has
+	remained unchanged since we updated it.  Because it contains a memory
+	address we had to resolve, this strongly suggests that the client code
+	has only executed a few instructions since then, which we can infer
+	even if that set included one or more branch instructions.
+\item The current return address points to the instruction immediately
+	following the one that faulted to result in the last invocation of
+	this function, and the current base address register's value has
+	remained the same since the faulting instruction was executed.  This
+	implies that said instruction was an indirect procedure call, and that
+	the register was probably just used to pass a pointer argument.
+	Because we didn't resolve the address of the indirect call until the
+	client code was already transferring control, there was no way for it
+	to have passed a pointer without performing arithmetic directly on the
+	dummy address present before the call.
+\end{itemize}
+
+We resolved the address without applying a heuristic.  Save a record of what we
+changed and how to allow us to heuristically resolve addresses based on our
+experience.  Because this is guarded, heuristics cannot chain, but multiple of
+them can be triggered based on a common base resolution.
+
+
+\section{Uncopyable function calls diagram (424387e)}
+
+See Figure~\ref{fig:uncopyable}.
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{functions/figs/calltree}
+\caption{What happens when a program calls an uncopyable function}
+\label{fig:uncopyable}
+\end{figure}
+
+
+\section{Program automatically repaired by libas-safe (ee2602a)}
+
+The main use of libgotcha is to make library function calls async-signal safe when
+they would not otherwise be.  To more clearly illustrate the library's usefulness, we
+pause to give a minimal example of such usage; specifically, we will leverage
+libgotcha to automatically fix the buggy program in Listing~\ref{lst:handlerbug},
+which calls the async-signal-unsafe function \texttt{printf()} from its signal
+handler.  Unfortunately, this function takes a lock on the \texttt{stdout} stream's
+associated file descriptor, and the signal handler eventually interrupts the program
+within \texttt{fflush()} while it is holding this same lock, resulting in deadlock.
+
+\begin{figure}
+\begin{lstlisting}[label=lst:handlerbug,caption=C program with a buggy signal handler]
+static void handler(int ignored) {
+  printf("In signal handler\n");
+}
+
+int main(void) {
+  struct sigaction sa = {
+    .sa_handler = handler,
+  };
+  sigaction(SIGALRM, &sa, NULL);
+
+  struct timeval tv = {
+    .tv_sec = 1,
+  };
+  struct itimerval it = {
+    .it_interval = tv,
+    .it_value = tv,
+  };
+  setitimer(ITIMER_REAL, &it, NULL);
+
+  while(true)
+    fflush(stdout);
+}
+\end{lstlisting}
+\end{figure}
+
+
+\section{Footnote introducing the concept of libac-safe (d3336e4)}
+
+While libas-safe reestablishes async-signal safety, it would also be
+possible to write a libgotcha client library that did the same for what POSIX calls
+async-cancellation safety.  The obvious application of this would be supporting
+asynchronous thread cancellation (in the common case where whitelisted code was not
+currently executing):\@ as we saw in Section~\ref{sec:intro}, today's POSIX and
+Windows interfaces for this are broken to the point of practical uselessness.
+
+
 \chapter*{Foreword}
 
 Perhaps it is inevitable that when a nonfiction work reaches a certain length, it
