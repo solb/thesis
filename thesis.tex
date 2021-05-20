@@ -497,6 +497,14 @@ documentation in \texttt{libgotcha\_repl.h}, and be prepared for some additional
 be used to inject an intermediate \texttt{objcopy} step into the build process).
 
 
+\section{Lessons for system builders (slides)}
+
+Resuming is a useful feature that is cheap, but introduces concurrency.
+Cannnot get CPU time isolation without memory isolation.
+Design abstractions modularly and with an eye to simple use cases (e.g., libgotcha as a separate
+runtime with a very small control API, things listed in the note on design).
+
+
 \chapter*{Foreword}
 
 Perhaps it is inevitable that when a nonfiction work reaches a certain length, it
