@@ -503,6 +503,8 @@ Resuming is a useful feature that is cheap, but introduces concurrency.
 Cannnot get CPU time isolation without memory isolation.
 Design abstractions modularly and with an eye to simple use cases (e.g., libgotcha as a separate
 runtime with a very small control API, things listed in the note on design).
+Treat debuggability as a first-order concern (e.g., permit disabling features that interfere at
+runtime, test and maintain support for running under debugging and diagnostic tools).
 
 
 \chapter*{Foreword}
