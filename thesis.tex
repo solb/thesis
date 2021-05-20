@@ -356,6 +356,147 @@ See Figure~\ref{fig:reinit}.
 \input{functions/rebuttal/atc20-reviews-198.txt}
 
 
+\section{A note on terminology (inger 7d5b2e2)}
+
+We use the term lightweight preemptible function (LPF) to refer to the timed \textit{version} of a
+function, as invoked via the \texttt{launch()} wrapper function in this library.  It's not quite right to
+say that \textit{libinger} "provides preemptible functions"; rather, it provides a transformation from
+an ordinary function into a preemptible one.
+
+To provide the memory isolation necessary to introduce preemption and asynchronous cancellation at
+sub-thread granularity without breaking existing program dependencies, the \textit{libgotcha} runtime
+allocates a separate copy of all the program's loaded dynamic libraries for each preemptible
+function.  While the paper refers to this isolation unit as a libset, that term was unfortunately
+coined late in development; as such, the source code and configuration variables refer to it as a
+"group" instead.
+
+
+\section{A note on design (inger 7d5b2e2)}
+
+The paper describes the \textit{libinger} API, and the generated HTML documentation gives a few more usage
+details.  Here are some of the guiding principles that inspired our interface choices:
+\begin{itemize}
+\item **We do not assume users need asynchrony.**  Hence, preemptible functions \textit{run on the same kernel
+	thread as their caller}.  This is good for performance (and especially invocation latency), but
+	it is also important to be aware of; for instance, it means that a preemptible function will
+	deadlock if it attempts to acquire a lock held by its caller, or vice versa.  If asynchrony is
+	something you require, you can build it atop \textit{libinger}, as we have demonstrated with our
+	\textit{libturquoise} preemptive userland thread library.
+\item **We assume that simply calling a function with a timeout is the common use case.**  As such, the
+	\texttt{launch()} wrapper both constructs and begins executing the preemptible function rather than
+	asking the user to first employ a separate constructor.  The latter behavior can be achieved by
+	passing the sentinel \texttt{0} as the timeout, then later using \texttt{resume()} to invoke the preemptible
+	function.
+\item **We endeavor to keep argument and return value passing simple yet extensible.**  Because Rust
+	supports closures, the Rust version of \texttt{launch()} accepts only nullary functions: those seeking
+	to pass arguments should just capture them from the environment.  Because C supports neither
+	closures nor generics, the C version of \texttt{launch()} accepts a single \texttt{void *} argument that can
+	serve as an inout parameter; it occupies the last position in the parameter list to permit
+	(possible) eventual support for variable argument lists.
+\item **We choose defaults to favor flexibility and performance.**  When a preemptible function times
+	out, \textit{libinger} assumes the caller might later want to resume it from where it left off.  As
+	such, both \texttt{launch()} and \texttt{resume()} pause in this situation; this incurs some memory and time
+	overhead to provide a separate execution stack and package the continuation object, but has much
+	lower overall cost than asynchronous cancellation.  If the program does require cancellation, it
+	can request it explicitly by calling \texttt{cancel()} (C) or dropping the continuation object (Rust).
+\item **We provide preemption out of the box, but the flexibility to cooperatively yield.**  The
+	\texttt{pause()} primitive allows a preemptible function to "yield" back to its caller by immediately
+	"timing out."  One can imagine building higher-level synchronization constructs atop this; for
+	example, a custom mutex that paused instead of blocking would allow two or more preemptible
+	functions to share state, even when some of them executed from the same kernel thread.
+\item **We favor a simple, language-agnostic interface.**  Because the interface is based on the
+	foundational function call abstraction, it looks very similar in both C and Rust.  Someday, it
+	may look \textit{equally} similar in other languages as well, and in the meantime, it ought to enjoy
+	compatibility with languages' C foreign-function interfaces.  It's relatively simple to integrate
+	higher-level abstractions on top, such as the Rust futures wrapper available in \textit{libinger}'s
+	\texttt{future} module.
+\end{itemize}
+
+
+\section{A note on implementation (inger 7d5b2e2)}
+
+The timer signal handler in \textit{libinger} refuses to pause while the next libset is set to 0 (the
+starting libset).  Because \textit{libinger} is statically linked with \textit{libgotcha}, the latter enforces a
+transparent switch to this libset whenever a dynamic function call transfers control into the module
+in the process image that corresponds to \texttt{libinger.so}.  This means that preemption is deferred on a
+given kernel thread while \textit{libinger}'s own code is executing on that thread.
+
+Of course, things are not quite that simple.  There are noteworthy exceptions to the rule:
+\begin{itemize}
+\item The public \textit{libinger} Rust interface includes a number of generic functions.  Because the Rust
+	compiler monomorphizes such functions for the client code that uses them, \textit{their implementations
+	are \textrm{not} in \texttt{libinger.so}!}  Rather, there is, roughly speaking, one or more copies of them
+	(specialized for various type arguments) in each program module that calls them.  The generic
+	functions are therefore implemented such that they package everything that differs by type, then
+	call into non-specialized functions such as \texttt{setup\_stack()} and \texttt{switch\_stack()} to do the scary
+	stuff.
+\item The \texttt{resume\_preemption()} function is installed as a \textit{libgotcha} callback hook, and is implicitly
+	invoked at the end of each deferred-preemption library call made by a preemptible function.
+	\textit{This happens in the preemptible function's libset rather than the starting one}; this is
+	essential because the callback's main task is to force the timer signal handler to run
+	\textit{immediately} and check for a timeout, and we don't want the libset to inhibit preemption!
+\end{itemize}
+
+
+\section{Building glibc from source (inger 7d5b2e2)}
+
+Although \textit{libinger} is compatible with an unmodified glibc in principle, in practice the build
+configuration used by most distributions is insufficient for two reasons:
+ * By loading numerous copies of the application's libraries, we tend to exhaust the static storage
+   pool provided by the dynamic linker.  If your program hits this limit, it will crash at load time
+   with an error like: \texttt{yourprogram: libgotcha error: Unable to load ancillary copies of library:
+   somelibrary.so: cannot allocate memory in static TLS block}.
+ * Stock glibc builds are limited to 16 linker namespaces, enough to support only 15 preemptible
+   functions at any given time.  If your program hits this limit, it will crash at runtime with an
+   error like: \texttt{launch(): too many active timed functions}.
+
+Unfortunately, these configuration parameters are baked into the dynamic linker at build time.
+What's more, changing (at least) the latter alters the size of internal structures that are shared
+between \texttt{ld-linux.so}, \texttt{libc.so}, \texttt{libpthread.so}, and others, so making changes requires rebuilding
+all of glibc.  Fortunately, provided you set the prefix properly when building glibc, the dynamic
+linker will know where to search (by absolute path) for the other libraries; as such, most
+applications that depend on \texttt{libinger.so} need only define a custom interpreter path pointing to the
+\texttt{ld-linux-x86-64.so.2} file in your build directory.
+
+
+\section{Control libraries (gotcha 8224235)}
+
+There are two possible types of control library:
+\begin{itemize}
+\item An \textit{internal control library} is statically linked with \textit{libgotcha} to form a single shared
+   object file that is loaded (or preloaded) as one unit.  In addition to having access to the
+   \textit{libgotcha} control API (declared in \texttt{libgotcha\_api.h}), internal libraries enjoy the guarantee
+   that their code always executes in the base libset, and have direct access to the C library
+   functions deemed by \textit{libgotcha} to be too dangerous for the rest of the program to call
+   (enumerated in \texttt{libgotcha\_repl.h}).
+\item An \textit{external control library} is dynamically linked with \textit{libgotcha}, and therefore constitutes
+   a separate shared object file that depends on \texttt{libgotcha.so} (or, perhaps, a compatible internal
+   control library).  Calls into such a library do not cause an automatic libset switch unless
+   explicitly whitelisted (which is currently not pluggable and done via \texttt{whitelist.c}), and the
+   library does not have special access to dangerous C library functions.  External control
+   libraries haven't been tested as extensively as internal ones, but are necessary when you want to
+   have more than one control library in a single application, if you want to be able to update
+   \textit{libgotcha} without rebuilding the control library, and maybe for other reasons yet to be
+   discovered.
+\end{itemize}
+
+If an internal control library needs to alter the behavior of any additional third-party library
+functions, it may designate them as dangerous by defining its own implementation of the same name.
+Calls to the function from the rest of the process image will be rerouted to this implementation,
+but calls from the control library (and \textit{libgotcha} itself) will be routed to the original
+third-party implementation.  For more details, see the documentation in \texttt{libgotcha\_api.h}, the
+advice about compiler optimizations in \texttt{libgotcha\_repl.h}, and the example control libraries in the
+projects under the \texttt{example} directory.
+
+Note that internal control libraries' calls to \textit{existing} dangerous C library functions are also
+routed directly to the real implementation, but the control library may instead choose to call
+\textit{libgotcha}'s safer wrapper.  A control library might even use this feature to wrap \textit{libgotcha}'s
+own wrapper of a third-party library function!  These use cases are considered advanced: see the
+documentation in \texttt{libgotcha\_repl.h}, and be prepared for some additional build system complexity
+(e.g., our Make integration supports replacing calls to \texttt{cp} via the \texttt{\$(CP)} variable, which could
+be used to inject an intermediate \texttt{objcopy} step into the build process).
+
+
 \chapter*{Foreword}
 
 Perhaps it is inevitable that when a nonfiction work reaches a certain length, it
