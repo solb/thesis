@@ -1,0 +1,64 @@
+strict digraph {
+	edge [arrowhead=none];
+	node [shape=none, width=0, height=0, label=""];
+
+	caller [label="caller module"];
+	control [label="control library"];
+	gotcha [label=<<i>libgotcha</i>>];
+	callee [label="callee module"];
+
+	{
+		// This weight must be at least the number of horizontal arrows.
+		edge [style=dashed, weight=5];
+
+		caller -> callerA -> callerB -> callerC -> callerD -> callerE -> callerF -> callerG;
+
+		control -> controlA -> controlB -> controlC -> controlD;
+		controlD -> controlE [style=solid, penwidth=2];
+		controlE -> controlF -> controlG;
+
+		gotcha -> gotchaA;
+		gotchaA -> gotchaB [style=solid, penwidth=2];
+		gotchaB -> gotchaC;
+		gotchaC -> gotchaD [style=solid, penwidth=2];
+		gotchaD -> gotchaE;
+		gotchaE -> gotchaF [style=solid, penwidth=2];
+		gotchaF -> gotchaG;
+
+		callee -> calleeA -> calleeB;
+		calleeB -> calleeC [style=solid, penwidth=2];
+		calleeC -> calleeD -> calleeE -> calleeF -> calleeG;
+	}
+
+	{
+		rank=same;
+		callerA -> controlA [label="procedure_linkage_override()"];
+		controlA -> gotchaA [arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		gotchaB -> calleeB [label="callee()", arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		gotchaC -> calleeC [arrowhead=normal, dir=back];
+	}
+
+	{
+		rank=same;
+		controlD -> gotchaD [label=<<i>hook</i> ?>, arrowhead=normal, dir=back];
+	}
+
+	{
+		rank=same;
+		controlE -> gotchaE [arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		callerF -> controlF [arrowhead=normal, dir=back];
+		controlF -> gotchaF;
+	}
+}
