@@ -1,0 +1,33 @@
+strict digraph {
+	rankdir=LR;
+
+	mod0 [label="module 0"];
+	plt0 [shape=record, label="PLT 0||"];
+	got0 [shape=record, label="GOT 0||"];
+	plot [shape=record, label="PLOT||"];
+	mod0 -> plt0;
+	plt0 -> got0;
+	got0 -> plot;
+
+	modN [label="module N"];
+	pltN [shape=record, label="PLT N||"];
+	gotN [shape=record, label="GOT N||"];
+	modN -> pltN;
+	pltN -> gotN;
+	gotN -> plot;
+
+	plo [shape=box, label="procedure_linkage_override()"];
+	sgots [shape=record, label="SGOTs||"];
+	plot -> plo;
+	plo -> sgots [label=<<i>module handle</i>>];
+
+	sgot0 [shape=record, label="SGOT 0||"];
+	fun0 [shape=box, label="fun(), libset 0 copy"];
+	sgots -> sgot0;
+	sgot0 -> fun0 [label="GOOT"];
+
+	sgotN [shape=record, label="SGOT N||"];
+	funN [shape=box, label="fun(), libset N copy"];
+	sgots -> sgotN [label="libset_thread_get_next()"];
+	sgotN -> funN [label="GOOT"];
+}
