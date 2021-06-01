@@ -1,0 +1,112 @@
+strict digraph {
+	edge [arrowhead=none];
+	node [shape=none, width=0, height=0, label=""];
+
+	caller [label="caller module"];
+	control [label=<<i>libinger</i>>];
+	gotcha [label=<<i>libgotcha</i>>];
+	callee [label="callee module"];
+
+	{
+		// This weight must be at least the number of horizontal arrows.
+		edge [style=dashed, weight=5];
+
+		caller -> callerA -> callerB -> callerC -> callerD;
+		callerD -> callerE [style=solid, penwidth=2];
+		callerE -> callerF -> callerG -> callerH -> callerI;
+		callerI -> callerJ [style=solid, penwidth=2];
+		callerJ -> callerK -> callerL -> callerM -> callerN;
+
+		control -> controlA;
+		controlA -> controlB [style=solid, penwidth=2];
+		controlB -> controlC;
+		controlC -> controlD [style=solid, penwidth=2];
+		controlD -> controlE -> controlF -> controlG -> controlH
+		controlH -> controlI [style=solid, penwidth=2];
+		controlI -> controlJ;
+		controlJ -> controlK [style=solid, penwidth=2];
+		controlK -> controlL;
+		controlL -> controlM [style=solid, penwidth=2];
+		controlM -> controlN;
+
+		gotcha -> gotchaA -> gotchaB;
+		gotchaB -> gotchaC [style=solid, penwidth=2];
+		gotchaC -> gotchaD -> gotchaE;
+		gotchaE -> gotchaF [style=solid, penwidth=2];
+		gotchaF -> gotchaG;
+		gotchaG -> gotchaH [style=solid, penwidth=2];
+		gotchaH -> gotchaI -> gotchaJ -> gotchaK;
+		gotchaK -> gotchaL [style=solid, penwidth=2];
+		gotchaL -> gotchaM -> gotchaN;
+
+		callee -> calleeA -> calleeB -> calleeC -> calleeD -> calleeE -> calleeF;
+		calleeF -> calleeG [style=solid, penwidth=2];
+		calleeG -> calleeH -> calleeI -> calleeJ -> calleeK -> calleeL -> calleeM -> calleeN;
+	}
+
+	{
+		rank=same;
+		callerA -> controlA [label=<launch(<i>F</i>)>, arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		controlB -> gotchaB [label="libset_thread_set_next()", arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		controlC -> gotchaC [arrowhead=normal, dir=back];
+	}
+
+	{
+		rank=same;
+		callerD -> controlD [label=<<i>F</i>()>, arrowhead=normal, dir=back];
+	}
+
+	{
+		rank=same;
+		callerE -> controlE [label="procedure_linkage_override()"];
+		controlE -> gotchaE [arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		gotchaF -> calleeF [label="callee()", arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		gotchaG -> calleeG [arrowhead=normal, dir=back];
+	}
+
+	{
+		rank=same;
+		controlH -> gotchaH [label=<<i>hook</i> ?>, arrowhead=normal, dir=back];
+	}
+
+	{
+		rank=same;
+		callerI -> controlI [arrowhead=normal, dir=back];
+	}
+
+	{
+		rank=same;
+		callerJ -> controlJ [arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		controlK -> gotchaK [label="libset_thread_set_next()", arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		controlL -> gotchaL [arrowhead=normal, dir=back];
+	}
+
+	{
+		rank=same;
+		callerM -> controlM [arrowhead=normal, dir=back];
+	}
+}
