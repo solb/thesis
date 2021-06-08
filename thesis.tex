@@ -35,10 +35,11 @@
 \newcommand{\us}[1]{#1 $\mu$s}
 
 \newcommand{\attribchapquote}{}
-\newcommand{\widthchapquote}{}
-\newenvironment{chapquote}[2][3in]{
+\newcommand{\gapchapquote}{}
+\newcommand{\widthchapquote}{3in}
+\newenvironment{chapquote}[2][1in]{
 	\renewcommand{\attribchapquote}{#2}
-	\renewcommand{\widthchapquote}{#1}
+	\renewcommand{\gapchapquote}{#1}
 	\vspace{-2in}
 	\begin{flushright}
 	{\Large ``}
@@ -47,7 +48,7 @@
 	--- \attribchapquote \\
 	\rule{\widthchapquote}{1pt}
 	\end{flushright}
-	\vspace{1in}
+	\vspace{\gapchapquote}
 }
 
 \makeatletter
@@ -826,7 +827,7 @@ cancellation.
 \label{chap:libgotcha}
 
 \ifdefined\chapquotes
-\begin{chapquote}{James S.\@ A.\@ Corey, \textit{Nemesis Games}}
+\begin{chapquote}[0.5in]{James S.\@ A.\@ Corey, \textit{Nemesis Games}}
 `Alien superweapons were used,' Alex said, walking into the room, \\
 sleep-sweaty hair standing out from his skull in every direction. \\
 `The laws of physics were altered, mistakes were made.'
@@ -849,7 +850,7 @@ sleep-sweaty hair standing out from his skull in every direction. \\
 \label{chap:libturquoise}
 
 \ifdefined\chapquotes
-\begin{chapquote}{Isaac Asimov, \textit{The Gods Themselves}}
+\begin{chapquote}[0.75in]{Isaac Asimov, \textit{The Gods Themselves}}
 `Does everyone just believe what he wants to?' \\
 `As long as possible.  Sometimes longer.'
 \end{chapquote}
