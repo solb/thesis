@@ -80,6 +80,12 @@
 }{
 	\let\subsection\subsection@
 }
+
+\newenvironment{promotesubsections}{
+	\renewcommand{\subsection}[1]{\section@{##1}}
+}{
+	\let\subsection\subsection@
+}
 \makeatother
 
 \renewenvironment{abstract}{}{}
