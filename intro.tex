@@ -1,0 +1,110 @@
+\chapter{Introduction}
+
+The abstraction most fundamental to modern programs is the \textbf{function}, a
+section of code that expects zero or more data inputs, performs some computation, and
+produces zero or more outputs.  It is a structured control flow primitive that obeys
+a strict convention:\@ whenever invoked from one of its \textbf{call sites}, a
+function runs from beginning to (one possible) end, at which point execution resumes
+in the \textbf{caller} just after the call site.  It is also a \textbf{synchronous}
+primitive; that is, all these steps happen sequentially and in order.  Because
+processors conceptually implement synchronous computation, scheduling a function is
+as trivial as instructing the processor to jump from the call site to its starting
+address, then jump back to the (saved) address subsequent to the call site.  Thus,
+the program continues executing throughout, with no inherent need for intervention by
+an external scheduler or other utility software.
+
+% TODO: Citation on decompression bombs?
+Note, however, that just because the program has retained control does not mean the
+programmer has.  Precisely because functions represent an abstraction, the programmer
+who calls one is not necessarily familiar with its specific implementation.  This can
+make it hard to predict the function's duration, yet calling it requires the
+programmer to trust it to eventually finish and relinquish control.  The programmer
+may have made a promise (e.g., a service-level agreement) that their whole program
+will complete within a specified timeframe; unfortunately, they cannot certify their
+compliance without breaking the abstraction and examining the internals of each
+function they call.  Even then, untrusted or unpredictable input may make the
+function's performance characteristics unclear:  Perhaps it solves a problem that is
+known to be intractable for certain cases, but such inputs are difficult to identify
+\textit{a priori}.  Perhaps it performs format decoding or translation that is
+susceptible to attacks such as decompression bombs.  Or perhaps it simply contains
+bug that open it to inefficient corner cases or even an infinite loop.
+
+Faced with such problems, the programmer is often tempted to resort to an
+\textbf{asynchronous} invocation strategy, whereby the function runs in the
+background while the programmer maintains control of the rest of the program.  Common
+abstractions following this model include the operating system's own processes and
+threads, as well as the threads, coroutines, and futures (i.e., promises) provided by
+some libraries and language runtimes.  Any use of asynchronous computation requires
+an external scheduler to allocate work.
+
+Here again, the programmer is sacrificing control.  Upon handing execution control to
+a scheduler, dependencies are no longer clear from the program's structure and must
+be passed to the scheduler by encoding them in synchronization constructs; however,
+it is difficult to fully communicate the relevant bits of the application logic
+across this abstraction boundary, which can result in unintended resource-sharing
+effects such as priority inversion.  Furthermore, each software scheduler is itself a
+piece of code, and because its job does not represent useful application work, any
+time it spends executing is pure overhead.  Therefore, introducing unnecessary
+scheduling necessarily reduces per-processor performance.
+
+In many cases, the \textit{only} tool necessary to ensure timely completion of a
+program is preemption.  Instead of confronting this directly, current programming
+environments incentivize the programmer to rely on a scheduler to fix the problem,
+limiting them to whatever coarse timescales (often milliseconds) the OS scheduler
+operates at, or (in the case of userland schedulers) to cooperative scheduling
+that doesn't even address the problem of infinite loops.  The goal of this work is to
+design and prototype an interface that extends the programming model with simple
+preemption, thereby allowing the use of functions without having to break the
+abstraction and examine their implementations.  If the function times out, it is
+paused so that the programmer can later resume and/or cancel it at the appropriate
+time.  Note that such an interface is still inherently concurrent; indeed, it is the
+programmer who expresses the schedule describing when to devote time to the timed
+code, and how much.
+
+
+\section{Thesis statement}
+
+\textit{Modern operating systems provide task preemption
+as a resource sharing mechanism:\@ when the total number of
+threads exceeds the number of processors, the kernel scheduler preempts long-running
+or low-priority threads to allow others to run.  Preemption is also useful to
+applications in its own right, and its interface
+influences the structure and architecture of such programs.
+Providing only an asynchronous interface encourages the programmer to leave even
+simple scheduling to the operating system, thereby accepting the scheduler's overhead
+and coarse resolution.  We introduce a novel
+abstraction for preemption at the granularity of a synchronous function call, and
+demonstrate that this represents a more efficient and composable interface that
+enables new functionality for latency-critical applications, while being both
+compatible with the existing systems stack and expressive enough
+to encode classic asynchrony primitives.
+}
+
+
+\section{Structure}
+
+The rest of the chapters of this thesis break down this research as follows:
+\begin{itemize}
+\item We prototype our abstraction on top the GNU/Linux operating system with an
+	unmodified kernel (Chapter~\ref{chap:libinger}).  Although the current
+	implementation is limited to the x86-64 architecture and relies on POSIX
+	features such as signals, timers, and contexts and GNU dynamic linker
+	namespaces, we believe it could be ported to other systems and architectures
+	with additional engineering effort.  We examine the performance properties of
+	preemptible function invocations, pauses, resumes, and cancellations.
+\item Supporting existing nonreentrant code requires an approach we call selective
+	relinking; our implementation includes a lightweight runtime to do this
+	transparently with modest overhead (Chapter~\ref{chap:libgotcha}).  We
+	present the technique, along with its interaction with dynamic linking and
+	loading, in detail and with examples of semantic implications.
+\item Although lightweight preemptible functions are fundamentally synchronous, we
+	demonstrate their expressiveness by applying them to the asynchrony problem
+	of making an existing cooperative thread library preemptive
+	(Chapter~\ref{chap:libturquoise}).  We demonstrate the applicability of this
+	artifact to mitigating head-of-line blocking in a modern Web server.
+\item We discuss the relevance of preemptible functions to serverless computing,
+	where we argue they could be used to accelerate the launch times of
+	microservices, enabling customers to better leverage the low latency of
+	modern datacenter networks and the steady performance improvements of FaaS
+	providers' walled garden services (Chapter~\ref{chap:microservices}).
+\end{itemize}

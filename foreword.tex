@@ -1,0 +1,168 @@
+\chapter*{Foreword}
+
+Perhaps it is inevitable that when a nonfiction work reaches a certain length, it
+begins to serve multiple purposes; if so, this document is no exception.  Yes, it is
+a record of the ideas I have explored over the past years of my life.  But like any
+thesis, it is also a lesson:\@ in summarizing my findings from these explorations, it
+endeavors to save you from spending years of your own on the same topic.  And like
+any good lesson, this one begins with an exercise...
+
+With your permission, we will conduct a brief mindfulness activity.  At this moment,
+and for however much longer you focus on this document, you mind will be occupied by
+ideas.  Many of these ideas I will have put there.  Shortly, they will be ideas about
+computer systems, but first let us consider:  How are the ideas getting to you?  You
+are reading, but what does that mean?  Perhaps you are holding a printout or a bound
+copy of this manuscript, or perhaps you have loaded it onto your personal computer,
+tablet, phone, or hand terminal.  In any case, you have opened it to a particular
+page, exposing your eyes to a sea of shapes arranged into nested clusters.  Your eyes
+have gravitated to a cluster of particularly large shapes known as a ``chapter
+title,'' then they have scanned across the page and sent a compressed representation
+of each smaller ``word'' cluster of shapes to your brain, which has matched the
+clusters of shapes to entries in your mental lexicon, then parsed them according to a
+set of linguistic rules to infer their logical connections.  Then you have moved on
+to the large ``paragraph'' clusters and processed each in turn, starting with the
+first of its ``sentence'' clusters, and in so doing, learning what the next sentences
+will be about.  Occasionally, something will go wrong at one of these steps and you
+will backtrack and notice a missed word, or more closely examine a misidentified
+word, or try a different parsing of the sentence, or reexamine the logical flow of
+the paragraph.  You will usually not realize you are doing any of this, preferring
+to think simply that you are \textbf{reading}.
+
+The document you are reading is about computer systems, and like your brain, such
+systems have many complexities.  If we as computer users had to describe the full
+process for doing everything, we would never accomplish anything, so instead we
+build \textbf{abstractions} for performing common tasks without examining the
+underlying details.  Some would say that any computer systems research is
+fundamentally about abstractions.  This particular work centers around an abstraction
+for use by application programmers, who in turn work on top of other abstractions,
+the most notable of which is software called the \textbf{operating system}.
+
+In computing, as in life, one's fundamental goal is to accomplish some task using a
+set of shared resources.  Someone must decide how to allocate these shared resources,
+a role usually filled for a particular resource by a piece of software called its
+\textbf{scheduler}.  One major responsibility of the operating system is to share
+hardware resources such as the processor, the short- and long-term storage devices,
+devices for user interaction, and network interfaces.  Among these, the one most
+relevant to our discussion is the CPU scheduler, which manages the processor.
+
+Despite itself being an abstraction that hides enormous complexity, a processor is
+conceptually quite simple:\@ it receives a stream of simple \textbf{instructions}
+telling it what to do, executing them in the order received and occasionally jumping
+to a particular point elsewhere in the stream when so instructed.  The simplicity of
+this model belies the infinite expressive power of programs constructed from such
+instructions.  Indeed, programming at the instruction level is difficult not only
+because the simplicity of the instructions make it verbose, but also because ad-hoc
+jumps can be deceptively complicated to reason about.  Modern programmers usually
+write software in programming languages that provide so-called ``structured control''
+abstractions for performing common, formulaic sequences of jumps.
+
+The most fundamental abstraction composing a structured program is the
+\textbf{function}:\@ a section of code that expects zero or more input data, performs
+some computation, and generates zero or more output data.  One function can call
+another, which automatically transfers the input data and jumps to the start of that
+function's code.  Later, when the end of its code is reached, the function
+automatically jumps back to the program point just after it was called and transfers
+its output data back.  Notice that a function call is \textbf{synchronous}; that is,
+the function runs to completion before the calling function continues to run.
+Because such sequential execution matches the processor's inherent behavior, sharing
+the processor between functions is trivial and requires no scheduler.
+
+Of course, an important feature of modern computers is the ability to work on
+multiple tasks alongside each other, such as reading a document and composing an
+outline or notes.  Operating systems manage such situations by providing an
+abstraction called a \textbf{process}, or independent task.  Each process is isolated
+from the others on the system and cannot access their data.  Furthermore, processes
+exhibit a property known as \textbf{concurrency} wherein their executions can
+interleave such that one process executes some of its code ``in the middle of''
+another process's work.  (Think of momentarily putting your notetaking on hold to
+scroll down in the document you're reading.)
+
+Because isolation prevents processes from calling each other's functions directly,
+switching between processes requires a scheduler to transfer control of the
+processor.  Specifically, the processor must stop executing the running process and
+start running the operating system's CPU scheduler code, which then performs an
+action called a \textbf{context switch}:\@ it saves a checkpoint of that process and
+restores the other process, resuming it from the state in which it last left off.
+The conceptually simpler way for this transition to happen is \textbf{cooperative}
+multitasking, in which the former process voluntarily gives up control of the
+processor by explicitly telling the operating system to give someone else a turn.
+Unfortunately, it is not safe to assume a process will eventually cede its processor,
+as it may never decide to do so, through either misbehavior or malice.  Such a
+scenario would render the rest of the programs unusable.
+
+Fortunately, processors have a low-level mechanism for spontaneously changing which
+instruction they are executing known as a \textbf{timer interrupt}.  Every so often,
+the processor jumps into the OS scheduler from whatever code it is currently
+executing.  Since it is now has the use of the processor, the scheduler can decide
+whether to jump back to that same program or context switch to a different one, a
+decision that is usually made based on how long the former program had been running
+since the last context switch.  This style of process scheduling is known as
+\textbf{preemptive} multitasking because the operating system initiates it by
+actively pausing the running process.
+
+Recent decades have seen the introduction of multicore computers that have more than
+one processor, creating the opportunity for the operating system to schedule a
+different process on each.  Such processes exhibit \textbf{parallelism}:\@ they
+actually run at the same time.  Parallelism is also an attractive feature for
+application programmers because by carefully restructuring their programs, they can
+route some of their work to each processor, thereby speeding up portions of their
+program's run.  Unfortunately, fitting such programs into operating systems' existing
+process model was cumbersome.
+
+To better accommodate parallel programs, operating systems introduced a hybrid
+abstraction called a \textbf{thread}.  Like processes, threads can be both concurrent
+and parallel.  Unlike processes, though, threads must share data to effectively
+work together on a single task, so the threads within a process are not isolated from
+one another.  It turns out that the simultaneous presence of concurrency and shared
+data introduces fundamental challenges that make it difficult to write correct
+programs due to a class of bugs informally known as race conditions.  Although safe
+concurrency is a popular area of study, challenges remain particularly in systems
+containing components that predate the parallel programming paradigm.  More detailed
+coverage of safe concurrency and backwards compatibility as they relate to this
+thesis work appears in chapters~\ref{chap:libinger} and \ref{chap:libgotcha},
+respectively.
+
+The lack of isolation between threads permits the programmer to spawn a thread in
+much the same way they would call a function:\@ in most programming languages, they
+place the code they want to execute on the new thread in its own function, but
+instead of calling it directly, they pass it to a special wrapper function.  The
+wrapper sets up the thread and begins running the programmer's custom thread thereon.
+However, in an important break from functions, threads are \textbf{asynchronous} like
+processes.  The wrapper function returns almost instantly, even if the thread is
+still running in the background.  As with processes, this property means there must
+be a scheduler to decide which application code each processor should run.  Note
+that for the sake of this discussion, we are assuming this is the operating system's
+CPU scheduler; however, this is not always the case and sometimes a custom scheduler
+runs as part of the application itself, a configuration that is addressed in detail
+in chapter~\ref{chap:libturquoise}.
+
+Introducing additional scheduler dependencies on an application has important
+functionality and performance ramifications for two fundamental reasons.  First, the
+scheduler's placement behind an abstraction decouples it from the program's logic,
+thereby imposing one or more levels of communication barrier that reduce its
+understanding of the particular application's needs, often resulting in a brittle
+policy ill suited to the workload.  For instance, few preemptive schedulers provide a
+way for an application to customize the timer interrupt interval, even when supported
+by the hardware.  Second, every scheduler works by running its own code to make
+decisions about how to allocate a resource.  Because it does not represent useful
+work from the application's perspective, time spent this way is pure overhead, and it
+follows that introducing unnecessary scheduling necessarily reduces performance.
+
+Threads represent the standard application for exploiting preemption within an
+application.  However, reminiscent of how processes were cumbersome to use for
+parallel programming, threads are ill suited to some use cases of preemption.  For
+one thing, programmers who do not need parallelism are led to build their synchrony
+atop asynchrony, thereby introducing a useless scheduler dependency.  For instance,
+when calling a helper function but needing a result by a specific deadline is tempted
+to spawn the function on its own thread, then immediately wait for the thread to
+finish, a task better accomplished on the same thread.  Furthermore, although they
+support pausing code mid-execution, threads make it very difficult to cancel
+in-progress work that is no longer needed at all.
+
+Fortunately, the tendency to use threads for application-level preemption is not
+because the operating system does not expose hardware features such as timers.
+Rather, it is because such features are presented as very low-level abstractions that
+perform hardware-style unstructured jumps rather than using language-style structured
+control and abstracting away the details of context switching.  We therefore propose
+a new abstraction for easy preemption within an application, but show that it can be
+implemented on top of the existing operating system.

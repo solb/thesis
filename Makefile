@@ -10,6 +10,13 @@ thesis.pdf: figs/reinit.pdf
 thesis.pdf: functions/figs/architecture.pdf
 thesis.pdf: functions/figs/progsupport.pdf
 thesis.pdf: microservices/figs/fancy_system-crop.pdf
+thesis.pdf: foreword.tex
+thesis.pdf: functions.tex
+thesis.pdf: gotcha.tex
+thesis.pdf: inger.tex
+thesis.pdf: intro.tex
+thesis.pdf: microservices.tex
+thesis.pdf: turquoise.tex
 
 .PHONY: clean
 clean:

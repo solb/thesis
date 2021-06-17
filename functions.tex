@@ -1,0 +1,32 @@
+\chapter{Function calls with timeouts}
+\label{chap:libinger}
+
+\ifdefined\chapquotes
+\begin{chapquote}{Isaac Asimov, \textit{The Gods Themselves}}
+`Does everyone just believe what he wants to?' \\
+`As long as possible.  Sometimes longer.'
+\end{chapquote}
+\fi
+
+\begin{swallowsections}
+\input[functions]{intro}
+\end{swallowsections}
+\input[functions]{related}
+\input[functions]{inger}
+
+
+\section{Evaluation}
+
+\input[functions]{eval_testbed}
+
+
+\subsection{Microbenchmarks}
+
+\input[functions]{eval_uinger}
+
+
+\subsection{Image decompression}
+
+Unlike state of the art approaches, lightweight preemptible functions support
+cancellation.
+\input[functions]{eval_cancel}
