@@ -17,3 +17,5 @@ exported global variables are rare now that thread safety is a pervasive concern
 system design.  Even the POSIX-specified \texttt{errno} global is gone:\@ the Linux
 Standard Base specifies that its address is resolved via a call to the
 \texttt{\_\_errno\_location()} helper function~\cite{www-lsb-errno}.
+
+\thesis{Discuss \texttt{GNU\_IFUNC} relocations?}
