@@ -1,0 +1,23 @@
+\subsection{Library copying: namespaces}
+\label{sec:namespaces}
+
+Expanding a preemptible function's isolation boundary to include libraries requires
+providing it with private copies of those libraries.  POSIX has long provided a
+\texttt{dlopen()} interface to the dynamic linker for loading shared objects at
+runtime; however, opening an already-loaded library just increments
+a reference count, and this function is therefore of no use for making copies.
+Fortunately, the GNU dynamic linker (\texttt{ld-linux.so}) also supports
+Solaris-style \textbf{namespaces}, or isolated sets of loaded libraries.  For each
+namespace, \texttt{ld-linux.so} maintains a separate set of loaded libraries whose
+dependency graph and reference counts are tracked independently from the rest of the
+program~\cite{dlmopen-manpage}.
+
+It may seem like namespaces provide the isolation we need:\@ whenever we
+\texttt{launch(\textnormal{\textit{F}})}, we can initialize a namespace with a copy
+of the whole application and transfer control into that namespace's copy of
+\textit{F}, rather than the original.  The problem with this approach is that it
+breaks the lexical scoping of static variables.  For example,
+Listing~\ref{lst:exmplstate} would fail assertion (2).
+
+\thesis{Cover the algorithm for identifying GOT entries that correspond to
+cross-library symbols.}

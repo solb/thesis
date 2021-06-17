@@ -1,0 +1,40 @@
+\subsection{Library copying: libsets}
+\label{sec:libsets}
+
+We just saw that namespaces provide too much isolation
+for our needs:\@ because of their completely independent dependency graphs, they
+never encounter any state from another namespace, even according to normal scoping
+rules.  However, we can use namespaces to build the abstraction we need, which we
+term a \textbf{libset}.  A libset is like a namespace, except that the program can
+decide whether symbols referenced within a libset resolve to the same
+libset or a different one.  Control libraries such as \textit{libinger} configure such
+\textbf{libset switches} via \textit{libgotcha}'s private control API, shown
+in Listing~\ref{lst:gotchaapi}.
+
+\begin{figure}
+\begin{lstlisting}[label=lst:gotchaapi,caption=\textit{libgotcha} C interface]
+typedef long libset_t;
+
+bool libset_thread_set_next(libset_t);
+libset_t libset_thread_get_next(void);
+bool libset_reinit(libset_t);
+\end{lstlisting}
+\end{figure}
+
+This abstraction serves our needs:\@ when a
+\texttt{launch(\textnormal{\textit{F}})} happens, \textit{libinger} assigns an
+available \texttt{libset\_t} exclusively to that preemptible function.  Just before
+calling \textit{F}, it informs \textit{libgotcha} by calling
+\texttt{libset\_thread\_set\_next()} to set the thread's \textbf{next libset}:\@ any
+dynamic symbols used by the preemptible function will resolve to this libset.  The
+thread's \textbf{current libset} remains
+unchanged, however, so the preemptible function itself executes from the same libset
+as its caller and the two share access to the same global variables.
+
+One scoping issue remains, though.  Because dynamic symbols can resolve back
+to a definition in the same executable or shared object that used them,
+Listing~\ref{lst:gotchaapi} would fail assertion (3) under the described rules.
+We want global variables defined in \textit{F}'s object file to have the same scoping
+semantics regardless of whether they are declared \texttt{static}, so
+\textit{libgotcha} only performs a namespace switch when the use of a dynamic symbol
+occurs in a different executable or shared library than that symbol's definition.

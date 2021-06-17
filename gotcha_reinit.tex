@@ -1,0 +1,7 @@
+However, if a preemptible function
+is canceled rather than being allowed to return, \textit{libinger} must
+assume that its libset's shared state could be corrupted.  It unloads and reloads
+all objects in such a libset by calling \texttt{libset\_reinit()}.
+
+\thesis{Can we (re)initialize libsets more efficiently than that (e.g., by
+restoring only their writable sections)?}

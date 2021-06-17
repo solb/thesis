@@ -1,0 +1,32 @@
+\subsection{Uninterruptible code: uncopyable}
+\label{sec:uncopyable}
+
+The library-copying approach to memory isolation works for the common case, and
+allows us to handle most third-party libraries with no configuration.  However, in
+rare cases it is not appropriate.  The main example is the \texttt{malloc()} family
+of functions:\@ in Section~\ref{sec:intro}, we observed that not sharing a common
+heap complicates ownership transfer of objects allocated from inside a preemptible
+function.  To support dynamic memory allocation and a few other special cases,
+\textit{libgotcha} has an internal whitelist of \textbf{uncopyable} symbols.
+
+From \textit{libgotcha}'s perspective, uncopyable symbols differ only in what
+happens on a libset switch.  If code executing in any libset other than the
+application's \textbf{starting libset} calls an uncopyable symbol, a libset
+switch still occurs, but it returns to the starting libset instead of the next
+libset; thus, all calls to an uncopyable symbol are routed to a single,
+globally-shared definition.  When the function call that caused one of these special
+libset switches returns, the next libset is restored to its prior value.  The
+\textit{libgotcha} control API provides one more function,
+\texttt{libset\_register\_interruptible\_callback()}, that allows others to request
+a notification when one of these libset restorations occurs.
+
+Because it is never safe to preempt while executing in the starting libset, the
+first thing the \textit{libinger} preemption handler described in
+Section~\ref{sec:libinger:signals} does is check whether the thread's next libset
+is set to the starting one; if so, it disables preemption interrupts and immediately
+returns.  However, \textit{libinger} registers an interruptible callback that it uses
+to reenable preemption as soon as any uncopyable function returns.
+
+\thesis{Draw a figure depicting what happens w.r.t. the current libset,
+preemptibility, and the notification callbacks when a preemptible function calls
+an uncopyable function (say, malloc()).}

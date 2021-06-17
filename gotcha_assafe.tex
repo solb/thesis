@@ -1,0 +1,46 @@
+\subsection{Case study: auto async-signal safety}
+\label{sec:assafe}
+
+We have now described the role of \textit{libgotcha}, and how \textit{libinger} uses
+it to handle nonreentrancy.  Before concluding our discussion, however, we note that
+\textit{libgotcha} has other interesting uses in its own right.
+
+As an example, we have used it to implement a small library, \textit{libas-safe},
+that transparently allows an application's signal handlers to call functions that
+are not async-signal safe, which is forbidden by POSIX because it is normally unsafe.
+
+Written in 127 lines of C, \textit{libas-safe} works by injecting code before
+\texttt{main()} to switch the program away from its starting libset.  It shadows
+the system's \texttt{sigaction()}, providing an implementation that:
+\begin{itemize}
+\item Provides copy-based library isolation for signal handlers by switching the
+	thread's next libset to the starting libset while a signal handler is running.
+\item Allows use of uncopyable code such as \texttt{malloc()} from a signal
+	handler by deferring signal arrival whenever the thread is already executing
+	in the starting libset, then delivering the deferred signal when the
+	interruptible callback fires.
+\end{itemize}
+
+In addition to making signal handlers a lot easier to write, \textit{libas-safe} can
+be used to automatically ``fix'' deadlocks and other misbehaviors in misbehaved
+signal-handling programs just by loading it via \texttt{LD\_PRELOAD}.
+
+We can imagine extending \textit{libgotcha} to support other use cases, such as
+simultaneously using different versions or build configurations of the same library
+from a single application.
+
+\thesis{Walk through example(s) of programs that are automatically repaired by
+\textit{libas-safe}.}
+
+\thesis{Explore \textit{libac-safe} idea?}
+
+\thesis{Use \textit{libas-safe} to prototype a library that enables safe signal
+handling in Rust.}
+
+\thesis{It's been suggested that \texttt{libgotcha} could let you switch
+between multiple versions of the same library (e.g., different revisions, feature
+sets, or even release vs. debug).  This probably merits additional thought.}
+
+\thesis{Another possible use for (an enhanced) \textit{libgotcha} is some kind
+of scary runtime aspect-oriented programming thing (i.e., a generalization of
+ltrace).}

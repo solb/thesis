@@ -1,0 +1,53 @@
+\section{Shared state: \textit{libgotcha}}
+\label{sec:libgotcha}
+
+Despite the name, it is more like a runtime that isolates hidden shared state
+within an application.  Although the rest of the
+program does not interact directly with \textit{libgotcha}, its presence has a
+global effect:\@ once loaded into the process image, it employs a technique we call
+\textbf{selective relinking} to dynamically intercept and reroute many of the
+program's function
+calls and global variable accesses.
+
+The goal of \textit{libgotcha} is to establish around every preemptible function a
+memory isolation boundary encompassing whatever third-party libraries that function
+interacts with (Section~\ref{sec:libinger:reentrancy}).  The result is that the only
+state shared across the boundary is that explicitly passed via arguments,
+return value, or closure---the same state the application programmer is responsible
+for protecting from concurrency violations (Section~\ref{sec:libinger:concurrency}).
+Listing~\ref{lst:exmplstate} shows the impact on an example program, and
+Figure~\ref{fig:progsupport} classifies libraries by how \textit{libgotcha} supports
+them.
+
+\begin{figure}
+\begin{lstlisting}[label=lst:exmplstate,caption=Demo of isolated \textnormal{(1)} vs.\ shared \textnormal{(2\&3)} state]
+static bool two;
+bool three;
+
+linger_t caller(const char *s, u64 timeout) {
+	stdout = NULL;
+	two = true;
+	three = true;
+	return launch(timed, timeout, s);
+}
+
+void timed(void *s) {
+	assert(stdout); // (1)
+	assert(two); // (2)
+	assert(three); // (3)
+}
+\end{lstlisting}
+\end{figure}
+
+Note that \textit{libgotcha} operates at runtime; this constrains its visibility
+into the program, and therefore the granularity of its operation, to shared
+libraries.  It therefore
+assumes that the programmer will dynamically link all third-party libraries, since
+otherwise there is no way to tell them apart from the rest of the program at runtime.
+We feel this restriction is reasonable because a programmer wishing to use
+\textit{libinger} or \textit{libgotcha} must already have control over their
+project's build in order to add the dependency.
+
+Before introducing the \textit{libgotcha} API and explaining selective relinking, we
+now briefly motivate the need for \textit{libgotcha} by demonstrating how existing
+system interfaces fail to provide the required type of isolation.

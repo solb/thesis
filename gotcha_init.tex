@@ -1,0 +1,9 @@
+\subsection{Managing libsets}
+\label{sec:gotchainit}
+
+At program start, \textit{libgotcha} initializes a pool of libsets, each with a full
+complement of the program's loaded object files.  Throughout the program's run
+\textit{libinger} tracks the libset assigned to each preemptible function that has
+started running but not yet reached successful completion.  When a preemptible
+function completes, \textit{libinger} assumes it has not corrupted its libset and
+returns it to the pool of available ones.

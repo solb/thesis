@@ -1,0 +1,13 @@
+\subsection{Limitations}
+\label{sec:limits}
+
+The current version of \textit{libgotcha} includes partial support for thread-local
+storage (TLS).  Like other globals, TLS variables are copied along with the libset;
+this behavior is correct because a thread might call into the same library from
+multiple preemptible functions.  However, we do not yet support migrating TLS
+variables between threads along with their preemptible function.  This restriction is
+not fundamental:\@ the TLS models we support (general dynamic and local dynamic) use
+a support function called \texttt{\_\_tls\_get\_addr()} to resolve
+addresses~\cite{drepper:spec2013}, and \textit{libgotcha} could substitute its own
+implementation that remapped the running thread's TLS accesses to that of the
+preemptible function's initial thread when executing outside the starting libset.
