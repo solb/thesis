@@ -73,6 +73,13 @@
 }{
 	\let\section\section@
 }
+
+\let\subsection@\subsection
+\newenvironment{swallowsubsections}{
+	\renewcommand{\subsection}[1]{}
+}{
+	\let\subsection\subsection@
+}
 \makeatother
 
 \renewenvironment{abstract}{}{}
