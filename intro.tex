@@ -18,7 +18,7 @@ context switches are purely cooperative.  This limitation is common among userla
 thread libraries, and illustrates the need for a mechanism for \textit{preemptive}
 scheduling at finer granularity than the kernel thread.
 
-In this paper, we propose an abstraction for calling a function with a timeout:  Once
+In this \paper, we propose an abstraction for calling a function with a timeout:  Once
 invoked, the function runs on the same thread as the caller.  Should the function
 time out, it is preempted and its execution state is returned as a continuation in
 case the caller later wishes to resume it.  The abstraction is exposed via a wrapper
@@ -39,7 +39,7 @@ difficult to write nontrivial ones.  Preemption of a timed function constitutes 
 interruption by the rest of the program.  This implies that \textit{the rest of the
 program} should be restricted to calling reentrant functions; needless to say, such
 a rule would be crippling.  Addressing this problem is one of the main contributions
-of this paper.  Our main insight here, as shown in Figure~\ref{fig:progsupport}, is
+of this \paper.  Our main insight here, as shown in Figure~\ref{fig:progsupport}, is
 that some libraries are naturally reentrant, while many others can be made reentrant
 by automatically cloning their internal state so that preempting one invocation does
 not leave the library ``broken'' for concurrent callers.
@@ -108,7 +108,7 @@ implemented entirely in userland, and
 requires neither custom compiler or runtime support nor managed runtime features such
 as garbage collection.
 
-This paper makes three primary contributions:  (1) It proposes function calls that
+This \paper makes three primary contributions:  (1) It proposes function calls that
 return a continuation upon preemption, a novel primitive for unmanaged languages.
 (2) It introduces selective relinking, a compiler-agnostic approach to automatically
 lifting safety restrictions related to nonreentrancy.  (3) It demonstrates how to
