@@ -35,7 +35,7 @@ services.  In fact, acting as an access-control proxy is a recurring microservic
 pattern:\@ receive an API request from a user, validate it, then access
 a backend storage service (e.g., S3) using the service's credentials.
 
-In this paper, we explore a design intended to reduce the tension between two of
+In this \paper, we explore a design intended to reduce the tension between two of
 the desiderata for cloud functions:\@ low latency invocation and low cost.  Contemporary
 invocation techniques exhibit high latency with a
 large tail; this is
@@ -58,7 +58,7 @@ once again the bottleneck.
 We further hypothesize---admittedly without much proof for this chicken-and-egg
 scenario---that substantially reducing both the latency and cost of running
 intermittently-used services will enable new classes and scales of applications
-for cloud functions, and in the remainder of this paper, present a design that
+for cloud functions, and in the remainder of this \paper, present a design that
 achieves this.  As Lampson noted, there is power in making systems 
 ``fast rather than general or powerful''~\cite{Lampson1983}, because fast
 building blocks can be used more widely.
@@ -70,7 +70,7 @@ these services to respond faster as well, and new stable storage
 technologies such as 3D XPoint (projected to offer sub-microsecond reads and
 writes) will further accelerate this trend by offering lower-latency storage.
 
-In this paper, we propose a restructuring of the serverless model centered around
+In this \paper, we propose a restructuring of the serverless model centered around
 low-latency: \textit{lightweight microservices} run in \textit{shared processes}
 and are isolated primarily with language-based \textit{compile-time guarantees} and
 \textit{fine-grained preemption}.
