@@ -13,8 +13,10 @@
 \usepackage[libertine]{newtxmath}
 \usepackage{subcaption}
 \usepackage[svgnames]{xcolor}
+\usepackage{xspace}
 
 \newcommand{\chapquotes}{}
+\newcommand{\paper}{thesis\xspace}
 \newcommand{\solb}[1]{{\color{magenta} TODO #1}}
 \newcommand{\thesis}[1]{\solb{THESIS #1}}
 
@@ -367,14 +369,14 @@ an ordinary function into a preemptible one.
 To provide the memory isolation necessary to introduce preemption and asynchronous cancellation at
 sub-thread granularity without breaking existing program dependencies, the \textit{libgotcha} runtime
 allocates a separate copy of all the program's loaded dynamic libraries for each preemptible
-function.  While the paper refers to this isolation unit as a libset, that term was unfortunately
+function.  While the thesis refers to this isolation unit as a libset, that term was unfortunately
 coined late in development; as such, the source code and configuration variables refer to it as a
 "group" instead.
 
 
 \section{A note on design (inger 7d5b2e2)}
 
-The paper describes the \textit{libinger} API, and the generated HTML documentation gives a few more usage
+The thesis describes the \textit{libinger} API, and the generated HTML documentation gives a few more usage
 details.  Here are some of the guiding principles that inspired our interface choices:
 \begin{itemize}
 \item **We do not assume users need asynchrony.**  Hence, preemptible functions \textit{run on the same kernel
@@ -885,6 +887,8 @@ Who controls the present controls the past.
 \chapter{Microsecond-scale microservices}
 \label{chap:microservices}
 
+\renewcommand{\paper}{chapter\xspace}
+
 \ifdefined\chapquotes
 \begin{chapquote}{Douglas Adams, \textit{The Hitchhiker's Guide to the Galaxy}}
 The ships hung in the sky in much the same way that bricks don't.
@@ -904,6 +908,8 @@ used to create the serverless platform of the future.
 \input[microservices]{eval}
 \input[microservices]{future}
 \input[microservices]{concl}
+
+\renewcommand{\paper}{thesis\xspace}
 
 
 \chapter{Proposed work}
