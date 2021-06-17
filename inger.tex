@@ -61,14 +61,14 @@ and Rust~\cite{www-rustlang} APIs.  To demonstrate the flexibility and composabi
 of the preemptible function abstraction, we have also created \textit{libturquoise},
 a preemptive userland thread library for Rust, by porting an existing futures-based
 thread
-pool to \textit{libinger}.  We discuss this system in Section~\ref{sec:libturquoise}.
+pool to \textit{libinger}.  We discuss this system in \Chap~\ref{sec:libturquoise}.
 
 Figure~\ref{fig:architecture} shows a dependency graph of the software components
 comprising the preemptible functions stack.  The \textit{libinger} library itself is
 implemented in approximately 2,500 lines of Rust.  To support calls to nonreentrant
 functions, it depends on another library, \textit{libgotcha}, which consists of
 another 3,000 lines of C, Rust, and x86-64 assembly.  We cover the details in
-Section~\ref{sec:libgotcha}.
+\Chap~\ref{sec:libgotcha}.
 
 We now examine \textit{libinger}, starting with shared state.
 
@@ -108,7 +108,7 @@ to automatically and dynamically create copies of $L$ to
 isolate state from different timed functions.  Making this approach work on top of
 existing systems software required solving many
 design and implementation challenges, which we cover when we introduce
-\textit{libgotcha} in Section~\ref{sec:libgotcha}.
+\textit{libgotcha} in \Chap~\ref{sec:libgotcha}.
 
 
 \subsection{Safe concurrency}
