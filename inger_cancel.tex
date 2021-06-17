@@ -1,0 +1,24 @@
+\subsection{Cancellation}
+\label{sec:libinger:cancel}
+
+Should a caller decide not to finish running a timed-out preemptible function, it
+must deallocate it.  In Rust, deallocation happens implicitly via the
+\texttt{linger\_t}
+type's destructor, whereas users of the C interface are responsible for explicitly
+calling the \textit{libinger} \texttt{cancel()} function.
+
+Cancellation cleans up \textit{libinger} resources allocated by
+\texttt{launch()};
+however, the current implementation
+does not automatically release resources already claimed by the
+preemptible function itself.  While the lack of a standard resource deallocation API
+makes such cleanup inherently hard to do in C, it is possible in Rust and other
+languages in which
+destructor calls are ostensibly guaranteed.  For instance, the approach proposed by
+Boucher et al.~\cite{boucher:atc2018} could be employed to raise a panic
+(exception) on the preemptible function's stack.  This in turn would cause the
+language runtime
+to unwind each stack frame, invoking local variables' destructors in
+the process.
+
+\thesis{Implement resource cleanup.}

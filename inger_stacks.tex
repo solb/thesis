@@ -1,0 +1,14 @@
+\subsection{Execution stacks}
+
+When a preemptible function times out, \textit{libinger} returns a
+continuation object.  The caller might pass this object around the program, which
+could later \texttt{resume()} from a different stack frame.  To handle this case, the
+\texttt{launch()} function switches to a new, dedicated stack just
+before invoking the user-provided function.  This stack is then stored in the
+continuation alongside the register context.
+
+Because of the infeasibility of moving these stacks after a function has started
+executing, \textit{libinger} currently heap-allocates large 2-MB stacks so it can
+treat them as having fixed size.  To avoid an order of magnitude slowdown from having
+such large dynamic allocations on the critical path, \textit{libinger} preallocates a
+pool of reusable stacks when it is first used.

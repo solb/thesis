@@ -1,0 +1,21 @@
+\subsection{Automatic handling of shared state}
+\label{sec:libinger:reentrancy}
+
+As we found in Section~\ref{sec:intro}, a key design challenge facing
+\textit{libinger} is the shared state problem:  Suppose a preemptible function
+$F$ calls a stateful routine in a third-party library $L$, and
+that $F$ times out and is preempted by \textit{libinger}.  Later, the
+user invokes another timed function $F_0$, which also calls a stateful
+routine in $L$.  This pattern involves an unsynchronized concurrent access to $L$.
+To avoid introducing such bugs, \textit{libinger} must hide state modifications in
+$L$ by $F$ from the execution of $F_0$.
+
+One non-solution to this problem is to follow the approach taken by POSIX signal
+handlers and specify that preemptible functions may not
+call third-party code, but doing so would
+severely limit their usefulness (Section~\ref{sec:related}).  We opt instead
+to automatically and dynamically create copies of $L$ to
+isolate state from different timed functions.  Making this approach work on top of
+existing systems software required solving many
+design and implementation challenges, which we cover when we introduce
+\textit{libgotcha} in \Chap~\ref{sec:libgotcha}.
