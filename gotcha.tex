@@ -10,6 +10,13 @@ sleep-sweaty hair standing out from his skull in every direction. \\
 \end{chapquote}
 \fi
 
+In Section~\ref{sec:libinger:reentrancy}, we saw that it is not safe in general for a
+preemptible function to call into stateful code that was written without the
+preemptible function abstraction in mind.  However, such code is prolific in the
+modern systems stack, and in order to support interoperability with it, we need to
+automatically transform the program to fix the safety hole.  This chapter covers a
+novel software system designed to do just that, dubbed \textit{libgotcha}.
+
 \begin{promotesubsections}
 \begin{swallowsections}
 \input[functions]{gotcha_gotcha}
