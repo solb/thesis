@@ -33,7 +33,7 @@
 	Uncopyable call + callback & $25 \pm 0$
 	\end{tabular}
 	\subcaption{Uncopyable calls triggering a libset switch}
-	\label{tab:libgotcha:whitelist}
+	\label{tab:libgotcha:allowlist}
 	\end{minipage}
 \caption{Runtime overheads of accessing dynamic symbols}
 \end{table*}
@@ -53,7 +53,7 @@ program, regardless of the
 current libset at the time of the call.  Additionally, calls to
 uncopyable functions from within a preemptible function incur several extra
 nanoseconds of latency to switch back to the main namespace as described in
-\Chap~\ref{sec:libgotcha}; Table~\ref{tab:libgotcha:whitelist} breaks this overhead
+\Chap~\ref{sec:libgotcha}; Table~\ref{tab:libgotcha:allowlist} breaks this overhead
 down to
 show the cost of notification callbacks at the conclusion of such a call (always
 required by \textit{libinger}).

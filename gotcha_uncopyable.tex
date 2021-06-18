@@ -7,7 +7,7 @@ rare cases it is not appropriate.  The main example is the \texttt{malloc()} fam
 of functions:\@ in Section~\ref{sec:intro}, we observed that not sharing a common
 heap complicates ownership transfer of objects allocated from inside a preemptible
 function.  To support dynamic memory allocation and a few other special cases,
-\textit{libgotcha} has an internal whitelist of \textbf{uncopyable} symbols.
+\textit{libgotcha} has an internal \whitelist of \textbf{uncopyable} symbols.
 
 From \textit{libgotcha}'s perspective, uncopyable symbols differ only in what
 happens on a libset switch.  If code executing in any libset other than the
