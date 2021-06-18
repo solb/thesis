@@ -13,7 +13,7 @@ failures (e.g., compiler bug or the operator allowing use of a buggy or maliciou
 % contained.  We endeavor to catalog many of these here, along with proposed solutions
 % that we intend to implement going forward.
 
-\paragraph{Non-reentrancy.}
+\paragraph{Nonreentrancy.}
 Our use of Rust panics to unwind the stack during preemption can
 corrupt the internal state of non-reentrant functions (e.g., Rust's dynamic
 allocator).  Possible fixes include \blacklist{ing} these functions and delaying
