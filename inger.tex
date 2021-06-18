@@ -8,6 +8,78 @@ A half-read book is a half-finished love affair.
 \end{chapquote}
 \fi
 
+Chapter~\ref{chap:functions} motivated the need for lightweight preemptible functions
+and introduced the shared state problem.  Therein, we concluded that explicitly
+handling state shared between a preemptible function and the rest of the program must
+necessarily be the responsibility of the programmer using the preemptible function,
+as is the case for any concurrency abstraction.  However, we also reasoned that
+requiring the programmer to reason about all shared state in the program and its
+dependencies was not a tenable approach to solving the other half of the problem.
+Instead, we introduced the \textit{libgotcha} runtime for automatically establishing
+memory isolation boundaries within the process.  Now that we have covered how said
+runtime works in Chapter~\ref{chap:libgotcha}, we are ready to discuss the
+implementation of the preemptible function abstraction itself.
+
+In this chapter, we turn our attention to the \textit{libinger} library that provides
+the wrapper functions for invoking and working with preemptible functions.  We begin
+by showing a summary of the library's API surface, expanded from that first presented
+in Section~\ref{sec:libinger}.  Figure~TODO shows the C interface; the Rust interface
+differs in a few ways:
+
+\thesis{Add listing of the interface, including \texttt{cancel()} and \texttt{pause()}.}
+
+\paragraph{Closure support}
+We leverage Rust's first-class closures to enable the caller to pass
+\texttt{launch()} a function that captures state from its environment.  We expect the
+caller to provide any inputs to the function in this manner, so there is no need to
+wrap the arguments or pass an empty value when the function expects no inputs.
+
+
+\paragraph{Type safety}
+The aforementioned interface change means that the Rust wrapper functions do not
+erase the types of the preemptible function's parameters by diluting them to a
+\texttt{void *}; thus, the preemptible function does not have to perform an unsafe
+cast before using them, and any type mismatch is caught at compile time.
+Furthermore, both \texttt{launch()} and \texttt{resume()} are generic on the
+preemptible function's return type:\@ instead of a \texttt{linger\_t}, they return a
+tagged union.  Once the preemptible function runs to completion, the caller may
+destructure this type to retrieve the function's return value.
+
+
+\paragraph{Safe concurrency}
+The \texttt{launch()} function requires that the preemptible function closure
+implement the language's automatic \texttt{Send} trait.  This means that any attempt
+to pass a closure that shares external state without the use of concurrency control
+will cause a compilation failure.
+
+
+\paragraph{Flexibility}
+The requirement that Rust preemptible functions be \texttt{Send} is similar to the
+restrictions imposed by the standard library's thread \texttt{spawn()} interface.
+However, \texttt{launch()} differs in an important way:\@ unlike a thread, a
+preemptible function is not restricted to the \texttt{'static} lifetime, and so is
+able to accept references to local variables and other dynamically-allocated data.
+Attempts to transfer such references to a thread would result in a compile error.
+The difference that makes it safe to use all lifetimes with preemptible functions is
+the fact that they execute synchronously, and therefore cannot outlive the calling
+context without becoming paused.  If a preemptible function times out, the Rust
+compiler knows the lifetime of any references it has captured, so any attempt to pass
+the paused closure to a scope where its shared data no longer exists will be met with
+a compile error.
+
+
+\paragraph{RAII}
+Our Rust interface adheres to the RAII (Resource Allocation Is Initialization) idiom,
+allowing continuation deallocation to happen automatically.  Unlike the C interface,
+the Rust one has no \texttt{cancel()} function; instead, its continuation objects
+implement the \texttt{Drop} trait, and their destructor performs cancellation
+whenever they go out of scope.
+\\
+
+We now turn our attention from how one interacts with \textit{libinger} to how it
+works.
+
+
 \begin{promotesubsections}
 \input[functions]{inger_stacks}
 \input[functions]{inger_interrupts}
