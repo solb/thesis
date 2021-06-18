@@ -525,7 +525,7 @@ be used to inject an intermediate \texttt{objcopy} step into the build process).
 \section{Lessons for system builders (slides)}
 
 Resuming is a useful feature that is cheap, but introduces concurrency.
-Cannnot get CPU time isolation without memory isolation.
+Cannot get CPU time isolation without memory isolation.
 Design abstractions modularly and with an eye to simple use cases (e.g., libgotcha as a separate
 runtime with a very small control API, things listed in the note on design).
 Treat debuggability as a first-order concern (e.g., permit disabling features that interfere at
@@ -577,7 +577,7 @@ have some ideas about how to augment the technique, such as by extending
 deallocations of common resources (e.g., memory and file descriptors) from each
 libset.  While exhaustive cleanup may prove difficult to achieve, I hope to at least
 catalogue situations where we guarantee not to leak certain classes of resource, and
-perhaps provide a tunable allowing users to request full resouce tracking if needed.
+perhaps provide a tunable allowing users to request full resource tracking if needed.
 
 \paragraph{Automatic selection and variation of timer frequency}
 For simplicity, the current \textit{libinger} implementation subscribes to timer
@@ -642,7 +642,7 @@ from where it left off.
 
 \begin{itemize}
 \item 24 April 2020: ATC '20 author notification
-\item 4 June 2020: ATC '20 cameraready deadline (if applicable)
+\item 4 June 2020: ATC '20 camera-ready deadline (if applicable)
 \item June 2020: Start cancellation resource cleanup, fix OpenSSL support
 \item July 2020: Continue cancellation resource cleanup, fix OpenSSL support
 \item August 2020: Finish cancellation resource cleanup
