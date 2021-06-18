@@ -57,6 +57,6 @@ not have unmonitored file system access.
 
 We propose to block system calls using Linux's \texttt{seccomp()} system
 call~\cite{seccomp-manpage}; each worker process should call this during
-initialization to limit itself to a whitelisted set of system calls.
+initialization to limit itself to a \whitelist{ed} set of system calls.
 Prior to lockdown, the worker process should install a \texttt{SIGSYS} handler
 for regaining control from any microservice that attempts to violate the policy.
