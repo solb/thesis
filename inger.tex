@@ -28,14 +28,14 @@ differs in a few ways:
 
 \thesis{Add listing of the interface, including \texttt{cancel()} and \texttt{pause()}.}
 
-\paragraph{Closure support}
+\paragraph{Closure support.}
 We leverage Rust's first-class closures to enable the caller to pass
 \texttt{launch()} a function that captures state from its environment.  We expect the
 caller to provide any inputs to the function in this manner, so there is no need to
 wrap the arguments or pass an empty value when the function expects no inputs.
 
 
-\paragraph{Type safety}
+\paragraph{Type safety.}
 The aforementioned interface change means that the Rust wrapper functions do not
 erase the types of the preemptible function's parameters by diluting them to a
 \texttt{void *}; thus, the preemptible function does not have to perform an unsafe
@@ -46,14 +46,14 @@ tagged union.  Once the preemptible function runs to completion, the caller may
 destructure this type to retrieve the function's return value.
 
 
-\paragraph{Safe concurrency}
+\paragraph{Safe concurrency.}
 The \texttt{launch()} function requires that the preemptible function closure
 implement the language's automatic \texttt{Send} trait.  This means that any attempt
 to pass a closure that shares external state without the use of concurrency control
 will cause a compilation failure.
 
 
-\paragraph{Flexibility}
+\paragraph{Flexibility.}
 The requirement that Rust preemptible functions be \texttt{Send} is similar to the
 restrictions imposed by the standard library's thread \texttt{spawn()} interface.
 However, \texttt{launch()} differs in an important way:\@ unlike a thread, a
@@ -68,7 +68,7 @@ the paused closure to a scope where its shared data no longer exists will be met
 a compile error.
 
 
-\paragraph{RAII}
+\paragraph{RAII.}
 Our Rust interface adheres to the RAII (Resource Allocation Is Initialization) idiom,
 allowing continuation deallocation to happen automatically.  Unlike the C interface,
 the Rust one has no \texttt{cancel()} function; instead, its continuation objects
