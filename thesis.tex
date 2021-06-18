@@ -22,6 +22,9 @@
 \newcommand{\solb}[1]{{\color{magenta} TODO #1}}
 \newcommand{\thesis}[1]{\solb{THESIS #1}}
 
+\newcommand{\blacklist}[1][\xspace]{blocklist#1}
+\newcommand{\whitelist}[1][\xspace]{allowlist#1}
+
 \renewcommand{\contentsname}{Table of Contents}
 \renewcommand{\lstlistlistingname}{List of Listings}
 
@@ -340,7 +343,7 @@ int main(void) {
 While libas-safe reestablishes async-signal safety, it would also be
 possible to write a libgotcha client library that did the same for what POSIX calls
 async-cancellation safety.  The obvious application of this would be supporting
-asynchronous thread cancellation (in the common case where whitelisted code was not
+asynchronous thread cancellation (in the common case where \whitelist{ed} code was not
 currently executing):\@ as we saw in Section~\ref{sec:intro}, today's POSIX and
 Windows interfaces for this are broken to the point of practical uselessness.
 
@@ -494,7 +497,7 @@ There are two possible types of control library:
 \item An \textit{external control library} is dynamically linked with \textit{libgotcha}, and therefore constitutes
    a separate shared object file that depends on \texttt{libgotcha.so} (or, perhaps, a compatible internal
    control library).  Calls into such a library do not cause an automatic libset switch unless
-   explicitly whitelisted (which is currently not pluggable and done via \texttt{whitelist.c}), and the
+   explicitly \whitelist{ed} (which is currently not pluggable and done via \texttt{whitelist.c}), and the
    library does not have special access to dangerous C library functions.  External control
    libraries haven't been tested as extensively as internal ones, but are necessary when you want to
    have more than one control library in a single application, if you want to be able to update
