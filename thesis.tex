@@ -215,7 +215,7 @@ same code will be run, the compiler loads such addresses directly from the GOT v
 instructions of the special position-independent relocation form
 \texttt{mov~\textit{symbol}@gotpcrel(\%rip),~\%\textit{dest}}, and the dynamic linker
 resolves the calls and populates their GOT entries eagerly at load time.}.  To avoid
-breaking pointer comparison, libgotcha makes sure to share the same PLOT
+breaking pointer comparison, \textit{libgotcha} makes sure to share the same PLOT
 stub between all GOT entries to a given symbol that use this type of
 relocation.  As long as the current libset remains the same between the time of a
 function pointer comparison and the time of its invocation, such a comparison
@@ -227,7 +227,7 @@ copy when invoked using either pointer.
 
 The setup procedure described so far has one significant problem:\@ recall that a PLT
 call memoizes the real address of its symbol by replacing the GOT entry, which should
-cause subsequent calls to skip libgotcha's \texttt{procedure\_linkage\_override()}
+cause subsequent calls to skip \textit{libgotcha}'s \texttt{procedure\_linkage\_override()}
 codepath.  In order to prevent this, the constructor updates the relocation entries
 corresponding to cross-library calls to point at \textit{shadow} GOT entries.  This
 fools the dynamic linker into updating the shadow entry instead, meaning that
@@ -299,12 +299,12 @@ See Figure~\ref{fig:uncopyable}.
 \end{figure}
 
 
-\section{Program automatically repaired by libas-safe (ee2602a)}
+\section{Program automatically repaired by \textit{libas-safe} (ee2602a)}
 
-The main use of libgotcha is to make library function calls async-signal safe when
+The main use of \textit{libgotcha} is to make library function calls async-signal safe when
 they would not otherwise be.  To more clearly illustrate the library's usefulness, we
 pause to give a minimal example of such usage; specifically, we will leverage
-libgotcha to automatically fix the buggy program in Listing~\ref{lst:handlerbug},
+\textit{libgotcha} to automatically fix the buggy program in Listing~\ref{lst:handlerbug},
 which calls the async-signal-unsafe function \texttt{printf()} from its signal
 handler.  Unfortunately, this function takes a lock on the \texttt{stdout} stream's
 associated file descriptor, and the signal handler eventually interrupts the program
@@ -338,10 +338,10 @@ int main(void) {
 \end{figure}
 
 
-\section{Footnote introducing the concept of libac-safe (d3336e4)}
+\section{Footnote introducing the concept of \textit{libac-safe} (d3336e4)}
 
-While libas-safe reestablishes async-signal safety, it would also be
-possible to write a libgotcha client library that did the same for what POSIX calls
+While \textit{libas-safe} reestablishes async-signal safety, it would also be
+possible to write a \textit{libgotcha} client library that did the same for what POSIX calls
 async-cancellation safety.  The obvious application of this would be supporting
 asynchronous thread cancellation (in the common case where \whitelist{ed} code was not
 currently executing):\@ as we saw in Section~\ref{sec:intro}, today's POSIX and
@@ -526,7 +526,7 @@ be used to inject an intermediate \texttt{objcopy} step into the build process).
 
 Resuming is a useful feature that is cheap, but introduces concurrency.
 Cannot get CPU time isolation without memory isolation.
-Design abstractions modularly and with an eye to simple use cases (e.g., libgotcha as a separate
+Design abstractions modularly and with an eye to simple use cases (e.g., \textit{libgotcha} as a separate
 runtime with a very small control API, things listed in the note on design).
 Treat debuggability as a first-order concern (e.g., permit disabling features that interfere at
 runtime, test and maintain support for running under debugging and diagnostic tools).
