@@ -61,7 +61,7 @@ while reserving each allocation, cancelling them during this critical section wi
 result in the lock never being released and the affected portion of the heap becoming
 unusable.)
 
-In this chapter, we explore how \textit{libgotcha} fills a usability gap in UNIX's
+In this chapter, we explore how \textit{libgotcha} fills a usability gap in Unix's
 userland and allows one to establish either kind of async safety in places where it
 would not otherwise exist.  In doing so, we present ordinarily unsound sample
 programs that can be automatically fixed through the use of \textit{libgotcha} and
