@@ -16,6 +16,7 @@ thesis.pdf: gotcha.tex
 thesis.pdf: inger.tex
 thesis.pdf: intro.tex
 thesis.pdf: microservices.tex
+thesis.pdf: safety.tex
 thesis.pdf: turquoise.tex
 
 .PHONY: clean
