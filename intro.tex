@@ -58,7 +58,7 @@ according to a \whitelist, as described in Section~\ref{sec:uncopyable}.}}
 The most obvious approach to implementing preemptible functions is to map them to
 OS threads, where the function would run on a new thread that
 could be cancelled upon timeout.  Unfortunately, cancelling a thread is also hard.
-UNIX's pthreads provide
+\Unix's pthreads provide
 asynchronous cancelability, but according to the Linux documentation, it
 \begin{quote}
 \vspace{-3pt}
@@ -81,7 +81,7 @@ heap, the heap lock will not be released...
 and goes on from
 there~\cite{www-microsoft-terminatethread}.
 
-One might instead seek to implement preemptible functions via the UNIX
+One might instead seek to implement preemptible functions via the \Unix
 \texttt{fork()} call.  Assuming a satisfactory solution to the performance penalty
 of this approach, one significant challenge would be providing bidirectional object
 visibility and ownership.  In a model where each timed function executes in its own
