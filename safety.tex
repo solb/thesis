@@ -8,3 +8,69 @@
 that I wasn't previously aware of.'
 \end{chapquote}
 \fi
+
+The reader will probably not be surprised to learn that the POSIX specification
+guarantees that most C library functions are thread safe; that is, assuming they are
+not explicitly instructed to use the same resources, it is safe to call them from
+concurrent kernel threads within the same process.  However, POSIX also defines two
+less familiar types of safety that become relevant when an individual thread does
+something other than execute a single task to synchronous completion or failure:
+
+\paragraph{Async-signal safety.}
+Async-signal-safe functions are those that can be safely called from a signal handler
+that has interrupted a non-async-signal-safe function (or conversely, can be safely
+interrupted by a signal handler that calls non-async-signal-safe functions).
+
+\paragraph{Async-cancel safety.}
+Async-cancel-safe functions are those that can be called by
+asynchronously-cancellable threads, which we first saw in
+Chapter~\ref{chap:functions}.  One can ostensibly cancel such threads at any point in
+their execution; however, POSIX marks almost no functions as async-cancel safe, so in
+practice the feature is only useful for threads executing a compute-bound loop with
+no I/O or other reliance on the OS.
+\\
+
+Along with thread safety, these two classes of safety exist because of nonreentrant
+interfaces; that is, functions whose signatures do not expose all the shared state
+they use.  To understand the need for these two classes of safety, it is helpful to
+consider how one might implement a thread-safe function.  For the sake of this
+discussion, consider the nonreentrant pseudorandom-number generator \texttt{rand()},
+which takes no arguments but returns a random number.  Clearly, the function needs
+some kind of entropy pool to produce such a number, and since the caller doesn't
+provide it with any information, the \texttt{rand()} function must manage the entropy
+pool itself.  This implies the function has internal state that is implicitly shared
+among all its callers.  The simplest way to implement an entropy pool is to feed some
+seed value to a one-way function, and use the resulting pseudorandom number as the
+new seed value.  Thus, the entropy pool needs only to store the current seed value.
+
+It's easy to see that a trivial implementation of \texttt{rand()} using the
+aforementioned approach is subject to data races when used by multiple threads:\@
+the function must update the entropy pool on each invocation, and concurrent accesses
+may interleave.  Establishing thread-safety is as easy as using a thread-local
+variable to maintain a separate entropy pool for each thread of execution, thereby
+eliminating the shared state.  Unfortunately, this mitigation is neither applicable
+to async-signal safety nor to async-cancellation safety:  In the former case, there
+is no analogue of thread-local variables capable of retargeting data accesses
+depending on whether a signal handler is running.  In the latter case, a function
+that mutates state that must be shared \textit{between} threads is likely to corrupt
+such state if cancelled in the middle of writing to it, even if the function employs
+concurrency control to prevent data races.  (One such example is the
+\texttt{malloc()} family of dynamic memory allocation functions, which carve their
+allocations out of a fixed heap.  Although they take a lock on a portion of the heap
+while reserving each allocation, cancelling them during this critical section will
+result in the lock never being released and the affected portion of the heap becoming
+unusable.)
+
+In this chapter, we explore how \textit{libgotcha} fills a usability gap in UNIX's
+userland and allows one to establish either kind of async safety in places where it
+would not otherwise exist.  In doing so, we present ordinarily unsound sample
+programs that can be automatically fixed through the use of \textit{libgotcha} and
+discuss practical applications to real-world systems.  And through its presentation
+of two simple control libraries, this chapter also serves as a straightforward
+example of how to use \textit{libgotcha}.  The insight from this chapter, both on our
+runtime and on POSIX safety itself, will be useful when we later explain the workings
+of \textit{libinger}, a more complicated control library.
+
+\begin{promotesubsections}
+\input[functions]{gotcha_assafe}
+\end{promotesubsections}
