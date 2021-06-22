@@ -9,7 +9,7 @@ strict digraph {
 
 	{
 		// This weight must be at least the number of horizontal arrows.
-		edge [style=dashed, weight=5];
+		edge [style=dotted, weight=5];
 
 		caller -> callerA -> callerB -> callerC -> callerD;
 		callerD -> callerE [style=solid, penwidth=2];
@@ -56,7 +56,7 @@ strict digraph {
 
 	{
 		rank=same;
-		controlC -> gotchaC [arrowhead=normal, dir=back];
+		controlC -> gotchaC [style=dashed, arrowhead=normal, dir=back];
 	}
 
 	{
@@ -77,7 +77,7 @@ strict digraph {
 
 	{
 		rank=same;
-		gotchaG -> calleeG [arrowhead=normal, dir=back];
+		gotchaG -> calleeG [style=dashed, arrowhead=normal, dir=back];
 	}
 
 	{
@@ -87,12 +87,12 @@ strict digraph {
 
 	{
 		rank=same;
-		callerI -> controlI [arrowhead=normal, dir=back];
+		callerI -> controlI [style=dashed, arrowhead=normal, dir=back];
 	}
 
 	{
 		rank=same;
-		callerJ -> controlJ [arrowhead=normal];
+		callerJ -> controlJ [style=dashed, arrowhead=normal];
 	}
 
 	{
@@ -102,11 +102,11 @@ strict digraph {
 
 	{
 		rank=same;
-		controlL -> gotchaL [arrowhead=normal, dir=back];
+		controlL -> gotchaL [style=dashed, arrowhead=normal, dir=back];
 	}
 
 	{
 		rank=same;
-		callerM -> controlM [arrowhead=normal, dir=back];
+		callerM -> controlM [style=dashed, arrowhead=normal, dir=back];
 	}
 }
