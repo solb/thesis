@@ -9,13 +9,15 @@ strict digraph {
 
 	{
 		// This weight must be at least the number of horizontal arrows.
-		edge [style=dashed, weight=5];
+		edge [style=dashed, weight=7];
 
-		caller -> callerA -> callerB -> callerC -> callerD -> callerE -> callerF -> callerG;
+		caller -> callerA -> callerB -> callerC -> callerD -> callerE -> callerF -> callerG -> callerH -> callerI;
 
-		control -> controlA -> controlB -> controlC -> controlD;
-		controlD -> controlE [style=solid, penwidth=2];
-		controlE -> controlF -> controlG;
+		control -> controlA -> controlB;
+		controlB -> controlC [style=solid, penwidth=2];
+		controlC -> controlD -> controlE -> controlF;
+		controlF -> controlG [style=solid, penwidth=2];
+		controlG -> controlH -> controlI;
 
 		gotcha -> gotchaA;
 		gotchaA -> gotchaB [style=solid, penwidth=2];
@@ -24,10 +26,12 @@ strict digraph {
 		gotchaD -> gotchaE;
 		gotchaE -> gotchaF [style=solid, penwidth=2];
 		gotchaF -> gotchaG;
+		gotchaG -> gotchaH [style=solid, penwidth=2];
+		gotchaH -> gotchaI;
 
-		callee -> calleeA -> calleeB;
-		calleeB -> calleeC [style=solid, penwidth=2];
-		calleeC -> calleeD -> calleeE -> calleeF -> calleeG;
+		callee -> calleeA -> calleeB -> calleeC -> calleeD;
+		calleeD -> calleeE [style=solid, penwidth=2];
+		calleeE -> calleeF -> calleeG -> calleeH -> calleeI;
 	}
 
 	{
@@ -38,27 +42,37 @@ strict digraph {
 
 	{
 		rank=same;
-		gotchaB -> calleeB [label="callee()", arrowhead=normal];
+		controlB -> gotchaB [label=<<i>prehook</i> ?>, arrowhead=normal, dir=back];
 	}
 
 	{
 		rank=same;
-		gotchaC -> calleeC [arrowhead=normal, dir=back];
+		controlC -> gotchaC [arrowhead=normal];
 	}
 
 	{
 		rank=same;
-		controlD -> gotchaD [label=<<i>hook</i> ?>, arrowhead=normal, dir=back];
+		gotchaD -> calleeD [label="callee()", arrowhead=normal];
 	}
 
 	{
 		rank=same;
-		controlE -> gotchaE [arrowhead=normal];
+		gotchaE -> calleeE [arrowhead=normal, dir=back];
 	}
 
 	{
 		rank=same;
-		callerF -> controlF [arrowhead=normal, dir=back];
-		controlF -> gotchaF;
+		controlF -> gotchaF [label=<<i>hook</i> ?>, arrowhead=normal, dir=back];
+	}
+
+	{
+		rank=same;
+		controlG -> gotchaG [arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		callerH -> controlH [arrowhead=normal, dir=back];
+		controlH -> gotchaH;
 	}
 }
