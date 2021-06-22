@@ -32,7 +32,7 @@ strict digraph {
 
 	{
 		rank=same;
-		callerA -> controlA [label="procedure_linkage_override()"];
+		callerA -> controlA [label="callee()                                                   ", headlabel="(redirected to procedure_linkage_override())"];
 		controlA -> gotchaA [arrowhead=normal];
 	}
 
