@@ -83,8 +83,29 @@ works.
 \begin{promotesubsections}
 \input[functions]{inger_stacks}
 \input[functions]{inger_interrupts}
-\input[functions]{inger_cancel}
 \end{promotesubsections}
+
+
+\section{Cancellation}
+
+Should a caller decide not to finish running a timed-out preemptible function, it
+must deallocate it.  In Rust, deallocation happens implicitly via the
+\texttt{linger\_t} type's destructor, whereas users of the C interface are responsible
+for explicitly calling the \textit{libinger} \texttt{cancel()} function.
+
+As discussed in Chapter~\ref{chap:libgotcha}, \textit{libgotcha} returns a
+preemptible function's libset to the pool for reuse when that function returns
+normally.  However, when a function is cancelled before it finishes, none of the
+modules in its libset is safe to reuse in general:\@ a library function might have
+been in the middle of executing.  To avoid future problems with the libset, as part
+of a cancellation, \textit{libinger} instructs \textit{libgotcha} to reinitialize the
+function's libset before returning it to the pool.
+
+Cancellation cleans up \textit{libinger} resources allocated by \texttt{launch()};
+however, the current implementation does not automatically release resources already
+claimed by the preemptible function itself.  However, we have prototyped a solution
+that demonstrates the feasibility of such cleanup in RAII languages such as Rust.
+We detail this approach in Chapter~\ref{chap:ingerc}.
 
 
 \section{Evaluation}
