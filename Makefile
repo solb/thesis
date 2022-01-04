@@ -14,6 +14,7 @@ thesis.pdf: foreword.tex
 thesis.pdf: functions.tex
 thesis.pdf: gotcha.tex
 thesis.pdf: inger.tex
+thesis.pdf: ingerc.tex
 thesis.pdf: intro.tex
 thesis.pdf: microservices.tex
 thesis.pdf: safety.tex

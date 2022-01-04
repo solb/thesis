@@ -1,0 +1,85 @@
+\chapter{Resource cleanup and async unwinding: \\ the \textit{ingerc} compiler}
+\label{chap:ingerc}
+
+As described so far, one of the facilities that \textit{libinger} enables is
+asynchronous function cancellation.  As we saw in Chapters~\ref{chap:functions} and
+\ref{chap:safety}, this is a significant achievement that is only possible under the
+POSIX safety model thanks to selective relinking.  However, one missing piece of
+functionality is automatic cleanup of any resources the cancelled function had
+allocated.
+
+The resource leaks associated with cancelling a function are a significant problem:\@
+they make cancellation infeasible for long-running applications, which would
+experience the cumulative leakage of the resources allocated by all such cancelled
+functions.  While a garbage collector would be able to find the leaked resources,
+deallocating them might still prove challenging because, without a record of the
+interruption point where cancellation occurred, it would not be safe to run object
+finalizers.  Of course, our system targets unmanaged languages, so we must accomplish
+resource cleanup without a garbage collector.
+
+
+\section{Languages with unstructured resource management}
+
+In languages such as C, resource lifetimes are completely unstructured, with each
+allocation and deallocation performed via an ad-hoc function call.  Some such
+functions are well-known because they are prescribed by the C and/or POSIX standards:
+\texttt{malloc()}/\texttt{free()}, \texttt{open()}/\texttt{close()}, etc.  However,
+applications and libraries can provide their own resource-allocation interfaces, so
+it is not possible to identify or track resource management in general.  Worse, there
+is no standardization of deallocation functions' interface.  These language
+properties mean that automating cleanup would require hand-annotating all custom
+allocation and deallocation functions throughout the application and its
+dependencies; such annotations would have to provide associations between each
+allocator and its corresponding deallocator, as well as information about how to call
+the latter.
+
+Were one to build a system to support this, one would need to use an approach like
+that of Valgrind's Memcheck~\cite{seward:usenix2005} and LLVM's MemorySanitizer and
+instrument the application's allocation and deallocation calls (for which
+\textit{libgotcha}'s existing ability to intercept function calls might prove
+useful!).  While the memory footprint of this technique is modest compared to that
+imposed by \textit{libgotcha}, the runtime slowdown is 3x on memory-intensive
+workloads~\cite{stepanov:cgo2015}.  It is probably difficult to dramatically reduce
+this overhead because the necessary tracking amounts to adding potentially-expensive
+bookkeeping work to each allocation and deallocation, already expensive operations
+that can dominate applications' execution.  Worse, the bookkeeping structures need to
+be mutable, so care must be taken to avoid designing around data structures with
+amortized time complexities, as this would introduce undesirable unpredictable pauses
+in preemptible function execution reminiscent of garbage collection\footnote{The
+\textit{libgotcha} runtime itself does not suffer from this problem because its
+function lookup tables are immutable once process initialization is complete.}.  For
+instance, storing allocation records in a hash table would require periodic
+rebalancing.
+
+Because of the above limitations, we have not pursued automatic resource cleanup for
+preemptible functions written in C.  We advise developers of long-running C
+applications to enjoy the other benefits of lightweight preemptible functions, but to
+always eventually allow their functions to run to completion.
+
+
+\section{Languages following the RAII principle}
+
+The situation is more promising in Rust.  Like C++, it adheres to the RAII (Resource
+Allocation Is Initialization) idiom that associates each resource's lifetime with
+that of some object.  Whenever an object goes out of scope, the program invokes its
+destructor and those of its members, freeing the associated resources.  Thus, the
+problem of releasing the resources associated with a cancellation can be reduced to
+that of invoking the destructors of the objects that are alive at the interruption
+point.  Notice that, in contrast to garbage collection, such a model does not divorce
+the problem of deallocation from the cancelled function's code; as such, it is not
+subject to the safety problems of invoking finalizers, as only the destructors of
+objects whose initialization is already complete can be invoked.
+
+Faced with the challenge of safely preempting in the presence of shared state caused
+by nonreentrant library interfaces, we found that we could leverage dynamic linking
+to solve the problem automatically, and build the \textit{libgotcha} runtime to do
+just that.  Here again, we are fortunate to find an existing runtime facility that
+can be repurposed to call destructors at an arbitrary position in the program:\@
+the Rust language already supports exceptions (which it calls ``panics'').  One
+significant advantage to building on top of constructors rather than implementing
+separate resource tracking is that exception handling is already designed to add no
+overhead to the non-exceptional execution path, which it accomplishes by storing all
+necessary information out of band as immutable DWARF debugging annotations stored in
+the \texttt{.eh\_frame} section of the ELF object.  With the exception of adding one
+cheap function call to each function that owns objects with destructors, we are able
+to provide automatic cleanup with no runtime overhead.
