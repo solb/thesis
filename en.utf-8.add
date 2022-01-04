@@ -6,6 +6,8 @@ AWS
 backend
 bool
 cancelability
+CFI
+CFI's
 checkpointing
 codepath
 composability
@@ -73,6 +75,7 @@ libturquoise
 lifecycle
 LLVM's
 lockdown
+LSDA
 ltrace
 malloc
 Memcheck
@@ -111,6 +114,7 @@ POSIX
 preemptibility
 preemptible
 printf
+pseudoinstructions
 pthread
 pthreads
 pthread\_timedjoin\_np
