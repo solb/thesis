@@ -78,8 +78,47 @@ can be repurposed to call destructors at an arbitrary position in the program:\@
 the Rust language already supports exceptions (which it calls ``panics'').  One
 significant advantage to building on top of constructors rather than implementing
 separate resource tracking is that exception handling is already designed to add no
-overhead to the non-exceptional execution path, which it accomplishes by storing all
-necessary information out of band as immutable DWARF debugging annotations stored in
-the \texttt{.eh\_frame} section of the ELF object.  With the exception of adding one
+overhead to the non-exceptional execution path.  With the exception of adding one
 cheap function call to each function that owns objects with destructors, we are able
 to provide automatic cleanup with no runtime overhead.
+
+
+\section{A brief tour of exception handling}
+
+Whenever a program throws an exception, the language runtime must find the point in
+the program that handles that exception.  To prevent resource leaks, deadlocks, and
+other bugs, it must then invoke the destructors of all objects that are in scope at
+the point where the exception was thrown, but out of scope at the point where it is
+caught.  This feature of exception handling is perfectly suited to our use case.
+
+It is possible for a function to throw an exception that is then caught by one of its
+callers, so the language runtime must be able to ``unwind'' the stack, locating the
+stack frame of each function's caller.  Code for the x86 architecture used to
+maintain a frame pointer that made it easy to find the bounds of a function's stack
+frame, but with the advent of x86-64, this is no longer standard; thus, the runtime
+needs some other way to find the next frame.  Debuggers have long faced this very
+problem on other architectures, and the common approach is to rely on extra debugging
+information stored in the executable or library on the disk.  On Unix operating
+systems, most debuggers use the CFI (Call Frame Information) facility of the standard
+DWARF debugging format~\cite{eager:spec2012}.
+
+Modern exception runtimes repurpose this debugging information to unwind the stack
+once an exception has been thrown.  The compiler produces the requisite information
+by generating CFI pseudoinstructions, which the assembler then transcribes into DWARF
+format and stores in the \texttt{.eh\_frame} section of the object file.  This
+section is present in non-debug builds and stripped object files and gets loaded into
+the process's memory image by the ELF loader or dynamic linker, in contrast to the
+CFI's more traditional home, the \texttt{.debug\_frame} section.  With the complexity
+of this approach comes the advantage that the application no longer has to update
+frame pointers during normal execution.
+
+Call Frame Information alone is not a sufficient primitive to implement exception
+handling:\@ the runtime must also be able to find the exception handler(s) present in
+each call frame and the destructors to invoke based on where in the function the
+exception was thrown.  The compiler must supply this information, which it does by
+emitting pseudoinstructions that describe a metadata region known as the LSDA
+(Language-Specific Data Area); the assembler stores this in the object file's
+\texttt{.gcc\_except\_table} section.  For each function, the LSDA contains a table
+mapping instruction address ranges to landing pads, code regions within the function
+that serve either to catch exceptions or to invoke destructors.  Our discussion will
+focus on the latter type, known as cleanup landing pads.
