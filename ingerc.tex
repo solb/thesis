@@ -72,7 +72,7 @@ objects whose initialization is already complete can be invoked.
 
 Faced with the challenge of safely preempting in the presence of shared state caused
 by nonreentrant library interfaces, we found that we could leverage dynamic linking
-to solve the problem automatically, and build the \textit{libgotcha} runtime to do
+to solve the problem automatically, and built the \textit{libgotcha} runtime to do
 just that.  Here again, we are fortunate to find an existing runtime facility that
 can be repurposed to call destructors at an arbitrary position in the program:\@
 the Rust language already supports exceptions (which it calls ``panics'').  One
