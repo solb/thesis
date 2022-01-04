@@ -25,6 +25,7 @@ errno
 FaaS
 FaRM
 fflush
+finalizers
 -fpic
 -Funsafe-code
 GC
@@ -40,6 +41,7 @@ GPRs
 HPETs
 IFUNC
 'ing
+ingerc
 IPC
 IPI
 IPIs
@@ -69,12 +71,15 @@ libsets
 libtimetravel
 libturquoise
 lifecycle
+LLVM's
 lockdown
 ltrace
 malloc
+Memcheck
 memoization
 memoizes
 memoizing
+MemorySanitizer
 microbenchmarks
 microkernel
 microservice
@@ -153,6 +158,7 @@ u64
 uncopyable
 userland
 v4
+Valgrind's
 virtualized
 waitpid
 warmup
