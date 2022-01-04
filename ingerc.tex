@@ -130,3 +130,36 @@ emitting pseudoinstructions that describe a metadata region known as the LSDA
 mapping instruction address ranges to landing pads, code regions within the function
 that serve either to catch exceptions or to invoke destructors.  Our discussion will
 focus on the latter type, known as cleanup landing pads.
+
+
+\section{Asynchronous exception handling}
+
+Because exceptions are generated synchronously, they can only occur on calls to
+functions that can throw.  Since compilers know which functions can throw, they
+generally only output LSDA entries that are accurate for those functions' call sites.
+But since \textit{libinger} interrupts functions preemptively, we need to trigger
+unwinding and cleanup at whatever arbitrary point the function was paused at before
+being cancelled.
+
+Triggering unwinding is a simple matter of the runtime tweaking the stack pointer and
+instruction pointer of the preemptible function to be canceled in order to forge a
+call to a function that raises an exception using Rust's \texttt{panic!()} macro.
+But providing instruction-accurate cleanup information requires us to address the
+following challenges:
+\begin{enumerate}
+\item Optimization passes
+\item Functions ``returning pointers''
+\item Misplaced begin and end labels
+\item Function calls
+\item Prologues and epilogues
+\item First instruction of the prologue
+\item Epilogues
+\end{enumerate}
+
+Rather than integrate a fully general resource cleanup solution into
+\textit{libinger}, we have prototyped the components to solve these problems and used
+these to build a proof of concept implementation of the compiler transformations
+necessary to support asynchronous exception handling.  In doing so, we have convinced
+ourselves that our approach is feasible, although it would take additional
+engineering effort to get the implementation to a point where it worked on nontrivial
+applications.
