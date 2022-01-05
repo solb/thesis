@@ -147,13 +147,69 @@ call to a function that raises an exception using Rust's \texttt{panic!()} macro
 But providing instruction-accurate cleanup information requires us to address the
 following challenges:
 \begin{enumerate}
-\item Optimization passes
-\item Functions ``returning pointers''
-\item Misplaced begin and end labels
-\item Function calls
-\item Prologues and epilogues
-\item First instruction of the prologue
-\item Epilogues
+\item \textbf{Optimized builds remove some functions' LSDA tables and landing pads.}
+We have noticed that enabling optimizations via the Rust compiler's \texttt{-O}
+switch causes some functions that have exception-handling support in debug builds to
+instead be compiled without it.
+
+\item \textbf{Functions that ``return'' values via pointer parameters lack
+exception-handling information.}  We have noticed that such ``sret'' functions tend
+to lack any exception information at the LLVM IR level, even if they operate on
+objects with destructors.  This is a problem because, although the objects exist in
+the caller's stack frame, they must still be treated as owned by the function that is
+``returning'' them, so that we will clean them up if cancellation occurs between the
+time they are allocated and that function returns.  Such functions are more common
+than one might expect and include most constructors:\@ the Rust compiler prefers to
+compile functions that return large objects in this manner to avoid moving them to
+the caller's stack frame immediately afterward.
+
+\item \textbf{Many LSDA entries associate the landing pad with too few instructions
+following a function call site or instructions preceding the call site.}  Injecting
+an exception in such execution regions results in leaks or deallocating before
+allocation, respectively.  Our investigation revealed that these discrepancies result
+from changing instruction boundaries during lowering from LLVM IR to the platform's
+assembly language; in particular, the backend does not account for the \texttt{mov}
+and \texttt{lea} instructions that perform argument passing before most
+\texttt{call}s.
+
+\item \textbf{The runtime does not discriminate between being in the middle of
+executing a function and having just retired its \texttt{ret} instruction and jumped
+back to the call site.}  In either case, it will not invoke any cleanup landing pads
+in the caller.  The two scenarios are indistinguishable under the assumption that no
+exception can occur at these points in the function.  However, the fact that we can
+inject one there creates an important distinction for our purposes:\@ until the
+function returns, it still has ownership of its live variables and its landing pads
+are responsible for cleaning them up, whereas after it has returns, it is impossible
+for those landing pads to be invoked and cleanup must necessarily be up to the
+caller.
+
+\item \textbf{Unwinding on the first instruction of a function fails because it looks
+at the LSDA table for the function whose definition precedes the actual one in
+memory.}  This issue turns out to have the same cause as the previous one, but the
+two situations demand different solutions.
+
+\item \textbf{If attempted on the instruction just after one that repositions the
+stack pointer, unwinding miscalculates the frame address.}  While this behavior
+appears consistent between the libgcc and libunwind (LLVM) unwind implementations, we
+suspect it exists because exceptions ordinarily never occur in the prologue or
+epilogue of the function.  GCC has an \texttt{-fasynchronous-unwind-tables} switch
+that is intended to make the frame information accurate down to the instruction, but
+Clang only includes this switch for command-line compatibility and doesn't actually
+implement this feature.  As a likely consequence of this lack of support from the
+LLVM project itself, the Rust compiler also makes no attempt to offer it.
+
+\item \textbf{Cleanup landing pads do not work reliably if associated with the
+function epilogue.}  This happens because the epilogue adjusts the stack pointer,
+in many cases causing any synthetic function call (e.g., to inject an exception) to
+clobber the very stack values the landing pad is trying to clean up.  Incidentally,
+a Google search for ``LLVM unwind function epilogue'' reveals that the unwind info is
+not trustworthy during the epilogue in the general case.  Indeed, there have been
+several patchsets attempting to fix this, some of which were merged, but each of
+which was subsequently reverted for breaking some other architecture.  So it would
+appear not only that this is the primary design issue blocking LLVM support for
+asynchronous unwind tables, but also that we must avoid injecting exceptions in
+epilogues altogether.
+
 \end{enumerate}
 
 Rather than integrate a fully general resource cleanup solution into
