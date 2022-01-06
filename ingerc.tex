@@ -219,3 +219,68 @@ necessary to support asynchronous exception handling.  In doing so, we have conv
 ourselves that our approach is feasible, although it would take additional
 engineering effort to get the implementation to a point where it worked on nontrivial
 applications.
+
+The below numbered sections describe our approach to solving each of the
+challenges listed above.
+
+
+\subsection{Skipping optimization passes that remove exception handling}
+
+Testing with rustc 1.56.0, we have found that the \texttt{prune-eh},
+\texttt{function-attrs}, and \texttt{inline} LLVM optimization passes are
+responsible for stripping the LSDA tables and landing pads from some functions in
+optimized builds.  We have developed a shell script to invoke rustc without these
+passes, a task that is unfortunately complicated by the compiler's command-line
+interface, which only accepts a list of all the passes to run.
+
+We recognize that disabling the inlining pass is likely to reduce the efficiency of
+compiled code, but we leave it to future work to investigate why this pass is
+removing exception information from even functions otherwise unaffected by inlining.
+
+
+\subsection{Adding exception-handling support to functions' LLVM IR}
+\label{sec:ingerc:optimization}
+
+The above script does not address functions for which the compiler emits no
+exception-handling information even in debug builds.  As before, this problem is
+easiest to address in the intermediate representation, where the addition of an
+exception-handling personality and a \texttt{landingpad} instruction will cause the
+LLVM backend to emit an LSDA table and landing pad for the function.
+
+To reduce implementation complexity, we do not attempt to detect which functions own
+objects with destructors and instead introduce exception handling into any functions
+that do not already have them.  This saves us from having to query complex properties
+of the IR and reduces our task to one of simple text transformations.  We implement
+these in a TypeScript script performing regular expression replacements.
+
+The landing pads we insert at this stage are empty skeletons that do not actually
+invoke any destructors.  We describe how we identify which destructor(s) to invoke,
+if any, and add the calls at the end of Section~\ref{sec:ingerc:codegen}.
+
+
+\subsection{Adjusting LSDA entries}
+\label{sec:ingerc:codegen}
+
+The possibility that we inject an exception during the argument-passing instructions
+preceding a call violates a design assumption of LLVM's LSDA generation.  IR
+instructions such as \texttt{call} often expand to multiple machine instructions,
+most commonly to perform argument passing before the function dispatch.  However, the
+backend generates the address ranges for LSDA entries using labels in the IR.  This
+means that ordinary optimization and transform passes cannot associate landing pads
+with some but not all of a function call sequence.
+
+To get around this problem, we had to implement a plugin that loads a code generation
+pass into \texttt{llc}, the LLVM static compiler.  The pass works at the x86-64
+machine instruction level to reposition LSDA-related labels to resize the code region
+on the normal execution path with which a cleanup landing pad is associated.  To
+prevent leaks, if the ending label falls before a destructor call, we move it downward
+to just before the machine \texttt{call} instruction; otherwise, we move it downward
+to just before the function epilogue.  To prevent issuing destructor calls before
+construction, if the starting label falls before the function call that produces the
+object to be cleaned up, we move it downward to just after that call.
+
+As part of this pass, we also identify functions with parameters annotated as
+\texttt{sret} in the LLVM IR.  These correspond to functions where the script from
+Section~\ref{sec:ingerc:optimization} added synthetic landing pads.  We check to see
+whether the involved type(s) have destructors; if so, we add destructor calls to the
+landing pad.
