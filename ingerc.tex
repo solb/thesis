@@ -284,3 +284,62 @@ As part of this pass, we also identify functions with parameters annotated as
 Section~\ref{sec:ingerc:optimization} added synthetic landing pads.  We check to see
 whether the involved type(s) have destructors; if so, we add destructor calls to the
 landing pad.
+
+
+\subsection{Detecting whether a function has just returned}
+\label{sec:ingerc:return}
+
+Regardless of whether a function has returned, LLVM's libunwind treats the caller
+frame as sitting within the call instruction, rather than on the subsequent
+instruction located at the return address.  Here is the offending libunwind code:
+\begin{lstlisting}
+  // If the last line of a function is a "throw" the compiler sometimes
+  // emits no instructions after the call to __cxa_throw.  This means
+  // the return address is actually the start of the next function.
+  // To disambiguate this, back up the pc when we know it is a return
+  // address.
+  if (isReturnAddress)
+    --pc;
+\end{lstlisting}
+
+Since we inject the exception by forging a function call, libunwind always assumes
+the frame where we did this is a return address and performs the decrement.  The
+obvious workaround would be to remove this code from libunwind, at the cost of
+potentially breaking unwinding through C++ code that might be present in the program.
+Indeed, a glance through the disassembly of the Rust standard library shows that the
+rustc emits \texttt{ud2} (invalid) instructions following the call sites in this
+scenario, so Rust code is unaffected by the problem described in the comment.
+
+However, it turns out that the above code has another important effect beyond that
+documented in the comment:\@ it avoids running the cleanup landing pad associated
+with the code region following the call site if the called function was still
+executing at the time the exception was thrown.  This is essential because in this
+case, the called function still has ownership over any objects requiring cleanup, and
+their state is undefined from the perspective of the caller.  The safe and correct
+thing for the runtime to do is to invoke the called function's landing pad but not
+the caller's.
+
+For this reason, we need to override this libunwind behavior only at the instruction
+where we injected the exception, and only if that instruction happens to be the
+instruction following a call (so that libunwind would confuse the situation with one
+where the called function was still executing).  We can accomplish that by applying
+a heuristic-based tweak just before the \textit{libinger} cancellation code injects
+the exception call:\@ if the instruction pointer is equal to the 8-byte value at
+offset -1 from the stack pointer, the function return just completed and we should
+add one to the instruction pointer to counteract the described libunwind behavior for
+this stack frame only.
+
+
+\subsection{Unwinding from the first instruction of a function}
+
+Another consequence of the libunwind implementation detail described in
+Section~\ref{sec:ingerc:return} is that unwinding with the instruction pointer
+positioned on the first instruction of a function results in an address associated
+with the preceding function in memory.  Therefore, the runtime does not find the
+correct LSDA for the function (if it finds one at all).
+
+It is hard to detect this problem without consulting the LSDA, so we implement a fix
+by patching libunwind, which already decodes this information.  We insert a check
+whether the current instruction pointer falls at the very beginning of its function;
+if so, we set the \texttt{isReturnAddress} flag to skip the instruction pointer
+adjustment.
