@@ -349,3 +349,46 @@ by patching libunwind, which already decodes this information.  We insert a chec
 whether the current instruction pointer falls at the very beginning of its function;
 if so, we set the \texttt{isReturnAddress} flag to skip the instruction pointer
 adjustment.
+
+
+\subsection{Calling functions when the stack is misaligned}
+
+The \textit{libinger} cancellation code's standard approach of injecting a single
+function call causes crashes when the stack is misaligned, as during a function
+prologue.  Fortunately, we can easily solve this by instead selectively calling a
+function that does not allocate any space in its own stack frame.  This has the
+effect of restoring the stack alignment (because of the return address pushed by the
+\texttt{call} instruction) before calling any complex code that relies on alignment.
+Crucially, it does so without introducing any invalid stack frames that would break
+unwinding.  The following function suffices:
+\begin{verbatim}
+  .globl realign
+realign:
+  .cfi_startproc
+  call panic
+  ud2
+  .cfi_endproc
+\end{verbatim}
+
+\noindent
+(where \texttt{panic} is the function that would ordinarily inject the exception).
+
+
+\subsection{Unwinding after an instruction that move the stack pointer}
+
+To compute the offset from the stack pointer to the return address, libunwind
+contains a function called \texttt{parseFDEInstructions()}.  It loops through the CFI
+instructions in the \texttt{.eh\_frame} section, continuing as long as
+\texttt{codeOffset < pcoffset} to process the stack pointer adjustments for the
+instructions that have executed so far.  Unfortunately, this appears to fall one CFI
+instruction short when the instruction that has just retired repositioned the stack
+pointer.  Changing the \texttt{<} to a \texttt{<=} fixes the problem.
+
+Section 6.4.3 of the DWARF specification~\cite{www-dwarf-spec} seems to agree with
+this sign change.  We hypothesize that libunwind inherited this off-by-one error from
+libgcc in its effort to replicate the older library's behavior.  The libunwind test
+suite continues to pass after making the change, suggesting that inadequate test
+allowed this mistake to avoid detection.  Furthermore, Clang's lack of support for
+asynchronous unwind tables has probably prevented the community from encountering the
+unwind failures we have.  Now that we are finished prototyping our changes and
+continue to believe that this one fixes a bug, we plan to submit a patch upstream.
