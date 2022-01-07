@@ -9,6 +9,7 @@ cancelability
 CFI
 CFI's
 checkpointing
+codeOffset
 codepath
 composability
 composable
@@ -30,6 +31,7 @@ fasynchronous
 fflush
 finalizers
 -fpic
+function-attrs
 -Funsafe-code
 GC
 gcc
@@ -50,11 +52,13 @@ IPC
 IPI
 IPIs
 ISR
+isReturnAddress
 ITIMER
 itimerval
 Kaminsky
 Kotlin
 Lampson
+landingpad
 ld
 ld-linux
 libac-safe
@@ -77,6 +81,7 @@ libtimetravel
 libturquoise
 libunwind
 lifecycle
+llc
 LLVM
 LLVM's
 lockdown
@@ -113,7 +118,9 @@ notetaking
 nullary
 objcopy
 OpenWhisk
+parseFDEInstructions
 patchsets
+pcoffset
 PLOTs
 PLT
 POSIX
@@ -166,7 +173,9 @@ timeval
 tokio-threadpool
 tv_
 typedef
+TypeScript
 u64
+ud2
 uncopyable
 userland
 v4
