@@ -188,6 +188,12 @@ at the LSDA table for the function whose definition precedes the actual one in
 memory.}  This issue turns out to have the same cause as the previous one, but the
 two situations demand different solutions.
 
+\item \textbf{Performing function calls during the prologue or epilogue of a function
+is unsafe.}  The x86-64 ABI (Application Binary Interface) specifies that the stack
+must always be 16-byte aligned before calling a function, which is not true until the
+function has reserved space for an odd number of 8-byte values (excluding the return
+address) in its stack frame.
+
 \item \textbf{If attempted on the instruction just after one that repositions the
 stack pointer, unwinding miscalculates the frame address.}  While this behavior
 appears consistent between the libgcc and libunwind (LLVM) unwind implementations, we
