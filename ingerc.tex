@@ -133,6 +133,7 @@ focus on the latter type, known as cleanup landing pads.
 
 
 \section{Asynchronous exception handling}
+\label{sec:ingerc:async}
 
 Because exceptions are generated synchronously, they can only occur on calls to
 functions that can throw.  Since compilers know which functions can throw, they
@@ -392,3 +393,108 @@ allowed this mistake to avoid detection.  Furthermore, Clang's lack of support f
 asynchronous unwind tables has probably prevented the community from encountering the
 unwind failures we have.  Now that we are finished prototyping our changes and
 continue to believe that this one fixes a bug, we plan to submit a patch upstream.
+
+
+\subsection{Unwinding in the epilogue of a function}
+
+As discussed in Section~\ref{sec:ingerc:async}, function epilogues are perilous for
+exception injection, and even unwinding in them is currently unreliable.  To work
+around these limitations, we have developed our own compiler-assisted runtime
+component.
+
+That epilogues pop values off the stack might suggest that it is no longer possible
+to clean up a function's resources once its epilogue has started executing;
+fortunately, they have an important property that refutes this intuition.  Although
+the epilogue removes elements such as saved register values from the stack, it only
+moves the stack pointer and does not overwrite the contents of the stack frame.
+Thus, if we could undo the epilogue's effects, we could then inject an exception and
+it would be handled as if the epilogue had never executed at all.  This is precisely
+our approach.
+
+To support time traveling backward to just before a function's epilogue, we need the
+program to record its instruction pointer just before it enters the epilogue.  We
+accomplish this by having the script introduced in
+Section~\ref{sec:ingerc:optimization} and our LLVM pass cooperate to insert a call to
+a custom function, \texttt{ingerc\_epilogue\_start()}, before each function's
+epilogue(s).
+
+In addition to saving the instruction pointer, \texttt{ingerc\_epilogue\_start()}
+informs \textit{libinger} that an epilogue is currently running, so that cancelling a
+preemptible function will not inject an exception in the usual way.  This means that
+we must also be able to inform \textit{libinger} once the epilogue is finished, so
+\texttt{ingerc\_epilogue\_start()} overwrites the function's return address with the
+location of another function, \texttt{ingerc\_epilogue\_end()}, that performs this
+notification before returning to the real return address.
+
+There are a few other values we need to save before starting the epilogue:  (1) When
+\texttt{ingerc\_epilogue\_end()} runs, it will need to know the function's original
+return address.  (2) If either of the functions we introduce at the beginning and end
+of the epilogue is running when the function is canceled, the stack pointer will be
+different than at the point we intend to travel to, so we always store the original
+stack pointer as well.  (3) To change the return address, we need the frame pointer,
+which we also save because the runtime will need to restore the return address as
+part of its time travel.  The frame address is not normally accessible at runtime, so
+we have our LLVM plugin insert code to pass it to \texttt{ingerc\_epilogue\_begin()}.
+
+
+The functions we introduce run just before the function returns, so they cannot
+overwrite any return registers.  Because of this, we have hand coded them in
+assembly.  We give their implementations in Listing~\ref{lst:epilogue}.  The
+\texttt{ingerc\_epilogue\_begin()} function saves all values into globals so they are
+accessible by the runtime.  This allows us to use the stored return address
+(\texttt{ingerc\_epilogue\_ra}) to notify the runtime that the epilogue is currently
+executing, so we are careful to set that last and reset it to null in
+\texttt{ingerc\_epilogue\_end()}.
+
+\begin{figure}
+\begin{lstlisting}[label=lst:epilogue,language={[x86masm]Assembler},caption=Code to support time travel out of the epilogue. The \texttt{@gotpcrel} replocations are position-independent GOT lookups of the globals' accesses.]
+	.globl	ingerc_epilogue_start
+ingerc_epilogue_start:
+	# Save our return address as the destination instruction pointer.
+	mov	ingerc_epilogue_ip@gotpcrel(%rip), %rsi
+	mov	(%rsp), %rcx
+	mov	%rcx, (%rsi)
+	# Save the stack pointer as it was before we were called.
+	mov	ingerc_epilogue_sp@gotpcrel(%rip), %rsi
+	lea	8(%rsp), %rcx
+	mov	%rcx, (%rsi)
+	# Save the frame pointer, which we received as an argument.
+	mov	ingerc_epilogue_fp@gotpcrel(%rip), %rsi
+	mov	%rdi, %rcx
+	mov	%rcx, (%rsi)
+	# Save the return address of our caller.
+	mov	ingerc_epilogue_ra@gotpcrel(%rip), %rsi
+	mov	(%rdi), %rcx
+	mov	%rcx, (%rsi)
+	# Make our caller return to ingerc_epilogue_end().
+	mov	ingerc_epilogue_end@gotpcrel(%rip), %rsi
+	mov	%rsi, (%rdi)
+	# Return.
+	ret
+
+	.globl	ingerc_epilogue_end
+ingerc_epilogue_end:
+	# Put the original return address on the stack.
+	mov	ingerc_epilogue_ra@gotpcrel(%rip), %rsi
+	mov	(%rsi), %rdi
+	push	%rdi
+	# Clear the saved return address.
+	xor	%rcx, %rcx
+	mov	%rcx, (%rsi)
+	# Return to the original caller.
+	ret
+\end{lstlisting}
+\end{figure}
+
+There is one other thing that these functions have to be careful about:\@
+if cancellation occurs while they are running but outside the region where
+\texttt{ingerc\_epilogue\_ra} is set, unwinding must be safe and invoke the correct
+cleanup landing pads.  This is why \texttt{ingerc\_epilogue\_end()} returns to the
+real caller using a \texttt{push} and a \texttt{ret} instead of an unconditional
+branch.  The \texttt{ingerc\_epilogue\_start()} implementation is compatible with
+ordinary unwinding, but its invocation can be troublesome because it is
+intentionally the last instruction before the epilogue.  This would mean that cleanup
+in the caller frame would invoke the epilogue's landing pad, but it never has one.
+To prevent a leak in this situation, our LLVM plugin inserts a \texttt{nop}
+instruction after the call to associate the function with the landing pad for the
+preceding basic block.
