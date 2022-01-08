@@ -114,6 +114,7 @@ NODELETE
 nonpreemptible
 nonreentrancy
 nonreentrant
+nop
 notetaking
 nullary
 objcopy
@@ -131,6 +132,7 @@ pseudoinstructions
 pthread
 pthreads
 pthread\_timedjoin\_np
+ra
 RAII
 realtime
 reenable
