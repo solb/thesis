@@ -353,6 +353,7 @@ adjustment.
 
 
 \subsection{Calling functions when the stack is misaligned}
+\label{sec:ingerc:realign}
 
 The \textit{libinger} cancellation code's standard approach of injecting a single
 function call causes crashes when the stack is misaligned, as during a function
@@ -396,6 +397,7 @@ continue to believe that this one fixes a bug, we plan to submit a patch upstrea
 
 
 \subsection{Unwinding in the epilogue of a function}
+\label{sec:ingerc:epilogue}
 
 As discussed in Section~\ref{sec:ingerc:async}, function epilogues are perilous for
 exception injection, and even unwinding in them is currently unreliable.  To work
@@ -498,3 +500,64 @@ in the caller frame would invoke the epilogue's landing pad, but it never has on
 To prevent a leak in this situation, our LLVM plugin inserts a \texttt{nop}
 instruction after the call to associate the function with the landing pad for the
 preceding basic block.
+
+
+\section{Preemptible function cancellation}
+
+While we have not integrated resource cleanup support into \textit{libinger}, our
+work on asynchronous exception handling suggests a design.  We have prototyped the
+approach in isolation using a set of scripts that use GDB to interrupt execution
+after any arbitrary number of instructions have retired and inject an exception at
+that point.  In this section, we give the algorithm and how it would integrate with
+the existing \textit{libinger} codebase.
+
+Section~\ref{sec:ingerc:async} introduced our fundamental approach to asynchronous
+cleanup:\@ the runtime should inject a synthetic exception at an arbitrary point in
+the preemptible function.  It also presented a compiler wrapper script,
+\textit{ingerc}, that applies a series of transformations to the code to make this
+safe and correct.  In this section, we assume that the preemptible functions being
+canceled are written in Rust, and that the application and all its Rust dependencies
+have been compiled with \textit{ingerc} instead of rustc.  We believe the latter
+requirement is reasonable because the Cargo build system already expects to have the
+source of all dependencies available.
+
+Whereas the \textit{libinger} C bindings implement the \texttt{cancel()} operation as
+a standalone function, the Rust interface performs cancellation in the destructor.
+Whenever a paused preemptible function goes out of scope, the destructor notices that
+it has not run to completion and reinitializes its libset to prepare it for reuse.
+Listing~\ref{lst:cleanup} gives pseudocode for a function that the destructor would
+call right before this reinitialization to clean up the preemptible function's own
+resources.  This works because for safety, \texttt{resume()} catches all panics
+before they can cross the FFI (Foreign Function Interface) boundary.  To prevent the
+Rust runtime from outputting a diagnostic message when the panic occurs, it is
+advisable to first disable the Rust standard library's panic handler in the
+preemptible function's libset.
+
+\begin{figure}
+\begin{lstlisting}[label=lst:cleanup,escapeinside={(*}{*)},caption=Resource cleanup for cancelled preemptible functions (pseudocode)]
+function cleanup(linger_t func):
+	ucontext_t snapshot = func.continuation;
+
+	// Check whether some callee just returned (section (*{\color{Green} \ref{sec:ingerc:return}}*))
+	uint64_t retaddr = 8 bytes preceding snapshot.uc_mcontext[REG_RSP]
+	if snapshot.uc_mcontext[REG_RIP] == retaddr:
+		increment snapshot.uc_mcontext[REG_RIP]
+
+	// If in epilogue, time travel to before (section (*{\color{Green} \ref{sec:ingerc:epilogue}}*))
+	if ingerc_epilogue_ra != NULL:
+		snapshot.uc_mcontext[REG_RIP] = ingerc_epilogue_ip
+		snapshot.uc_mcontext[REG_RSP] = ingerc_epilogue_sp
+		location ingerc_epilogue_fp = ingerc_epilogue_ra
+		ingerc_epilogue_ra = NULL
+
+	if 16 divides snapshot.uc_mcontext[REG_RSP]:
+		// Inject an exception using panic!() (section (*{\color{Green} \ref{sec:ingerc:async}}*))
+		snapshot.uc_mcontext[REG_RIP] = panic
+	else:
+		// Realign the stack and inject exception (section (*{\color{Green} \ref{sec:ingerc:realign}}*))
+		snapshot.uc_mcontext[REG_RIP] = realign
+
+	// Throw the exception and let the cleanup landing pads run
+	resume(func, UNLIMITED_TIME)
+\end{lstlisting}
+\end{figure}
