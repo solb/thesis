@@ -228,7 +228,10 @@ engineering effort to get the implementation to a point where it worked on nontr
 applications.
 
 The below numbered sections describe our approach to solving each of the
-challenges listed above.
+challenges listed above.  The product of the work described in this section is a
+shell script, \textit{ingerc}, that wraps rustc and applies all the described
+transformations to produce an output program or library ready for runtime-assisted
+cancellation cleanup.
 
 
 \subsection{Skipping optimization passes that remove exception handling}
