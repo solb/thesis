@@ -442,7 +442,6 @@ which we also save because the runtime will need to restore the return address a
 part of its time travel.  The frame address is not normally accessible at runtime, so
 we have our LLVM plugin insert code to pass it to \texttt{ingerc\_epilogue\_begin()}.
 
-
 The functions we introduce run just before the function returns, so they cannot
 overwrite any return registers.  Because of this, we have hand coded them in
 assembly.  We give their implementations in Listing~\ref{lst:epilogue}.  The
