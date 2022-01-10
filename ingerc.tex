@@ -341,6 +341,7 @@ this stack frame only.
 
 
 \subsection{Unwinding from the first instruction of a function}
+\label{sec:ingerc:start}
 
 Another consequence of the libunwind implementation detail described in
 Section~\ref{sec:ingerc:return} is that unwinding with the instruction pointer
@@ -512,14 +513,16 @@ work on asynchronous exception handling suggests a design.  We have prototyped t
 approach in isolation using a set of scripts that use GDB to interrupt execution
 after any arbitrary number of instructions have retired and inject an exception at
 that point.  In this section, we give the algorithm and how it would integrate with
-the existing \textit{libinger} codebase.
+the existing \textit{libinger} codebase.  We conclude by reasoning about its
+correctness based on where the preemptible function is in its execution at the time
+it is cancelled.
 
 Section~\ref{sec:ingerc:async} introduced our fundamental approach to asynchronous
 cleanup:\@ the runtime should inject a synthetic exception at an arbitrary point in
 the preemptible function.  It also presented a compiler wrapper script,
 \textit{ingerc}, that applies a series of transformations to the code to make this
 safe and correct.  In this section, we assume that the preemptible functions being
-canceled are written in Rust, and that the application and all its Rust dependencies
+cancelled are written in Rust, and that the application and all its Rust dependencies
 have been compiled with \textit{ingerc} instead of rustc.  We believe the latter
 requirement is reasonable because the Cargo build system already expects to have the
 source of all dependencies available.
@@ -564,3 +567,33 @@ function cleanup(linger_t func):
 	resume(func, UNLIMITED_TIME)
 \end{lstlisting}
 \end{figure}
+
+Table~\ref{tab:cleanup} summarizes our method of resource cleanup, showing the
+actions taken by our proposed runtime at each possible point the preemptible function
+(or any of its callees) might be paused when cancellation occurs.  It can be seen
+that we have handled all possible points within the body of an ordinary function.
+The case we have scoped out of our investigation is cancelling a preemptible function
+while it is running a destructor; instead of attempting this, we suggest implementing
+a mechanism to detect this case (e.g., unwinding the stack or hooking into the Rust
+standard library) and using a return address trick similar to that from
+Section~\ref{sec:ingerc:epilogue} to delay resource cleanup until the destructor has
+finished.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{c | p{0.175\textwidth} p{0.15\textwidth} c c}
+Position within && Possible to & \multicolumn{2}{c}{Handling} \\
+running function & Indicator & unwind here? & Normal execution & When cancelling \\
+\hline
+First instruction & Stack alignment & No (stack misalignment) & -- & \textsection~\ref{sec:ingerc:start}, \ref{sec:ingerc:realign} \\
+Function prologue & Stack alignment & No (stack misalignment) & -- & \textsection~\ref{sec:ingerc:realign} \\
+Function body & -- & Yes & -- & Raise exception \\
+After call site & Return address & Yes (but leaks) & -- & \textsection~\ref{sec:ingerc:return} \\
+Before epilogue & -- & Yes & \textsection~\ref{sec:ingerc:epilogue} & Raise exception \\
+Function epilogue & Saved return address & No (calls could clobber stack frame) & -- & \textsection~\ref{sec:ingerc:epilogue} \\
+After return & -- & -- & \textsection~\ref{sec:ingerc:epilogue} & Raise exception \\
+\end{tabular}
+\end{center}
+\caption{Cancelled function resource cleanup by position within the running function}
+\label{tab:cleanup}
+\end{table}
