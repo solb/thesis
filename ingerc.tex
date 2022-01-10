@@ -309,7 +309,7 @@ instruction located at the return address.  Here is the offending libunwind code
   // To disambiguate this, back up the pc when we know it is a return
   // address.
   if (isReturnAddress)
-    --pc;
+  	--pc;
 \end{lstlisting}
 
 Since we inject the exception by forging a function call, libunwind always assumes
@@ -367,14 +367,14 @@ effect of restoring the stack alignment (because of the return address pushed by
 \texttt{call} instruction) before calling any complex code that relies on alignment.
 Crucially, it does so without introducing any invalid stack frames that would break
 unwinding.  The following function suffices:
-\begin{verbatim}
-  .globl realign
-realign:
-  .cfi_startproc
-  call panic
-  ud2
-  .cfi_endproc
-\end{verbatim}
+\begin{lstlisting}[language={[x86masm]Assembler},morekeywords=ud2]
+  	.globl realign
+  realign:
+  	.cfi_startproc
+  	call panic
+  	ud2
+  	.cfi_endproc
+\end{lstlisting}
 
 \noindent
 (where \texttt{panic} is the function that would ordinarily inject the exception).
