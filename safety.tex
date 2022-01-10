@@ -21,6 +21,7 @@ Async-signal-safe functions are those that can be safely called from a signal ha
 that has interrupted a non-async-signal-safe function (or conversely, can be safely
 interrupted by a signal handler that calls non-async-signal-safe functions).
 
+\begin{sloppypar}
 \paragraph{Async-cancel safety.}
 Async-cancel-safe functions are those that can be called by
 asynchronously-cancellable threads, which we first saw in
@@ -29,6 +30,7 @@ their execution; however, POSIX marks almost no functions as async-cancel safe, 
 practice the feature is only useful for threads executing a compute-bound loop with
 no I/O or other reliance on the OS.
 \\
+\end{sloppypar}
 
 Along with thread safety, these two classes of safety exist because of nonreentrant
 interfaces; that is, functions whose signatures do not expose all the shared state

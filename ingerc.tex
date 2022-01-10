@@ -432,6 +432,7 @@ we must also be able to inform \textit{libinger} once the epilogue is finished, 
 location of another function, \texttt{ingerc\_epilogue\_end()}, that performs this
 notification before returning to the real return address.
 
+\begin{sloppypar}
 There are a few other values we need to save before starting the epilogue:  (1) When
 \texttt{ingerc\_epilogue\_end()} runs, it will need to know the function's original
 return address.  (2) If either of the functions we introduce at the beginning and end
@@ -441,6 +442,7 @@ stack pointer as well.  (3) To change the return address, we need the frame poin
 which we also save because the runtime will need to restore the return address as
 part of its time travel.  The frame address is not normally accessible at runtime, so
 we have our LLVM plugin insert code to pass it to \texttt{ingerc\_epilogue\_begin()}.
+\end{sloppypar}
 
 The functions we introduce run just before the function returns, so they cannot
 overwrite any return registers.  Because of this, we have hand coded them in
@@ -491,6 +493,7 @@ ingerc_epilogue_end:
 \end{lstlisting}
 \end{figure}
 
+\begin{sloppypar}
 There is one other thing that these functions have to be careful about:\@
 if cancellation occurs while they are running but outside the region where
 \texttt{ingerc\_epilogue\_ra} is set, unwinding must be safe and invoke the correct
@@ -503,6 +506,7 @@ in the caller frame would invoke the epilogue's landing pad, but it never has on
 To prevent a leak in this situation, our LLVM plugin inserts a \texttt{nop}
 instruction after the call to associate the function with the landing pad for the
 preceding basic block.
+\end{sloppypar}
 
 
 \section{Preemptible function cancellation}
