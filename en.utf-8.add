@@ -28,6 +28,7 @@ errno
 FaaS
 FaRM
 fasynchronous
+FFI
 fflush
 finalizers
 -fpic
@@ -35,6 +36,7 @@ function-attrs
 -Funsafe-code
 GC
 gcc
+GDB
 getpid
 gettimeofday
 glibc
