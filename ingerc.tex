@@ -143,7 +143,7 @@ unwinding and cleanup at whatever arbitrary point the function was paused at bef
 being cancelled.
 
 Triggering unwinding is a simple matter of the runtime tweaking the stack pointer and
-instruction pointer of the preemptible function to be canceled in order to forge a
+instruction pointer of the preemptible function to be cancelled in order to forge a
 call to a function that raises an exception using Rust's \texttt{panic!()} macro.
 But providing instruction-accurate cleanup information requires us to address the
 following challenges:
@@ -435,7 +435,7 @@ notification before returning to the real return address.
 There are a few other values we need to save before starting the epilogue:  (1) When
 \texttt{ingerc\_epilogue\_end()} runs, it will need to know the function's original
 return address.  (2) If either of the functions we introduce at the beginning and end
-of the epilogue is running when the function is canceled, the stack pointer will be
+of the epilogue is running when the function is cancelled, the stack pointer will be
 different than at the point we intend to travel to, so we always store the original
 stack pointer as well.  (3) To change the return address, we need the frame pointer,
 which we also save because the runtime will need to restore the return address as

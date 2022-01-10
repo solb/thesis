@@ -189,7 +189,7 @@ Some shared libraries are marked with a special configuration flag,
 \texttt{DF\_1\_NODELETE}, which prevents the dynamic linker from ever removing them
 once they have been loaded.  Because almost all libraries depend on libc, the
 presence of even one such library prevents us from reinitializing a libset for reuse
-after its preemptible function has been canceled!  The flag is mostly used on
+after its preemptible function has been cancelled!  The flag is mostly used on
 libraries that need
 to monkey-patch some other loaded library, such that the two subsequently have a
 circular dependency.  Fortunately, this is not usually a problem because when we
