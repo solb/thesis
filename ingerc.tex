@@ -42,16 +42,20 @@ allocator and its corresponding deallocator, as well as information about how to
 the latter.
 
 Were one to build a system to support this, one would need to use an approach like
-that of Valgrind's Memcheck~\cite{seward:usenix2005} and LLVM's MemorySanitizer and
-instrument the application's allocation and deallocation calls (for which
-\textit{libgotcha}'s existing ability to intercept function calls might prove
-useful!).  While the memory footprint of this technique is modest compared to that
-imposed by \textit{libgotcha}, the runtime slowdown is 3x on memory-intensive
-workloads~\cite{stepanov:cgo2015}.  It is probably difficult to dramatically reduce
-this overhead because the necessary tracking amounts to adding potentially-expensive
-bookkeeping work to each allocation and deallocation, already expensive operations
-that can dominate applications' execution.  Worse, the bookkeeping structures need to
-be mutable, so care must be taken to avoid designing around data structures with
+that of Valgrind's Memcheck~\cite{seward:usenix2005} or LLVM's
+AddressSanitizer~\cite{serebryany:usenix2012}, which
+instrument the application's allocation and deallocation calls.  Neither system could
+be imported wholesale:  Both assume at a design level that memory is the only
+resource whose allocations are being tracked.  Valgrind depends on expensive dynamic
+instruction translation that is not suitable for production use.  AddressSanitizer
+does not track how each resource was allocated unless paired with the separate
+MemorySanitizer system~\cite{stepanov:cgo2015} run in origin-tracking mode; this adds
+another 2--7x slowdown on top of AddressSanitizer's own 2x execution time penalty.
+
+For rolling one's own allocation and deallocation tracker, \textit{libgotcha}'s
+existing ability to intercept function calls might prove useful.  The bookkeeping
+structures would need to be mutable, so care would have to be taken to avoid
+designing around data structures with
 amortized time complexities, as this would introduce undesirable unpredictable pauses
 in preemptible function execution reminiscent of garbage collection\footnote{The
 \textit{libgotcha} runtime itself does not suffer from this problem because its
@@ -518,7 +522,7 @@ after any arbitrary number of instructions have retired and inject an exception 
 that point.  In this section, we give the algorithm and how it would integrate with
 the existing \textit{libinger} codebase.  We conclude by reasoning about its
 correctness based on where the preemptible function is in its execution at the time
-it is cancelled.
+it is cancelled and discussing performance considerations.
 
 Section~\ref{sec:ingerc:async} introduced our fundamental approach to asynchronous
 cleanup:\@ the runtime should inject a synthetic exception at an arbitrary point in

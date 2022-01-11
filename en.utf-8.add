@@ -1,4 +1,6 @@
 ABI
+AddressSanitizer
+AddressSanitizer's
 adherance
 ad-hoc
 async
@@ -183,6 +185,7 @@ ud2
 uncopyable
 userland
 v4
+Valgrind
 Valgrind's
 virtualized
 waitpid
