@@ -604,3 +604,15 @@ After return & -- & -- & \textsection~\ref{sec:ingerc:epilogue} & Raise exceptio
 \caption{Cancelled function resource cleanup by position within the running function}
 \label{tab:cleanup}
 \end{table}
+
+While our approach mostly avoids adding operations to the common execution path, the
+exception is epilogue handling.  To support that case, we add one function call and
+six global variable accesses.  We saw in Chapter~\ref{chap:libgotcha} that in a
+normal application, each of these operations has a negligible cost of just a few
+cycles.  However, we also found that \textit{libgotcha} slows down accesses to
+dynamically-linked functions and global variables by one and two orders of magnitude,
+respectively.  Fortunately, the names of the symbols we introduce are well known, so
+when integrating the new runtime components, we could introduce exceptions to prevent
+\textit{libgotcha} from intercepting their uses.  This would make the symbols
+local to each libset and thereby obviate the need to pay the expensive reference
+costs.
