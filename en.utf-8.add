@@ -1,4 +1,5 @@
 ABI
+ABIs
 AddressSanitizer
 AddressSanitizer's
 adherance
@@ -129,6 +130,7 @@ pcoffset
 PLOTs
 PLT
 POSIX
+precompiled
 preemptibility
 preemptible
 printf
