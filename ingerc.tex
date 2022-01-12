@@ -57,9 +57,9 @@ existing ability to intercept function calls might prove useful.  The bookkeepin
 structures would need to be mutable, so care would have to be taken to avoid
 designing around data structures with
 amortized time complexities, as this would introduce undesirable unpredictable pauses
-in preemptible function execution reminiscent of garbage collection\footnote{The
+in preemptible function execution reminiscent of garbage collection.\footnote{The
 \textit{libgotcha} runtime itself does not suffer from this problem because its
-function lookup tables are immutable once process initialization is complete.}.  For
+function lookup tables are immutable once process initialization is complete.}  For
 instance, storing allocation records in a hash table would require periodic
 rebalancing.
 
