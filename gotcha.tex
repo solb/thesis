@@ -17,8 +17,14 @@ modern systems stack, and in order to support interoperability with it, we need 
 automatically transform the program to fix the safety hole.  This chapter covers a
 novel software system designed to do just that, dubbed \textit{libgotcha}.
 
-\solb{Preview the idea of a control library by saying we use libinger as a motivation
-because it was the inspiration for this more general idea}
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.7\columnwidth]{figs/procimg_perobj}
+\end{center}
+\caption{Layout of a typical module within the process image.  \textbf{Bold} sections
+contain program data; \textit{italicized} ones contain metadata for the runtime.}
+\label{fig:procimgobj}
+\end{figure}
 
 \begin{promotesubsections}
 \begin{swallowsections}
@@ -27,9 +33,24 @@ because it was the inspiration for this more general idea}
 \end{promotesubsections}
 
 
-\solb{\textbf{A brief tour of linking (subsections for static and dynamic)}}
+\section{A brief tour of linking}
 
-\solb{Diagram of process image}
+We begin with background about linking, a two-stage process that ultimately produces
+an in-memory \textbf{process image} containing a program's code, all the data it
+needs to execute, and the code and data of all its dependencies.  Linking operates on
+\textbf{object files} that can take the form of either an \textbf{executable} or a
+\textbf{shared library}.  Once a program is running, its process image contains a
+region corresponding to each loaded object file.  We will refer to each such region as
+a \textbf{module}, regardless of whether it corresponds to an executable or a shared
+library.  Each module is divided into logical \textbf{sections}, each containing a
+particular type of information.  Figure~\ref{fig:procimgobj} shows a typical module's
+layout; notice that it contains both data corresponding to the source code and
+generated metadata for runtime consumption.
+
+The linking process occurs in two parts.  Static linking occurs at compile time and
+forms the last step of the traditional build process.  Dynamic linking occurs at a
+phase of runtime we will refer to as \textbf{load time}, because it starts before the
+program has been loaded from disk or the language runtime initialized.
 
 \solb{Diagram of unaltered lookup path through GOTs and PLTs}
 
