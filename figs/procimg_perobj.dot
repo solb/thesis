@@ -1,25 +1,24 @@
 strict digraph {
 	nodesep=0;
 	rankdir=LR;
-	node [fontcolor=darkgreen];
 	node [shape=box];
 	node [width=4.5];
 
 	zero [shape=none, height=0, label=""];
-	ehdr [label=<<i>Ehdr</i> (ELF object file header)>];
-	phdr [label=<<i>Phdr</i> (ELF program header/segment table)>];
-	dynsym [label=<<i>.dynsym</i> (dynamic symbol table)>];
-	dynstr [label=<<i>.dynstr</i> (dynamic string table)>];
-	reladyn [label=<<i>.rela.dyn</i> (table of GLOB_DAT relocations)>];
-	relaplt [label=<<i>.rela.plt</i> (table of JUMP_SLOT relocations)>]; 
+	ehdr [label=<<i>Ehdr</i> (ELF object file header)>, fontcolor=darkgreen];
+	phdr [label=<<i>Phdr</i> (ELF program header/segment table)>, fontcolor=darkgreen];
+	dynsym [label=<<i>.dynsym</i> (dynamic symbol table)>, fontcolor=darkgreen];
+	dynstr [label=<<i>.dynstr</i> (dynamic string table)>, fontcolor=darkgreen];
+	reladyn [label=<<i>.rela.dyn</i> (table of GLOB_DAT relocations)>, fontcolor=darkgreen];
+	relaplt [label=<<i>.rela.plt</i> (table of JUMP_SLOT relocations)>, fontcolor=darkgreen];
 	init [label=<<i>.init</i> (platform initialization code)>, fontcolor=blue];
 	plt [label=<<i>.plt</i> (procedure call stubs, lazily-resolved portion)>, fontcolor=blue];
 	pltgot [label=<<i>.plt.got</i> (procedure call stubs, eagerly-resolved portion)>, fontcolor=blue];
 	text [label=<<b>.text</b> (program code)>, fontcolor=blue];
 	fini [label=<<i>.fini</i> (platform termination code)>, fontcolor=blue];
-	rodata [label=<<b>.rodata</b> (static storage, compile-time constant portion)>];
-	eh_frame_hdr [label=<<i>.eh_frame_hdr</i> (exception-handling header)>];
-	eh_frame [label=<<i>.eh_frame</i> (exception-handling stack-unwind metadata)>];
+	rodata [label=<<b>.rodata</b> (static storage, compile-time constant portion)>, fontcolor=darkgreen];
+	eh_frame_hdr [label=<<i>.eh_frame_hdr</i> (exception-handling header)>, fontcolor=darkgreen];
+	eh_frame [label=<<i>.eh_frame</i> (exception-handling stack-unwind metadata)>, fontcolor=darkgreen];
 	tdata [label=<<b>.tdata</b> (TLS initialization image, initialized portion)>, fontcolor=red];
 	tbss [label=<<b>.tbss</b> (TLS initialization image, zero-filled portion)>, fontcolor=red];
 	init_array [label=<<i>.init_array</i> (constructor pointer table)>, fontcolor=goldenrod];
@@ -31,6 +30,6 @@ strict digraph {
 	data [label=<<b>.data</b> (static storage, mutable initialized portion)>, fontcolor=red];
 	bss [label=<<b>.bss</b> (static storage, mutable zero-filled portion)>, fontcolor=red];
 
-	0 [shape=none, width=default, label="base address", fontcolor=none];
+	0 [shape=none, width=default, label="base address"];
 	zero -> 0 [dir=back];
 }
