@@ -17,12 +17,21 @@ modern systems stack, and in order to support interoperability with it, we need 
 automatically transform the program to fix the safety hole.  This chapter covers a
 novel software system designed to do just that, dubbed \textit{libgotcha}.
 
+\solb{Preview the idea of a control library by saying we use libinger as a motivation
+because it was the inspiration for this more general idea}
+
 \begin{promotesubsections}
 \begin{swallowsections}
 \input[functions]{gotcha_gotcha}
 \end{swallowsections}
 \end{promotesubsections}
 
+
+\solb{\textbf{A brief tour of linking (subsections for static and dynamic)}}
+
+\solb{Diagram of process image}
+
+\solb{Diagram of unaltered lookup path through GOTs and PLTs}
 
 \begin{promotesubsections}
 \begin{swallowsections}
@@ -31,23 +40,64 @@ novel software system designed to do just that, dubbed \textit{libgotcha}.
 
 \input[functions]{gotcha_libsets}
 
+\solb{Above reference is to the wrong listing!}
+
+\solb{Define control library in the first paragraph}
+
+\solb{Expand interface listing and add comments with section references}
+
 
 \input[functions]{gotcha_init}
 \hspace{-1.5em}
 \input[functions]{gotcha_reinit}
 \input[functions]{gotcha_linker}
 
+\solb{Reinitialization diagram (non-TLS part)}
+
 
 \input[functions]{gotcha_goot}
+
+\solb{\textbf{Subsections?}}
+
 \input[functions]{gotcha_plot}
 \input[functions]{gotcha_globals}
+
+\solb{\textbf{Subsection on thread-local storage}}
+
+\solb{Diagram of thread-local data layout}
+
+\solb{Reinitialization diagram (TLS part)}
 
 
 \input[functions]{gotcha_uncopyable}
 
+\solb{Add the effects in the above TODO to the UML diagram?}
+
+\solb{Stipulate that libgotcha itself is always uncopyable}
+
+\solb{Say that the hook function runs in the interrupted module's namespace}
+
+\solb{Mention pre-call hooks}
+
+\solb{Give the limitations of each type of hook}
+
+\solb{\textbf{Section More on control libraries}}
+
+\solb{Types of control libraries from the frontmatter}
+
+\solb{Address monomorphization}
+
 
 \input[functions]{gotcha_tls}
+
+\solb{Drop TLS stuff, incorporating whatever is salvageable earlier}
+
 \input[functions]{gotcha_relocations}
+
+\solb{Move paragraph from Managing libsets here}
+
+\solb{Recompiling glibc from the frontmatter}
+
 \end{swallowsections}
 \end{promotesubsections}
 
@@ -57,3 +107,5 @@ novel software system designed to do just that, dubbed \textit{libgotcha}.
 \input[functions]{eval_ugotcha}
 
 \input[functions]{eval_testbed}
+
+\solb{Thread creation, TLS allocation, and libtlsblock}
