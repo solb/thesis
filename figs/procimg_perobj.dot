@@ -20,8 +20,8 @@ strict digraph {
 	rodata [label=<<b>.rodata</b> (static storage, compile-time constant portion)>];
 	eh_frame_hdr [label=<<i>.eh_frame_hdr</i> (exception-handling header)>];
 	eh_frame [label=<<i>.eh_frame</i> (exception-handling stack-unwind metadata)>];
-	tdata [label=<<b>.tdata</b> (TLS initialization image, initialized portion)>, fontcolor=goldenrod];
-	tbss [label=<<b>.tbss</b> (TLS initialization image, zero-filled portion)>, fontcolor=goldenrod];
+	tdata [label=<<b>.tdata</b> (TLS initialization image, initialized portion)>, fontcolor=red];
+	tbss [label=<<b>.tbss</b> (TLS initialization image, zero-filled portion)>, fontcolor=red];
 	init_array [label=<<i>.init_array</i> (constructor pointer table)>, fontcolor=goldenrod];
 	fini_array [label=<<i>.fini_array</i> (destructor pointer table)>, fontcolor=goldenrod];
 	datarelro [label=<<b>.data.rel.ro</b> (static storage, relocated constant portion)>, fontcolor=goldenrod];
