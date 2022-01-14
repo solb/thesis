@@ -20,7 +20,7 @@ strict digraph {
 	plt0 -> ldso [label="push $IDENT_executable_fun\njmp 0x7f1d50"];
 	pltN -> ldso [label="push $IDENT_library.so_fun\njmp 0x7f1d50"];
 	ldso -> got0 [label="mov $0x7ffdef, fun@gotpcrel(%rip)"];
-	ldso -> gotN [label="mov $0x7ffdef, fun@gotpcrel(%rip)"];
+	ldso -> gotN [headlabel="mov $0x7ffdef, fun@gotpcrel(%rip)", labeldistance=40, labelangle=7];
 
 	funN [shape=box, label=<<font face="monospace">fun()</font> from <font face="monospace">library.so</font>>];
 	ldso -> funN [label="jmp 0x7ffdef"];
