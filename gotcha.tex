@@ -98,6 +98,7 @@ shared libraries are themselves ELF object files.
 
 
 \subsection{Dynamic linking}
+\label{sec:libgotcha:dylink}
 
 Static linking allows programs to reuse ``libraries'' of precompiled object files,
 but each program must be built with its own copy of all its libraries within the
@@ -230,8 +231,32 @@ Figure~\ref{fig:procimgobj} shows the GOT as split between two sections.
 \input[functions]{gotcha_libsets}
 
 \solb{Expand interface listing and add comments with section references}
+\end{swallowsections}
+\end{promotesubsections}
 
 
+\subsection{Detecting cross-module symbol references}
+
+Identifying which GOT entries correspond to cross-module symbol references is a
+multi-step process:
+First, we traverse the relocation table for each loaded module, cross referencing
+each of its relocation entries against the local module's symbol table.  If the
+symbol table does not contain a definition matching the relocation entry's target, we
+conclude that the relocation must correspond to a cross-module call.  Otherwise, we
+check the address in the GOT entry corresponding to the relocation:  If this address
+is outside the memory bounds of the current module, it is a cross-library call.
+Otherwise, if this address matches the one from the symbol table entry, it is not a
+cross-library call, and should be skipped.  The trickiest case is when the GOT entry
+does not match but does point somewhere within the current module, since this means
+it probably still refers to the PLT stub (because the symbol reference is lazy and
+has not yet been resolved, as covered at the end of
+Section~\ref{sec:libgotcha:dylink}).  In this case, we resolve the symbol early,
+update the GOT entry, and recheck whether it resolved to the local definition to
+determine whether it is a cross-module call.
+
+
+\begin{promotesubsections}
+\begin{swallowsections}
 \input[functions]{gotcha_init}
 \hspace{-1.5em}
 \input[functions]{gotcha_reinit}
