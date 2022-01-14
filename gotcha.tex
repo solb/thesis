@@ -142,6 +142,31 @@ hits between processes using the same library.  To avoid these problems, the com
 indirects references to dynamic symbols via a structure called the GOT (Global Offset
 Table).
 
+\begin{figure*}
+\begin{minipage}{\textwidth}
+	\includegraphics[width=\textwidth]{figs/gotables}
+	\subcaption{Reading a library's global variable: \texttt{size\_t tmp = data;}}
+	\label{fig:dytabs:got}
+	\end{minipage}
+
+	\begin{minipage}{\textwidth}
+	\includegraphics[width=\textwidth]{figs/pltables}
+	\subcaption{Calling an eagerly-resolved library function: \texttt{fun()}}
+	\label{fig:dytabs:plt}
+	\end{minipage}
+
+	\begin{minipage}{\textwidth}
+	\includegraphics[width=\textwidth]{figs/jstables}
+	\subcaption{Calling a lazily-resolved library function.  In step \textcircled{5},
+	the dynamic linker memoizes the resolved address into the GOT; subsequent calls
+	proceed as above.}
+	\label{fig:dytabs:lazy}
+	\end{minipage}
+\caption{Table references required to reference global symbols in dynamically-linked
+programs}
+\label{fig:dytabs}
+\end{figure*}
+
 The GOT is a table of relocated pointers to symbol definitions, whether those
 definitions are within the same module or in a different one.  To avoid generating
 code pages that require relocations, the compiler compiles each reference to or
@@ -187,31 +212,6 @@ proceed exactly like eagerly-resolved ones and jump directly to the symbol defin
 from the first instruction of the PLT stub.  Of course, the GOT entries associated
 with lazy PLT stubs must be writeable at runtime; this is why
 Figure~\ref{fig:procimgobj} shows the GOT as split between two sections.
-
-\begin{figure*}
-\begin{minipage}{\textwidth}
-	\includegraphics[width=\textwidth]{figs/gotables}
-	\subcaption{Reading a library's global variable: \texttt{size\_t tmp = data;}}
-	\label{fig:dytabs:got}
-	\end{minipage}
-
-	\begin{minipage}{\textwidth}
-	\includegraphics[width=\textwidth]{figs/pltables}
-	\subcaption{Calling an eagerly-resolved library function: \texttt{fun()}}
-	\label{fig:dytabs:plt}
-	\end{minipage}
-
-	\begin{minipage}{\textwidth}
-	\includegraphics[width=\textwidth]{figs/jstables}
-	\subcaption{Calling a lazily-resolved library function.  In step \textcircled{5},
-	the dynamic linker memoizes the resolved address into the GOT; subsequent calls
-	proceed as above.}
-	\label{fig:dytabs:lazy}
-	\end{minipage}
-\caption{Table references required to reference global symbols in dynamically-linked
-programs}
-\label{fig:dytabs}
-\end{figure*}
 
 
 \begin{promotesubsections}
