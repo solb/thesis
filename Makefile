@@ -4,6 +4,8 @@ DOT := dot
 GIT := git
 TEX := pdflatex
 
+thesis.pdf: figs/gotables.pdf
+thesis.pdf: figs/pltables.pdf
 thesis.pdf: figs/procimg_perobj.pdf
 thesis.pdf: figs/procimg_perthd.pdf
 thesis.pdf: figs/reinit.pdf

@@ -146,8 +146,10 @@ The GOT is a table of relocated pointers to symbol definitions, whether those
 definitions are within the same module or in a different one.  To avoid generating
 code pages that require relocations, the compiler compiles each reference to or
 dereference of non-\texttt{static} global data into a position-independent load of
-the corresponding pointer from the GOT.  Taking a pointer to a function works the
-same way.
+the corresponding pointer from the GOT.  Figure~\ref{fig:dytabs:got} shows an example
+of the two instructions and one table reference needed for a dereference.  A
+reference would generate only the first \texttt{mov} instruction, as would taking a
+pointer to a function.
 
 Calling a global function works differently and relies on another indirection
 structure called the PLT (Procedure Linkage Table), which contains code instead of
@@ -155,10 +157,27 @@ pointers.  For each call to a non-\texttt{static} function, the compiler generat
 position-independent call to a PLT entry corresponding to the function being called.
 It generates a PLT entry, which is a short sequence of instructions that loads the
 pointer to the real definition from the GOT, then executes and indirect jump to that
-location.  As with GOT entries, there are PLT entries for functions defined both
-within and outside the referencing module.
+location.  Figure~\ref{fig:dytabs:plt} shows an example function call.  As with GOT
+entries, there are PLT entries for functions defined both within and outside the
+referencing module.
 
-\solb{Diagram of unaltered lookup path through GOTs and PLTs}
+\begin{figure*}
+\begin{minipage}{\textwidth}
+	\includegraphics[width=\textwidth]{figs/gotables}
+	\subcaption{Reading a library's global variable: \texttt{size\_t tmp = data;}}
+	\label{fig:dytabs:got}
+	\end{minipage}
+
+	\begin{minipage}{\textwidth}
+	\includegraphics[width=\textwidth]{figs/pltables}
+	\subcaption{Calling a library function: \texttt{fun()}}
+	\label{fig:dytabs:plt}
+	\end{minipage}
+\caption{Table references required to reference global symbols in dynamically-linked
+programs}
+\label{fig:dytabs}
+\end{figure*}
+
 
 \begin{promotesubsections}
 \begin{swallowsections}

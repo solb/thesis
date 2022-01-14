@@ -1,0 +1,20 @@
+strict digraph {
+	rankdir=LR;
+	edge [fontname="monospace"];
+
+	mod0 [label="executable", fontname="monospace"]
+	plt0 [shape=record, label=<executable's PLT|<font face="monospace">jmp *</font>...|...>];
+	got0 [shape=record, label=<executable's GOT|<font face="monospace">0x7ffdef</font>|...>];
+	mod0 -> plt0 [label="call fun@plt"];
+	plt0 -> got0 [label="jmp *fun@gotpcrel(%rip)"];
+
+	modN [label="library.so", fontname="monospace"];
+	pltN [shape=record, label=<library's PLT|<font face="monospace">jmp *</font>...|...>];
+	gotN [shape=record, label=<library's GOT|<font face="monospace">0x7ffdef</font>|...>];
+	modN -> pltN [label="call fun@plt"];
+	pltN -> gotN [label="jmp *fun@gotpcrel(%rip)"];
+
+	funN [shape=box, label=<<font face="monospace">fun()</font> from <font face="monospace">library.so</font>>];
+	got0 -> funN [label="(jmp 0x7ffdef)"];
+	gotN -> funN [label="(jmp 0x7ffdef)"];
+}
