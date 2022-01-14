@@ -161,6 +161,33 @@ location.  Figure~\ref{fig:dytabs:plt} shows an example function call.  As with 
 entries, there are PLT entries for functions defined both within and outside the
 referencing module.
 
+Not all function calls are this simple.  To save the dynamic linker some work at load
+time, many function calls resolve lazily on their first execution.  Such resolution
+involves a series of jumps designed to memoize the address so that subsequent calls
+to the function from the same module do not repeat the expensive lookup.
+Figure~\ref{fig:dytabs:lazy} shows the effect of the first call to such a
+function:\footnote{This representation is slightly simplified for brevity.  In
+practice, it is undesirable to hardcode the address of a dynamic linker function into
+each module.  Therefore, instead of jumping directly to the symbol resolver, the slow
+lookup path jumps to a dedicated PLT stub that loads its address from another GOT
+entry.  Technically, there are separate identifiers for the symbol and the module,
+each pushed to the stack by one of these two involved PLT stubs.}  \textcircled{1}
+The program calls the PLT stub, just as it would for an eagerly-resolved function.
+\textcircled{2} The PLT stub is longer (three instructions instead of one), but still
+begins with an indirect jump to the pointer found in the corresponding GOT entry.
+\textcircled{3} The GOT entry initially contains the address of the PLT stub's second
+instruction, so the indirect jump is a no-op and merely advances the instruction
+pointer.  \textcircled{4} The rest of the PLT stub pushes a constant identifying the
+module and symbol onto the stack, then jumps to a symbol-lookup function in the
+dynamic linker.  \textcircled{5} After looking up the address of the symbol's
+definition, the dynamic linker uses the identifier from the stack to find and update
+the GOT entry in the calling module.  \textcircled{6} The dynamic linker jumps to the
+symbol in the defining module.  Because the GOT entry has been updated, future calls
+proceed exactly like eagerly-resolved ones and jump directly to the symbol definition
+from the first instruction of the PLT stub.  Of course, the GOT entries associated
+with lazy PLT stubs must be writeable at runtime; this is why
+Figure~\ref{fig:procimgobj} shows the GOT as split between two sections.
+
 \begin{figure*}
 \begin{minipage}{\textwidth}
 	\includegraphics[width=\textwidth]{figs/gotables}
@@ -170,8 +197,16 @@ referencing module.
 
 	\begin{minipage}{\textwidth}
 	\includegraphics[width=\textwidth]{figs/pltables}
-	\subcaption{Calling a library function: \texttt{fun()}}
+	\subcaption{Calling an eagerly-resolved library function: \texttt{fun()}}
 	\label{fig:dytabs:plt}
+	\end{minipage}
+
+	\begin{minipage}{\textwidth}
+	\includegraphics[width=\textwidth]{figs/jstables}
+	\subcaption{Calling a lazily-resolved library function.  In step \textcircled{5},
+	the dynamic linker memoizes the resolved address into the GOT; subsequent calls
+	proceed as above.}
+	\label{fig:dytabs:lazy}
 	\end{minipage}
 \caption{Table references required to reference global symbols in dynamically-linked
 programs}
