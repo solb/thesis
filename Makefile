@@ -4,6 +4,9 @@ DOT := dot
 GIT := git
 TEX := pdflatex
 
+OVERRIDE_DOT := false
+
+thesis.pdf: figs/jstables.pdf
 thesis.pdf: figs/gotables.pdf
 thesis.pdf: figs/pltables.pdf
 thesis.pdf: figs/procimg_perobj.pdf
@@ -22,13 +25,15 @@ thesis.pdf: microservices.tex
 thesis.pdf: safety.tex
 thesis.pdf: turquoise.tex
 
+figs/jstables.pdf: private OVERRIDE_DOT := true
+
 .PHONY: clean
 clean:
 	$(GIT) clean -fX
 	$(GIT) submodule foreach --recursive $(GIT) clean -fX
 
 %.pdf: %.dot
-	$(DOT) -Tpdf $(DOTFLAGS) -o $@ $<
+	$(DOT) -Tpdf $(DOTFLAGS) -o $@ $< || $(OVERRIDE_DOT)
 
 %.pdf: %.tex
 	$(TEX) $(TEXFLAGS) $<

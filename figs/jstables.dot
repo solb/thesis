@@ -1,0 +1,34 @@
+strict digraph {
+	rankdir=LR;
+	edge [fontname="monospace"];
+
+	mod0 [label="executable", fontname="monospace"]
+	plt0 [shape=record, label=<executable's PLT|<font face="monospace">jmp *<br/>push $<br/>jmp 0x7f1d50</font>|...>];
+	got0 [shape=record, label=<executable's GOT|<font face="monospace">fun@plt + 1</font>|...>];
+	mod0 -> plt0 [label="call fun@plt"];
+	plt0 -> got0 [label="jmp *fun@gotpcrel(%rip)"];
+	got0 -> plt0 [label="(jmp fun@plt + 1)"];
+
+	modN [label="library.so", fontname="monospace"];
+	pltN [shape=record, label=<library's PLT|<font face="monospace">jmp *<br/>push $<br/>jmp 0x7f1d50</font>|...>];
+	gotN [shape=record, label=<library's GOT|<font face="monospace">fun@plt + 1</font>|...>];
+	modN -> pltN [label="call fun@plt"];
+	pltN -> gotN [label="jmp *fun@gotpcrel(%rip)"];
+	gotN -> pltN [label="(jmp fun@plt + 1)"];
+
+	ldso [shape=box, label=<<font face="monospace">_dl_runtime_resolve()</font> from <font face="monospace">ld.so</font>>];
+	plt0 -> ldso [label="push $IDENT_executable_fun\njmp 0x7f1d50"];
+	pltN -> ldso [label="push $IDENT_library.so_fun\njmp 0x7f1d50"];
+	ldso -> got0 [label="mov $0x7ffdef, fun@gotpcrel(%rip)"];
+	ldso -> gotN [label="mov $0x7ffdef, fun@gotpcrel(%rip)"];
+
+	funN [shape=box, label=<<font face="monospace">fun()</font> from <font face="monospace">library.so</font>>];
+	ldso -> funN [label="jmp 0x7ffdef"];
+
+	{
+		rank=same;
+		edge [style=invis, arrowhead=none];
+
+		plt0 -> pltN;
+	}
+}
