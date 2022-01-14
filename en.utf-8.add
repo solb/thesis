@@ -52,6 +52,7 @@ goroutines
 Gosched
 @gotpcrel
 GPRs
+hardcode
 HPETs
 IFUNC
 'ing
@@ -100,6 +101,7 @@ macOS
 malloc
 Memcheck
 memoization
+memoize
 memoizes
 memoizing
 MemorySanitizer
