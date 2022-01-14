@@ -88,6 +88,76 @@ With the exception of macOS, most modern Unix systems use ELF (Executable and
 Linkable Format) object files.  One advantage of this format is that executables and
 shared libraries are themselves ELF object files.
 
+
+\subsection{Dynamic linking}
+
+Static linking allows programs to reuse ``libraries'' of precompiled object files,
+but each program must be built with its own copy of all its libraries within the
+executable.  This means that every time an application is loaded, its libraries' code
+and data must be read back from disk, even if another running program uses the same
+libraries; it also means that updating a library requires recompiling all dependent
+programs installed on the system.  Dynamic linking solves both problems by separating
+libraries into separate files that are not read until the executable runs.\footnote{
+Specifically, this separation obviates the need to read the files from disk multiple
+times because the runtime maps them into the process image using the \texttt{mmap()}
+family of system calls.  The kernel tracks regions that are already mapped and serves
+recurring requests from memory instead of disk, mapping to the same physical memory
+if the pages are read-only or creating copy-on-write page mappings otherwise.}
+
+By splitting libraries into their own files, dynamic linking introduces a build-time
+challenge:\@ the relative position and offset of modules cannot be known until
+runtime.  As such, rather than performing the relocations for inter-module symbol
+references, the static linker leaves the placeholder addresses and adds a separate
+dynamic relocation table and dynamic symbol table into the output object file.
+Unlike the tables used for static linking, these are needed to launch the program, so
+tools such as \texttt{strip} leave them in place.  For executables, the linker also
+writes the path to an ``interpreter'' program into the ELF program header.
+
+When asked to load a program that declares an interpreter, the kernel loads and jumps
+to the interpreter instead of the executed program.  Usually, this interpreter is the
+system \textbf{dynamic linker}, traditionally named \textit{ld.so}.  Before jumping
+into the program code, the dynamic linker loads all the modules and processes the
+entries in each of their dynamic relocation tables.  The relocations are not
+restricted to modifying writeable memory:\@ they can update constant global data and
+even executable instructions.  Even if they leave the code unchanged, its position
+relative to the rest of the module matters.  These points are critical to our use
+case, as they mean that in order to duplicate modules' data, we must also duplicate
+their code.
+
+Another consequence of relocations being able to alter read-only memory is that the
+dynamic linker must change the page protections of these regions after it is finished
+processing relocations.  To support this, the compiler splits up module components
+into fine-grained sections by purpose.  Non-\texttt{const} global variables are
+placed in the \texttt{.data} and \texttt{.bss} sections, which must remain writeable
+at runtime and therefore require no special action.  In contrast, \texttt{const}
+globals are split between the \texttt{.rodata} and \texttt{.data.rel.ro} sections
+based on whether they require relocation; in the latter case, the dynamic linker
+marks the pages read-only before passing control to the program.
+
+If relocations routinely modified scattered locations throughout the executable
+\texttt{.text} section, the dynamic linker would have to change page protections on
+most or all of each module's code pages.  This would require a lot of system calls,
+but it would also require copy-on-write code mappings, preventing instruction cache
+hits between processes using the same library.  To avoid these problems, the compiler
+indirects references to dynamic symbols via a structure called the GOT (Global Offset
+Table).
+
+The GOT is a table of relocated pointers to symbol definitions, whether those
+definitions are within the same module or in a different one.  To avoid generating
+code pages that require relocations, the compiler compiles each reference to or
+dereference of non-\texttt{static} global data into a position-independent load of
+the corresponding pointer from the GOT.  Taking a pointer to a function works the
+same way.
+
+Calling a global function works differently and relies on another indirection
+structure called the PLT (Procedure Linkage Table), which contains code instead of
+pointers.  For each call to a non-\texttt{static} function, the compiler generates a
+position-independent call to a PLT entry corresponding to the function being called.
+It generates a PLT entry, which is a short sequence of instructions that loads the
+pointer to the real definition from the GOT, then executes and indirect jump to that
+location.  As with GOT entries, there are PLT entries for functions defined both
+within and outside the referencing module.
+
 \solb{Diagram of unaltered lookup path through GOTs and PLTs}
 
 \begin{promotesubsections}
