@@ -52,6 +52,42 @@ forms the last step of the traditional build process.  Dynamic linking occurs at
 phase of runtime we will refer to as \textbf{load time}, because it starts before the
 program has been loaded from disk or the language runtime initialized.
 
+
+\subsection{Static linking}
+
+Invoking the \texttt{cc} compiler driver does more than just compile C code:\@ it
+runs the C preprocessor \texttt{cpp}, the C compiler (\texttt{cc1} in GCC's case),
+then the static linker \texttt{ld}.
+
+The output of the second step is a relocatable object file containing code and data
+with referenced addresses identified by named \textbf{symbols}.  In a relocatable
+object file, symbol \textbf{references} such as instructions making function calls
+or accessing global variables are encoded with a null address as a placeholder.  Each
+object file contains a \textbf{relocation table} in a separate section that
+associates each placeholder with a symbol name, which may or may not be located in
+the same file.  Each object file also contains a \textbf{symbol table} to identify
+the symbols it defines and associate them with the file offset of their definition.
+Note that only non-\texttt{static} C symbols generate global symbol table entries
+that can be referenced from other object files; this keyword is confusingly named and
+does not refer to static linking.  The compiler's ultimate output is one relocatable
+object file for each source file.
+
+The static linker is responsible for combining one or more relocatable object files
+into a single executable or shared library, where either type of output file is
+ready for loading into memory for execution.  This process consists of verifying that
+there is a definition corresponding to each symbol reference, unifying the sections
+across object files and choosing a final address (or relative address) for each
+symbol, encoding the chosen addresses at the location recorded in each relocation
+table entry, and writing the resulting file to disk.  This output file does not
+preserve the relocation table because the linker has already fixed the null pointers
+it described.  The file does contain a symbol table because it can be useful for
+debugging (e.g., to generate stack traces), but this can be removed using the
+\texttt{strip} utility without affecting the program semantics.
+
+With the exception of macOS, most modern Unix systems use ELF (Executable and
+Linkable Format) object files.  One advantage of this format is that executables and
+shared libraries are themselves ELF object files.
+
 \solb{Diagram of unaltered lookup path through GOTs and PLTs}
 
 \begin{promotesubsections}
