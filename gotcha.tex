@@ -31,6 +31,14 @@ contain program data; \textit{italicized} ones contain metadata for the runtime.
 \input[functions]{gotcha_gotcha}
 \end{swallowsections}
 \end{promotesubsections}
+\hspace{-2.5em}
+Our discussion in this chapter uses \textit{libinger} as a motivating example of a
+\textit{libgotcha} user, as this configuration was the inspiration for the runtime's
+creation.  However, we have found that the described techniques to be general and
+equally relevant to applications besides timed functions.  As such,
+\textit{libgotcha} exposes a general API that allows any \textbf{control library} to
+configure its behavior for the process.  We give more details later in the chapter,
+and study other examples of control libraries in Chapter~\ref{chap:safety}.
 
 
 \section{A brief tour of linking}
@@ -220,8 +228,6 @@ Figure~\ref{fig:procimgobj} shows the GOT as split between two sections.
 
 
 \input[functions]{gotcha_libsets}
-
-\solb{Define control library in the first paragraph}
 
 \solb{Expand interface listing and add comments with section references}
 
