@@ -11,6 +11,6 @@ strict digraph {
 	modN -> gotN [label="mov data@gotpcrel(%rip), %rax\nmov (%rax), %rax"];
 
 	funN [shape=box, label=<<font face="monospace">data</font> from <font face="monospace">library.so</font>>];
-	got0 -> funN [label="(mov 0x7ffdef, %rax)"];
-	gotN -> funN [label="(mov 0x7ffdef, %rax)"];
+	got0 -> funN [label="(mov $0x7ffdef, %rax)"];
+	gotN -> funN [label="(mov $0x7ffdef, %rax)"];
 }
