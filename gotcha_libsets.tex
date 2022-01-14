@@ -33,7 +33,7 @@ as its caller and the two share access to the same global variables.
 
 One scoping issue remains, though.  Because dynamic symbols can resolve back
 to a definition in the same executable or shared object that used them,
-Listing~\ref{lst:gotchaapi} would fail assertion (3) under the described rules.
+Listing~\ref{lst:exmplstate} would fail assertion (3) under the described rules.
 We want global variables defined in \textit{F}'s object file to have the same scoping
 semantics regardless of whether they are declared \texttt{static}, so
 \textit{libgotcha} only performs a namespace switch when the use of a dynamic symbol
