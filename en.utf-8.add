@@ -8,7 +8,9 @@ async
 AWS
 backend
 bool
+.bss
 cancelability
+cc1
 CFI
 CFI's
 checkpointing
@@ -18,8 +20,10 @@ composability
 composable
 const
 cp
+cpp
 datacenter
 datacenters
+.data.rel.ro
 debuggability
 destructure
 DF_
@@ -92,6 +96,7 @@ LLVM's
 lockdown
 LSDA
 ltrace
+macOS
 malloc
 Memcheck
 memoization
@@ -104,6 +109,7 @@ microservice
 microservice's
 microservices
 misbehaviors
+mmap
 Mollison
 monomorphization
 monomorphizes
@@ -147,6 +153,7 @@ reexecuted
 ret
 retarget
 retargeting
+.rodata
 RPC
 runtime's
 runtimes
