@@ -1,0 +1,28 @@
+strict digraph {
+	rankdir=LR;
+	node [label=""];
+
+	next [shape=none];
+	install [shape=none];
+
+	{
+		rank=same;
+		edge [style=invisible, arrowhead=none];
+
+		next -> install;
+	}
+
+	set [label="libset_thread_set_next()"];
+	segment [label="arch_prctl()"];
+	restore2 [label="TLS data restorer"];
+	mcpy3 [label="memcpy()"];
+	version [label="TLS libset version"];
+
+	next -> set [label="control library call"];
+	install -> segment [label="change TCB selector"];
+
+	set->restore2 [label=<<b>if</b> TLS version[libset] out of date>];
+	segment->restore2 [label=<<b>if</b> TLS version[libset] out of date>];
+	restore2 -> mcpy3 [label="1. restore TLS from snapshot"];
+	restore2 -> version [label="2. update TLS version[libset]"];
+}
