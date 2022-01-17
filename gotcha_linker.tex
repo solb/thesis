@@ -4,8 +4,3 @@ practice initializing more than one namespace tends to exhaust the
 statically-allocated thread-local storage area.  As a workaround, we build
 glibc with an increased \texttt{TLS\_STATIC\_SURPLUS}.  It is useful to also raise
 the maximum number of namespaces by increasing \texttt{DL\_NNS}.
-
-\thesis{Cover the \texttt{NODELETE} flag, ld.so monkey patching, and the
-library header rewriting trick I use to circumvent the issue.}
-
-\thesis{Describe (and hopefully even address) the monomorphization problem.}
