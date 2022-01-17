@@ -223,6 +223,13 @@ from the first instruction of the PLT stub.  Of course, the GOT entries associat
 with lazy PLT stubs must be writeable at runtime; this is why
 Figure~\ref{fig:procimgobj} shows the GOT as split between two sections.
 
+The dynamic linker performs all relocations and other standard module setup
+automatically at load time, but the initialization process is pluggable.  In
+particular, modules can include \textbf{constructor} functions to be invoked before
+control is transferred to the runtime and ultimately the program's main function.  As
+we will see, our work leverages this feature to override certain relocations at the
+conclusion of load time.
+
 
 \begin{promotesubsections}
 \begin{swallowsections}
