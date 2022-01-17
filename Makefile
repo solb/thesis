@@ -6,9 +6,9 @@ TEX := pdflatex
 
 OVERRIDE_DOT := false
 
-thesis.pdf: figs/jstables.pdf
-thesis.pdf: figs/gotables.pdf
-thesis.pdf: figs/pltables.pdf
+thesis.pdf: figs/jstables-crop.pdf
+thesis.pdf: figs/gotables-crop.pdf
+thesis.pdf: figs/pltables-crop.pdf
 thesis.pdf: figs/procimg_perobj.pdf
 thesis.pdf: figs/procimg_perthd.pdf
 thesis.pdf: figs/reinit.pdf
