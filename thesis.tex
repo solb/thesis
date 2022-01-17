@@ -166,17 +166,7 @@ Signal pool trick:\@ see 17b86d2.
 
 \section{ELF \textit{NODELETE} dynamic flag workaround (8dcf62b)}
 
-Some shared libraries are marked with a special configuration flag,
-\texttt{DF\_1\_NODELETE}, which prevents the dynamic linker from ever removing them
-once they have been loaded.  Because almost all libraries depend on libc, the
-presence of even one such library prevents us from reinitializing a libset for reuse
-after its preemptible function has been cancelled!  The flag is mostly used on
-libraries that need
-to monkey-patch some other loaded library, such that the two subsequently have a
-circular dependency.  Fortunately, this is not usually a problem because when we
-unload one library from a libset, we then unload the rest, so whenever we encounter a
-\texttt{NODELETE} object file, we make a special copy with the flag cleared, for
-loading into every namespace except the main one.  The one place this does not work
+The one place this does not work
 is when a library monkey-patches the dynamic linker itself.  This
 requires the use of a private interface, and the only offending library to our
 knowledge is GNU libpthread, which replaces function pointers in order to cause the
@@ -344,13 +334,7 @@ Per thread (Figure~\ref{fig:procimgthd})
 
 \section{Libset reinitialization diagram}
 
-See Figure~\ref{fig:reinit} and Figure~\ref{fig:reinit_tls}.
-
-\begin{figure}
-\includegraphics[width=\columnwidth]{figs/reinit-crop}
-\caption{Libset reinitialization to support asynchronous cancellation}
-\label{fig:reinit}
-\end{figure}
+See Figure~\ref{fig:reinit_tls}.
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figs/reinit_tls-crop}
@@ -586,15 +570,6 @@ involve regression testing using the old nginx setup.
 \noindent
 Additionally, I will complete one of the following projects, as selected by the
 committee:
-
-\paragraph{Optimize libset reinitialization}
-The high cost of cancellation is a consequence of our libset reinitialization
-approach, which currently involves unloading all libraries from the libset, then
-reloading them and running all their constructors in the process.  I believe cheaper
-schemes are possible, such as checkpointing only the writeable portions of each
-library's address space (e.g., by replacing their page mappings with copy-on-write
-pages backed by their saved contents immediately after return from the library's
-constructors).
 
 \paragraph{Achieve even finer--grained preemption}
 The \textit{Shinjuku} authors included IPI microbenchmarks that suggest it should be

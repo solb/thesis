@@ -42,6 +42,7 @@ and study other examples of control libraries in Chapter~\ref{chap:safety}.
 
 
 \section{A brief tour of linking}
+\label{sec:libgotcha:link}
 
 We begin with background about linking, a two-stage process that ultimately produces
 an in-memory \textbf{process image} containing a program's code, all the data it
@@ -258,11 +259,56 @@ determine whether it is a cross-module call.
 \begin{promotesubsections}
 \begin{swallowsections}
 \input[functions]{gotcha_init}
-\hspace{-1.5em}
-\input[functions]{gotcha_reinit}
-\input[functions]{gotcha_linker}
 
-\solb{Reinitialization diagram (non-TLS part)}
+If a preemptible function is canceled rather than being allowed to return, execution
+might be interrupted within a call to a library function.  For this reason,
+\textit{libgotcha} must treat the libset's shared state as corrupted; it provides the
+\texttt{libset\_reinit()} function shown in Listing~\ref{lst:gotchaapi} to allow
+control libraries to inform it of such a situation so it can \textbf{reinitialize}
+the libset before returning it to the pool.
+
+Our early approach to reinitialization was to unload and reload all objects in the
+libset by calling \texttt{dlclose()} followed by \texttt{dlmopen()}.  While this
+approach theoretically allowed us to delegate the work to the dynamic linker, in
+practice it introduced significant complications.\footnote{Most notably, some shared
+libraries are marked with a special configuration flag, \texttt{DF\_1\_NODELETE},
+which prevents the dynamic linker from ever removing them once they have been loaded.
+Because almost all libraries depend on libc, the presence of even one such library
+would prevent us from reinitializing a libset.  The flag is mostly used on libraries
+that need to monkey-patch some other loaded library, such that the two subsequently
+have a circular dependency.  Fortunately, this was not generally a problem for us
+because when we unload one library from a libset, we then unload the rest.  Whenever
+we encountered a \texttt{NODELETE} object file, we would make a special copy with the
+flag cleared, for loading into every namespace except the main one.}  Worse, it
+required the dynamic linker to reprocess all relocations throughout the libset, which
+introduced prohibitive runtime latency.  We measured reinitialization taking almost 5
+ms (over 10 million cycles on modern processors) on even small minimal example
+programs~\cite{boucher:atc2020}.  With such delays, the only reasonable way for the
+control library to handle cancellation was to delegate the reinitialization to a
+separate thread to take it off the critical path; of course, this approach only works
+as long as the number of libsets is not a bottleneck.
+
+We have since redesigned reinitialization around a significantly faster approach:\@
+checkpointing only portions of each module.  The key insight is that, as we saw in
+Section~\ref{sec:libgotcha:link}, only some sections are writeable at runtime.  We
+can therefore assume that these are the only memory regions of each module that can
+change.  After populating the libset pool at application start, \textit{libgotcha}
+iterates through each module of each libset and makes a backup copy of all its
+writeable regions.  When a control library calls \texttt{libset\_reinit()},
+\textit{libgotcha} restores each such region from the backup before returning the
+affected libset to the pool.  We summarize this approach, which has reduced the
+latency of reinitialization by two orders of magnitude, in
+Figure~\ref{fig:reinit}.\footnote{We will address the version watermark alluded to
+therein later in this chapter.}  To avoid having to repeat relocations and rerun any
+module constructors, we capture the backup after dynamic relocation is complete and
+all constructors have run; the tradeoff is that we actually have to copy memory,
+rather than leveraging copy on write to later restore to the version on disk.
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/reinit-crop}
+\caption{Libset reinitialization to support asynchronous cancellation}
+\label{fig:reinit}
+\end{figure}
 
 
 \input[functions]{gotcha_goot}
@@ -302,16 +348,18 @@ determine whether it is a cross-module call.
 
 \solb{Address monomorphization}
 
+\solb{Monkey patching of ld.so and library header rewriting trick}
+
 
 \input[functions]{gotcha_tls}
 
 \solb{Drop TLS stuff, incorporating whatever is salvageable earlier}
 
-\input[functions]{gotcha_relocations}
-
-\solb{Move paragraph from Managing libsets here}
+\input[functions]{gotcha_linker}
 
 \solb{Recompiling glibc from the frontmatter}
+
+\input[functions]{gotcha_relocations}
 
 \end{swallowsections}
 \end{promotesubsections}
