@@ -238,6 +238,10 @@ conclusion of load time.
 
 \input[functions]{gotcha_libsets}
 
+Thus, selective relinking is selective in two ways, only affecting execution when the
+next libset differs from the current libset and the program references a dynamic
+symbol defined in a module that is not currently executing on that thread.
+
 \solb{Expand interface listing and add comments with section references}
 \end{swallowsections}
 \end{promotesubsections}
