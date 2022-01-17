@@ -124,7 +124,7 @@ writes the path to an ``interpreter'' program into the ELF program header.
 
 When asked to load a program that declares an interpreter, the kernel loads and jumps
 to the interpreter instead of the executed program.  Usually, this interpreter is the
-system \textbf{dynamic linker}, traditionally named \textit{ld.so}.  Before jumping
+system \textbf{dynamic linker}, traditionally named \texttt{ld.so}.  Before jumping
 into the program code, the dynamic linker loads all the modules and processes the
 entries in each of their dynamic relocation tables.  The relocations are not
 restricted to modifying writeable memory:\@ they can update constant global data and
