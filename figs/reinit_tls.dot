@@ -5,13 +5,6 @@ strict digraph {
 	next [shape=none];
 	install [shape=none];
 
-	{
-		rank=same;
-		edge [style=invisible, arrowhead=none];
-
-		next -> install;
-	}
-
 	set [label="libset_thread_set_next()"];
 	segment [label="arch_prctl()"];
 	restore2 [label="TLS data restorer"];
