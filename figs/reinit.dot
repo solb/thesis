@@ -1,5 +1,6 @@
 strict digraph {
 	rankdir=LR;
+	ranksep=0;
 	node [label=""];
 
 	start [shape=none];
