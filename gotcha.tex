@@ -270,6 +270,8 @@ determine whether it is a cross-module call.
 \begin{promotesubsections}
 \begin{swallowsections}
 \input[functions]{gotcha_init}
+\end{swallowsections}
+\end{promotesubsections}
 
 If a preemptible function is canceled rather than being allowed to return, execution
 might be interrupted within a call to a library function.  For this reason,
@@ -322,16 +324,97 @@ rather than leveraging copy on write to later restore to the version on disk.
 \end{figure}
 
 
-\input[functions]{gotcha_goot}
+\section{Selective relinking}
 
-\solb{\textbf{Subsections?}}
+Most of the complexity of \textit{libgotcha} lies in the implementation of selective
+relinking, the mechanism underlying libset switches.  To establish the libset
+abstraction, it must arrange to conditionally intercept cross-module symbol
+uses based on the currently-configured next libset.
 
-\input[functions]{gotcha_plot}
-\hspace{-1.5em}
-\input[functions]{gotcha_lazy}
+As we saw in Section~\ref{sec:libgotcha:dylink}, whenever a program references a
+dynamic symbol, it looks up the address of the definition in a data structure called
+the global offset table (GOT).  Selective relinking works by shadowing the
+GOT.\footnote{Hence the name \textit{lib\textbf{got}cha}.}  Just after the dynamic
+linker populates the GOTs, \textit{libgotcha} replaces every entry that should
+sometimes trigger a libset switch with a fake address.  It stores the original
+address in its shadow GOT, which is organized by the libset that houses the
+definition.  The fake address used depends upon the type of symbol:
 
-\solb{Rewrite this now that we already describe lazy relocations earlier}
 
+\subsection{Intercepting function calls}
+
+When implementing selective relinking, we do not know whether a particular function
+call needs to be rerouted until runtime.  However, the fact that dynamic function
+calls consult the GOT to determine which code to execute makes it efficient and
+relatively straightforward to receive a notification whenever they occur.  To set
+this up, at load time, we replace each such cross-module GOT entry with the address
+of the special \textit{libgotcha} function \texttt{procedure\_linkage\_override()}.
+Whenever the program tries to call one of the affected functions, control transfers
+to this function instead; it then checks the thread's next libset, looks up the
+appropriate symbol definition in the shadow GOT, and jumps to that location.  Because
+\texttt{procedure\_linkage\_override()} runs between the caller's \texttt{call}
+instruction and the real function, it is written in assembly to avoid clobbering
+registers (e.g., those used for argument passing).
+
+There is one major complication that necessitates an additional level of indirection
+beyond what we have described.  Recall from the eagerly-resolved function calling
+sequence in Figure~\ref{fig:dytabs:plt} that each function call site calls a
+one-instruction PLT stub that performs an indirect jump to the real definition via
+the GOT.  This means that if we simply replaced all the GOT entries with the address
+of \texttt{procedure\_linkage\_override()}, that function would not know which GOT
+entry it was being called via, and therefore which symbol to look up.  Instead, we
+introduce our own table of executable stubs called the PLOT (Procedure Linkage
+Override Table).  Unlike PLT entries, ours always push an identifier indicating which
+function is being called.  For this, we use indices into a custom data structure
+called the GOOT (Global Offset Override Table), which stores enough information to
+find the symbol's shadow GOT entries while being practical to traverse in handwritten
+assembly code.  Figure~\ref{fig:override} summarizes the modified dynamic function
+call sequence under selective relinking.
+
+\begin{figure}
+\includegraphics[width=\textwidth]{figs/tables-crop}
+\caption{Calling an eagerly-resolved library function under selective relinking}
+\label{fig:override}
+\end{figure}
+
+A subtle but important point about dynamic linking is that pointers to the same
+definition must compare equal, regardless of where they are obtained.  For instance,
+the reader might notice that invocation is not the only thing a program can do with a
+function:\@ it might also pass around the function's address.  In fact, after taking
+the address, it could pass it to code within a different module, which might need to
+know whether a third module passed a pointer to the same function.  To support such
+comparisons, the compiler exclusively generates eagerly-resolved relocations for any
+function that a particular module obtains a pointer to.  This way, the \texttt{mov}
+to retrieve the pointer always finds the resolved address of the real definition in
+the GOT.  To avoid breaking pointer comparison, \textit{libgotcha} associates each
+PLOT entry with its function's definition, not its call site or calling module.  This
+provides correct comparison semantics because all references to a particular function
+receive the same pointer to a particular PLOT entry, and although this pointer
+technically refers to the corresponding symbol's definitions in all libsets, at any
+one time all calls to it will only resolve to the definition in the next libset.
+Since at any given time there can only be one next libset, calls to pointers that
+compare equal always refer to the same copy of the definition.
+
+The setup described so far works for eagerly-resolved function calls.  However,
+recall that some function calls resolve to their definition lazily at runtime.  For
+such calls, the dynamic linker memoizes the resolved address by updating the GOT
+entry, as shown in Figure~\ref{fig:dytabs:lazy}.  Unfortunately, replacing this GOT
+entry would overwrite the PLOT pointer installed by \textit{libgotcha} at load time,
+thereby preventing it from intercepting future calls to the function.  The write to
+the GOT happens within the symbol-lookup code in the dynamic linker, so there is no
+way to skip it.  Luckily, the dynamic linker keeps each module's dynamic relocation
+table in memory and uses that to determine which GOT entry to update.  The
+\textit{libgotcha} constructor exploits this by marking the relocation table pages
+writeable, changing the relocation entries corresponding to cross-library calls, then
+restoring the protection bits.  This fools the dynamic linker's lazy symbol lookup
+into later updating the shadow GOT entry instead.  Not only does this avoid breaking
+selective relinking, it also preserves memoization.
+
+
+\subsection{Intercepting global variable accesses}
+
+\begin{promotesubsections}
+\begin{swallowsections}
 \input[functions]{gotcha_globals}
 
 \solb{\textbf{Subsection on thread-local storage}}

@@ -175,44 +175,6 @@ handle this by preventing the monkey-patching constructor code from running in o
 modified copy of that library.
 
 
-\section{Preserving pointer equality (5d4b902)}
-
-A subtle but important point in the semantics of dynamic linking is that pointers to
-the same definition must compare equal, regardless of where they are obtained.  For
-instance,
-the reader might notice that invocation is not the only thing a program can do with a
-function:\@ it might also pass around the function's address.  In fact, after taking
-the address, it could pass it to code within a different object file, which might
-compare it\footnote{In order for such comparisons to correctly indicate whether the
-same code will be run, the compiler loads such addresses directly from the GOT via
-instructions of the special position-independent relocation form
-\texttt{mov~\textit{symbol}@gotpcrel(\%rip),~\%\textit{dest}}, and the dynamic linker
-resolves the calls and populates their GOT entries eagerly at load time.}.  To avoid
-breaking pointer comparison, \textit{libgotcha} makes sure to share the same PLOT
-stub between all GOT entries to a given symbol that use this type of
-relocation.  As long as the current libset remains the same between the time of a
-function pointer comparison and the time of its invocation, such a comparison
-guarantees that \texttt{procedure\_linkage\_override()} will dispatch to the same
-copy when invoked using either pointer.
-
-
-\section{Lazy PLT relocation memoization trick (154d76e)}
-
-The setup procedure described so far has one significant problem:\@ recall that a PLT
-call memoizes the real address of its symbol by replacing the GOT entry, which should
-cause subsequent calls to skip \textit{libgotcha}'s \texttt{procedure\_linkage\_override()}
-codepath.  In order to prevent this, the constructor updates the relocation entries
-corresponding to cross-library calls to point at \textit{shadow} GOT entries.  This
-fools the dynamic linker into updating the shadow entry instead, meaning that
-memoization still works, as shown in Figure~\ref{fig:override}.
-
-\begin{figure}
-\includegraphics[width=\columnwidth]{functions/figs/tables}
-\caption{\texttt{procedure\_linkage\_override()} tables}
-\label{fig:override}
-\end{figure}
-
-
 \section{Global variable interception heuristics (gotcha ebef4e0)}
 
 Woah!  The error was in executing this instruction, which probably means it's
