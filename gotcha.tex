@@ -256,9 +256,9 @@ each of its relocation entries against the local module's symbol table.  If the
 symbol table does not contain a definition matching the relocation entry's target, we
 conclude that the relocation must correspond to a cross-module call.  Otherwise, we
 check the address in the GOT entry corresponding to the relocation:  If this address
-is outside the memory bounds of the current module, it is a cross-library call.
+is outside the memory bounds of the current module, it is a cross-module call.
 Otherwise, if this address matches the one from the symbol table entry, it is not a
-cross-library call, and should be skipped.  The trickiest case is when the GOT entry
+cross-module call, and should be skipped.  The trickiest case is when the GOT entry
 does not match but does point somewhere within the current module, since this means
 it probably still refers to the PLT stub (because the symbol reference is lazy and
 has not yet been resolved, as covered at the end of
