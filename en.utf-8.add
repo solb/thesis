@@ -27,6 +27,8 @@ datacenters
 debuggability
 destructure
 DF_
+dlclose
+dlmopen
 DL\_NNS
 dlopen
 E5-2683
@@ -188,6 +190,7 @@ timestamp
 timeval
 \_\_tls\_get\_addr
 tokio-threadpool
+tradeoff
 tv_
 typedef
 TypeScript
