@@ -343,7 +343,7 @@ definition.  The fake address used depends upon the type of symbol:
 
 \subsection{Intercepting function calls}
 
-When implementing selective relinking, we do not know whether a particular function
+When setting up selective relinking, we do not know whether a particular function
 call needs to be rerouted until runtime.  However, the fact that dynamic function
 calls consult the GOT to determine which code to execute makes it efficient and
 relatively straightforward to receive a notification whenever they occur.  To set
