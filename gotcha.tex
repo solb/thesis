@@ -26,11 +26,9 @@ contain program data; \textit{italicized} ones contain metadata for the runtime.
 \label{fig:procimgobj}
 \end{figure}
 
-\begin{promotesubsections}
 \begin{swallowsections}
 \input[functions]{gotcha_gotcha}
 \end{swallowsections}
-\end{promotesubsections}
 \hspace{-2.5em}
 Our discussion in this chapter uses \textit{libinger} as a motivating example of a
 \textit{libgotcha} user, as this configuration was the inspiration for the runtime's
@@ -233,19 +231,17 @@ conclusion of load time.
 
 
 \begin{promotesubsections}
-\begin{swallowsections}
 \input[functions]{gotcha_namespaces}
 
 
 \input[functions]{gotcha_libsets}
+\end{promotesubsections}
 
 Thus, selective relinking is selective in two ways, only affecting execution when the
 next libset differs from the current libset and the program references a dynamic
 symbol defined in a module that is not currently executing on that thread.
 
 \solb{Expand interface listing and add comments with section references}
-\end{swallowsections}
-\end{promotesubsections}
 
 
 \subsection{Detecting cross-module symbol references}
@@ -269,9 +265,7 @@ determine whether it is a cross-module call.
 
 
 \begin{promotesubsections}
-\begin{swallowsections}
 \input[functions]{gotcha_init}
-\end{swallowsections}
 \end{promotesubsections}
 
 If a preemptible function is canceled rather than being allowed to return, execution
@@ -521,7 +515,6 @@ instead of constant average-case ones).
 
 
 \begin{promotesubsections}
-\begin{swallowsections}
 \input[functions]{gotcha_uncopyable}
 
 \solb{Add the effects in the above TODO to the UML diagram?}
@@ -558,8 +551,6 @@ instead of constant average-case ones).
 \solb{Recompiling glibc from the frontmatter}
 
 \input[functions]{gotcha_relocations}
-
-\end{swallowsections}
 \end{promotesubsections}
 
 
