@@ -514,8 +514,64 @@ just return the next-lowest entry.} (at the cost of logarithmic worst-case looku
 instead of constant average-case ones).
 
 
+\section{Uninterruptible functions}
+
+Unlike prior work, we support safe asynchronous pausing and cancellation on almost
+almost any instruction boundary, including within most third-party libraries without
+the need for configuration or code annotation.  However, there are still some cases
+where we have to briefly defer preemption.
+
+The most obvious is the \texttt{malloc()} family of dynamic memory allocation
+functions.  This case is significant because the allocator manages the heap, a
+resource shared among all threads of the application.  As we saw in
+Chapter~\ref{chap:functions}, na\"ive attempts to provide asynchronous cancellation
+often corrupt corrupt the heap if they interrupt the allocator.  It is even unsafe to
+call into the allocator from a thread that has only been asynchronously paused while
+allocating, as it can cause a deadlock on the locks intended to protect the heap from
+concurrent access by different threads.  This is the reason why signal handlers are
+not allowed to allocate memory.  One way around these problems would be to use a
+separate heap for each preemptible function, but we have avoided this because it
+would complicate the ownership of objects that are allocated by a preemptible
+function but escape its scope before it terminates.
+
+Instead, we consider the interfaces to the dynamic allocator to be
+\textbf{uninterruptible} functions.  Although each libset contains a separate copy of
+them, all except one are inactive.  Specifically, we route all calls to
+uninterruptible functions back to the \textbf{starting libset}, the set of modules
+loaded before \textit{libgotcha} loaded any additional copies.  The set of
+uninterruptible functions is currently governed by an internal allowlist within
+\textit{libgotcha}.  During load time, the constructor transcribes this information
+into the shadow GOTs so lookups will incur no additional runtime overhead.
+
+\begin{sloppypar}
+Although the next libset does not determine which copy of an uninterruptible function
+gets invoked, it is relevant during the call.  To avoid creating a dependency between
+the starting libset and the current one, it is important that the next libset be set
+to the starting libset while any uninterruptible code is running.  To ensure maintain
+this invariant, whenever \texttt{procedure\_linkage\_override()} detects any libset
+other than the starting one calling an uninterruptible function, it resets the next
+libset to the starting libset, storing a backup of its previous value.  Then, just
+before invoking the function, it pushes the address of a trampoline function onto the
+stack.  When the function eventually returns, this trampoline runs; before
+transferring control back to the call site, it restores the next libset.
+\end{sloppypar}
+
+In addition to controlling \textit{libgotcha}'s treatment of calls to uninterruptible
+functions, the next libset also communicates valuable information to the control
+library.  The starting libset always has to be valid, and because we maintain the
+invariant that the next libset is always equal to the starting libset when the
+current libset is, it is safe to preempt execution if and only if the starting libset
+is not equal to the starting one.  It is crucial that the control library check this
+before deciding to preempt, and as we saw in Listing~\ref{lst:gotchaapi}, it can do
+so using the \texttt{libset\_thread\_get\_next()} function.
+
+
 \begin{promotesubsections}
 \input[functions]{gotcha_uncopyable}
+
+\solb{\textbf{Subsection on callbacks with its own API listing}}
+
+\solb{Must tie this into preemption}
 
 \solb{Add the effects in the above TODO to the UML diagram?}
 
@@ -527,19 +583,27 @@ instead of constant average-case ones).
 
 \solb{Give the limitations of each type of hook}
 
+\solb{\textbf{Subsection on other uncopyable functions}}
+
+\solb{Backdoors directly into the dynamic linker}
+
+\solb{Monkey patching of ld.so and library header rewriting trick}
+
+\solb{Interception of internal dynamic linker interfaces}
+
 \solb{\textbf{Section More on control libraries}}
 
 \solb{Types of control libraries from the frontmatter}
 
 \solb{Address monomorphization}
 
-\solb{Monkey patching of ld.so and library header rewriting trick}
-
 \solb{\textbf{Subsection on thread-local storage}}
 
 \solb{Diagram of thread-local data layout}
 
 \solb{Reinitialization diagram (TLS part)}
+
+\solb{Remove all uses of the term uncopyable}
 
 
 \input[functions]{gotcha_tls}
