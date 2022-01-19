@@ -49,10 +49,13 @@ GDB
 getpid
 gettimeofday
 glibc
+global's
+GOOT
 goroutine
 goroutines
 Gosched
 @gotpcrel
+GOTs
 GPRs
 hardcode
 HPETs
@@ -153,6 +156,7 @@ RAII
 realtime
 reenable
 reentrant
+reexecute
 reexecuted
 ret
 retarget
