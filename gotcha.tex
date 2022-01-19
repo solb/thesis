@@ -461,22 +461,22 @@ the replacement register value by adding this offset to the last replacement add
 we substituted:
 
 \begin{itemize}
-\item The client code is using the same base address register as it was
-	during our last trip through this function.  This might indicate that
+\item The client code is using the same base address register as it was when
+	we last intercepted a global variable access.  This might indicate that
 	said code is using the register as an address accumulator, but doing
 	so in concert with some other temporary register: because of this
 	indirection, overwriting the register with the temporary after we
 	had preformed the original address resolution would have left us
 	unable to process any subsequent values accumulated into the register.
-\item The base address register is different than the one updated during our
-	last trip through this function, but the value of the latter has
+\item The base address register is different than the one updated on our last
+	interception, but the value of the latter has
 	remained unchanged since we updated it.  Because it contains a memory
 	address we had to resolve, this strongly suggests that the client code
 	has only executed a few instructions since then, which we can infer
 	even if that set included one or more branch instructions.
 \item The current return address points to the instruction immediately
-	following the one that faulted to result in the last invocation of
-	this function, and the current base address register's value has
+	following the one that last faulted,
+	and the current base address register's value has
 	remained the same since the faulting instruction was executed.  This
 	implies that said instruction was an indirect procedure call, and that
 	the register was probably just used to pass a pointer argument.
