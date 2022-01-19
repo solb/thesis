@@ -175,54 +175,6 @@ handle this by preventing the monkey-patching constructor code from running in o
 modified copy of that library.
 
 
-\section{Global variable interception heuristics (gotcha ebef4e0)}
-
-Woah!  The error was in executing this instruction, which probably means it's
-unreadable.  Let's *not* try to disassemble it; instead, we'll see whether we
-just followed a misguided indirect call instruction.  First search backward from
-the return address for such an instruction...
-
-It looks like the base of the displacement-mode address calculation isn't one we
-instrumented.  Maybe the code computed a custom base address using a register
-that we've since updated due to a separate (but nearby) dereference?
-
-See whether we can apply one of our heuristics.  Note that they currently assume
-that the code applied a *linear* offset to the last address we resolved.
-
-Let's try adding the same offset we did last time we resolved an address,
-because we're in one of the following common situations:
-\begin{itemize}
-\item The client code is using the same base address register as it was
-	during our last trip through this function.  This might indicate that
-	said code is using the register as an address accumulator, but doing
-	so in concert with some other temporary register: because of this
-	indirection, overwriting the register with the temporary after we
-	had preformed the original address resolution would have left us
-	unable to process any subsequent values accumulated into the register.
-\item The base address register is different than the one updated during our
-	last trip through this function, but the value of the latter has
-	remained unchanged since we updated it.  Because it contains a memory
-	address we had to resolve, this strongly suggests that the client code
-	has only executed a few instructions since then, which we can infer
-	even if that set included one or more branch instructions.
-\item The current return address points to the instruction immediately
-	following the one that faulted to result in the last invocation of
-	this function, and the current base address register's value has
-	remained the same since the faulting instruction was executed.  This
-	implies that said instruction was an indirect procedure call, and that
-	the register was probably just used to pass a pointer argument.
-	Because we didn't resolve the address of the indirect call until the
-	client code was already transferring control, there was no way for it
-	to have passed a pointer without performing arithmetic directly on the
-	dummy address present before the call.
-\end{itemize}
-
-We resolved the address without applying a heuristic.  Save a record of what we
-changed and how to allow us to heuristically resolve addresses based on our
-experience.  Because this is guarded, heuristics cannot chain, but multiple of
-them can be triggered based on a common base resolution.
-
-
 \section{Uncopyable function calls diagram (424387e)}
 
 See Figure~\ref{fig:uncopyable}.

@@ -413,17 +413,114 @@ selective relinking, it also preserves memoization.
 
 \subsection{Intercepting global variable accesses}
 
+Unlike function calls, global variable accesses do not provide an opportunity for
+hijacking the flow of control to detect the dereference, so we rely on operating
+system assistance to implement a mechanism similar to demand paging.  At load time,
+we replace each cross-module global variable GOT entry with a carefully-chosen
+address within a mapped but inaccessible memory region.  The program is therefore
+able to retrieve a ``pointer to'' the global variable, but whenever it attempts to
+read from or write to the location, it generates a segmentation fault;
+\textit{libgotcha} registers a signal handler so such signals notify it rather than
+crashing the program.  The handler disassembles the faulting instruction to determine
+the base address register of its address calculation and attempts to reconstruct a
+GOOT pointer based on the invalid address in that register.  If successful, it checks
+the thread's next libset, retrieves the address of that libset's definition of the
+symbol from the appropriate shadow GOT, and replaces the base address register's
+contents with this address.  It then returns, causing the processor to reexecute the
+faulting instruction with the valid address this time.  From the application's
+perspective, it is as if dereferencing the phony pointer causes it to change into a
+real address.  To avoid breaking applications with their own segmentation fault
+handlers, \textit{libgotcha} intercepts calls to \texttt{sigaction()} and keeps a
+pointer to the third-party handler.  Whenever its handler is unable to resolve a
+segmentation fault, it forwards the signal to the third-party one.
+
+The above approach assumes that the program will read or write from the global
+variable, but the global variable could instead contain a function pointer.  If it
+does and the program tries to invoke it, it will use an indirect call instruction and
+the jump will succeed but transfer control to an invalid location.  In this
+situation, it is important that we do not attempt to disassemble the faulting
+instruction, as the instruction pointer is pointing to unreadable memory.  However,
+we can recognize this case because the address of the fault matches the instruction
+pointer itself (instead of whatever address the instruction would have been trying to
+load data from).  To find the indirect call instruction, we load the return address
+from the stack; this gives us the subsequent instruction, so we subtract the length
+of an indirect call instruction.  We alter the signal handler's context so that the
+operating system will transfer control back to this instruction when our handler
+returns, then we disassemble the instruction and follow our usual approach on its
+register operand.
+
+It is possible to generate other code sequences that are incompatible with the
+approach (e.g., because they perform in-place pointer arithmetic rather than using a
+displacement-mode address calculation with a base address), so we also employ a few
+heuristics that consider the context of the instruction and fault.  If the code is
+reading or writing to a faulting location that we cannot translate into a GOOT
+pointer, it might have applied a linear offset to the last address we successfully
+translated.  If any of the following indicators point to this, we compute the offset
+between the faulting address and the last invalid address we replaced, then compute
+the replacement register value by adding this offset to the last replacement address
+we substituted:
+
+\begin{itemize}
+\item The client code is using the same base address register as it was
+	during our last trip through this function.  This might indicate that
+	said code is using the register as an address accumulator, but doing
+	so in concert with some other temporary register: because of this
+	indirection, overwriting the register with the temporary after we
+	had preformed the original address resolution would have left us
+	unable to process any subsequent values accumulated into the register.
+\item The base address register is different than the one updated during our
+	last trip through this function, but the value of the latter has
+	remained unchanged since we updated it.  Because it contains a memory
+	address we had to resolve, this strongly suggests that the client code
+	has only executed a few instructions since then, which we can infer
+	even if that set included one or more branch instructions.
+\item The current return address points to the instruction immediately
+	following the one that faulted to result in the last invocation of
+	this function, and the current base address register's value has
+	remained the same since the faulting instruction was executed.  This
+	implies that said instruction was an indirect procedure call, and that
+	the register was probably just used to pass a pointer argument.
+	Because we didn't resolve the address of the indirect call until the
+	client code was already transferring control, there was no way for it
+	to have passed a pointer without performing arithmetic directly on the
+	dummy address present before the call.
+\end{itemize}
+
+In our experience, these heuristics cover the common cases in compiler-generated
+code.  We do not allow heuristics to chain (that is, we never use a
+heuristically-calculated address as the basis of the offset calculation for another),
+but we do apply heuristics multiple times based on the same base address.
+
+While our current approach has proven successful, it does have some downsides.  It is
+complex, relies on heuristics, and incurs a performance cost on the order of
+microseconds.  It also suffers from a design flaw affecting large structures:\@ it
+does not account for the size of globals when ``allocating'' them fake addresses
+within the inaccessible memory region.  If a fake address gets assigned to a global
+whose size is less than the difference between that address and the end of the
+inaccessible region, it is possible for a correct program to dereference outside the
+inaccessible region and exhibit emergent undefined behavior.  The ELF dynamic symbol
+table includes objects' sizes, so it would be possible to account for this when
+assigning fake addresses.
+
+One could go further with this idea and redesign global variable interception without
+the need for heuristics or the dependency on a disassembler.  By allocating each
+global its own inaccessible region matching its real size, the address of the
+faulting access could be made to reveal the access's offset within the global.
+Mapping the fake address back to a symbol would require a lookup data structure; one
+option is a hash table with an entry for each of our inaccessible pages.  To
+translate a fake address, one would zero out its page offset bits, consult the lookup
+structure to find our metadata about the page, and use this to convert to a real
+symbol definition and offset within it.  This final conversion could be done either
+by starting each global's fake region on a page boundary (at the cost of more virtual
+memory) or binary searching a list of the addresses within the inaccessible page that
+corresponded to the starts of new symbols\footnote{The faulting address would not be
+found if the program was dereferencing at an offset into the global, but one would
+just return the next-lowest entry.} (at the cost of logarithmic worst-case lookups
+instead of constant average-case ones).
+
+
 \begin{promotesubsections}
 \begin{swallowsections}
-\input[functions]{gotcha_globals}
-
-\solb{\textbf{Subsection on thread-local storage}}
-
-\solb{Diagram of thread-local data layout}
-
-\solb{Reinitialization diagram (TLS part)}
-
-
 \input[functions]{gotcha_uncopyable}
 
 \solb{Add the effects in the above TODO to the UML diagram?}
@@ -443,6 +540,12 @@ selective relinking, it also preserves memoization.
 \solb{Address monomorphization}
 
 \solb{Monkey patching of ld.so and library header rewriting trick}
+
+\solb{\textbf{Subsection on thread-local storage}}
+
+\solb{Diagram of thread-local data layout}
+
+\solb{Reinitialization diagram (TLS part)}
 
 
 \input[functions]{gotcha_tls}
