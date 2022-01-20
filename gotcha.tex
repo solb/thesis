@@ -716,6 +716,7 @@ provide a \texttt{libset\_of\_caller()} function for retrieving the previous val
 the next libset (which is also the value it will be restored to when exiting the
 uninterruptible region).
 
+\begin{sloppypar}
 The way that we currently implement callbacks places some restrictions on what they
 are allowed to do.  The \textit{libgotcha} assembly trampoline that invokes return
 callbacks backs up the integer return registers, but such callbacks cannot use
@@ -729,6 +730,7 @@ not in the middle of memory allocation), so it does not subject the callback fun
 to the usual safety constraints on signal handlers, but it does make this type of
 callback orders of magnitude slower.  Fortunately, we anticipate rarer need for them;
 \textit{libinger}, for example, only uses a return callback.
+\end{sloppypar}
 
 
 \solb{\textbf{Section More on control libraries}}
