@@ -636,18 +636,21 @@ Treating it as uninterruptible would result in a libset switch when calling it f
 outside the starting libset, pushing a \textit{libgotcha} trampoline ``return''
 address onto the stack and thereby causing all dynamically-loaded libraries to be
 added to the starting libset instead of the current libset.  Other functions that
-rely on the same mechanism include the \texttt{iconv()} family of
+use these internal dynamic loading calls include the \texttt{iconv()} family of
 character-conversion functions, \texttt{getaddrinfo()} and the other DNS-translation
 functions (which can load GNU Libidn to handle internationalized domain names), and
 the modular Name Switch Service system for accessing the users, hosts, protocols,
 and services databases.  Adding these functions to the allowlist would not break
 them, but it would treat what are potentially long-running operations (even including
-network communication) as nonpreemptible code.  We handle both of these situations by
+network communication) as nonpreemptible code.  We instead handle both of these
+situations by
 replacing the \texttt{\_dl\_open()} and \texttt{\_dl\_close()} pointers in
 \texttt{\_rtld\_global\_ro} with our own hook functions that transition to
 uninterruptible code only while modules are being loaded or unloaded.  Since the
-region is opaque and its region is subject to change, we find the appropriate
-pointers by repeatedly replacing an entry with a probe function and executing no-op
+region is opaque and its layout is subject to change and dependent on the glibc build
+configuration, we find the appropriate
+pointers by repeatedly replacing one entry at a time with a probe function and
+executing no-op
 \texttt{dlopen()} and \texttt{dlclose()} operations until the probe function gets
 called.  Once we have found both pointers, we record their original values, mark
 their containing page writeable, replace them with pointers to our hook functions,
