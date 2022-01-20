@@ -36,7 +36,7 @@ strict digraph {
 
 	{
 		rank=same;
-		callerA -> controlA [label="callee()                                                   ", headlabel="(redirected to procedure_linkage_override())"];
+		callerA -> controlA [label=<<font face="monospace">callee()</font>                                                               >, headlabel=<(redirected to <font face="monospace">procedure_linkage_override()</font>)>];
 		controlA -> gotchaA [arrowhead=normal];
 	}
 
@@ -52,7 +52,7 @@ strict digraph {
 
 	{
 		rank=same;
-		gotchaD -> calleeD [label="callee()", arrowhead=normal];
+		gotchaD -> calleeD [label="callee()", fontname="monospace", arrowhead=normal];
 	}
 
 	{

@@ -23,13 +23,13 @@ strict digraph {
 
 	{
 		rank=same;
-		callerA -> controlA [label="callee()                                                   ", headlabel="(redirected to procedure_linkage_override())"];
+		callerA -> controlA [label=<<font face="monospace">callee()</font>                                                               >, headlabel=<(redirected to <font face="monospace">procedure_linkage_override()</font>)>];
 		controlA -> gotchaA [arrowhead=normal];
 	}
 
 	{
 		rank=same;
-		gotchaB -> calleeB [label="callee()", arrowhead=normal];
+		gotchaB -> calleeB [label="callee()", fontname="monospace", arrowhead=normal];
 	}
 
 	{
