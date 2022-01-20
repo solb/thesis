@@ -241,8 +241,6 @@ Thus, selective relinking is selective in two ways, only affecting execution whe
 next libset differs from the current libset and the program references a dynamic
 symbol defined in a module that is not currently executing on that thread.
 
-\solb{Expand interface listing and add comments with section references}
-
 
 \subsection{Detecting cross-module symbol references}
 
@@ -731,34 +729,12 @@ to the usual safety constraints on signal handlers, but it does make this type o
 callback orders of magnitude slower.  Fortunately, we anticipate rarer need for them;
 \textit{libinger}, for example, only uses a return callback.
 
-\begin{promotesubsections}
-\input[functions]{gotcha_uncopyable}
-
-\solb{\textbf{Subsection on callbacks with its own API listing}}
-
-\solb{Must tie this into preemption}
-
-\solb{Add the effects in the above TODO to the UML diagram?}
-
-\solb{Stipulate that libgotcha itself is always uncopyable}
-
-\solb{Say that the hook function runs in the interrupted module's namespace}
-
-\solb{Mention pre-call hooks}
-
-\solb{Give the limitations of each type of hook}
-
-\solb{\textbf{Subsection on other uncopyable functions}}
-
-\solb{Backdoors directly into the dynamic linker}
-
-\solb{Monkey patching of ld.so and library header rewriting trick}
-
-\solb{Interception of internal dynamic linker interfaces}
 
 \solb{\textbf{Section More on control libraries}}
 
 \solb{Types of control libraries from the frontmatter}
+
+\solb{Stipulate that libgotcha itself is always uncopyable}
 
 \solb{Address monomorphization}
 
@@ -771,6 +747,7 @@ callback orders of magnitude slower.  Fortunately, we anticipate rarer need for 
 \solb{Remove all uses of the term uncopyable}
 
 
+\begin{promotesubsections}
 \input[functions]{gotcha_tls}
 
 \solb{Drop TLS stuff, incorporating whatever is salvageable earlier}
