@@ -644,6 +644,34 @@ called.  Once we have found both pointers, we record their original values, mark
 their containing page writeable, replace them with pointers to our hook functions,
 and restore the page protections.
 
+
+\subsection{Control library callbacks}
+
+\begin{figure}
+\begin{lstlisting}[label=lst:gotchacbapi,caption=\textit{libgotcha} C callback interface]
+// Pointer to function taking and returning void
+typedef void (*libset_cb_t)(void);
+
+void libset_register_callback(libset_cb_t);
+void libset_register_returnback(libset_cb_t);
+libset_t libset_of_caller(void);
+\end{lstlisting}
+\end{figure}
+
+While a control library can tell whether it is safe to preempt the thread by checking
+whether its next libset is not equal to the starting libset, many control libraries
+will benefit from active notification.  For this purpose, \textit{libgotcha} provides
+a callback interface that allows the control library to register functions that
+should be invoked whenever an uninterruptible function is called or returns.  These
+can be used to disable and reenable preemption mechanisms or establish a critical
+section around uninterruptible code (e.g., by taking a mutex or blocking signals).
+Callbacks run when we automatically switch to the starting libset from any other;
+since this change is idempotent, a callback is only invoked once at the beginning or
+end of each uninterruptible region, even if the function calls others within the
+starting libset.  Figure~\ref{fig:gotchahooks} shows the effect of such callbacks on
+function call interception by comparing against both interruptible calls and
+uninterruptible calls when no callbacks are registered.
+
 \begin{figure*}
 	\begin{minipage}{\textwidth}
 	\includegraphics[width=\textwidth]{figs/calltree_function-crop}
@@ -663,6 +691,33 @@ and restore the page protections.
 \label{fig:gotchahooks}
 \end{figure*}
 
+Listing~\ref{lst:gotchacbapi} shows the functions for managing callbacks, which form
+an extension to the main \textit{libgotcha} control API.  The control library can
+pass a function pointer to either of the registration functions to have it invoked on
+entry to or exit from uninterruptible code.  In developing this interface, we
+discovered it was very hard to write correct callbacks that could tolerate being
+preempted, so we elected to run all callbacks with the next libset set to the
+starting one.  Recall that it is never safe to pause or cancel execution in this
+state, so the control library's preemption mechanism will defer preemption in
+callbacks, just as it was already required to do in other such places.  Because the
+control library's callback might want to know which libset control switched from, we
+provide a \texttt{libset\_of\_caller()} function for retrieving the previous value of
+the next libset (which is also the value it will be restored to when exiting the
+uninterruptible region).
+
+The way that we currently implement callbacks places some restrictions on what they
+are allowed to do.  The \textit{libgotcha} assembly trampoline that invokes return
+callbacks backs up the integer return registers, but such callbacks cannot use
+floating points unless they manually save and restore the floating-point return
+registers.  As an implementation shortcut, \texttt{procedure\_linkage\_override()}
+invokes the call callback via a \texttt{SIGTRAP} handler by executing an
+\texttt{int3} instruction, in order to avoid having to save and restore a large set
+of registers itself (since the return registers account for only two of the many
+caller-saved registers).  The signal occurs at a well-known point in execution (e.g.,
+not in the middle of memory allocation), so it does not subject the callback function
+to the usual safety constraints on signal handlers, but it does make this type of
+callback orders of magnitude slower.  Fortunately, we anticipate rarer need for them;
+\textit{libinger}, for example, only uses a return callback.
 
 \begin{promotesubsections}
 \input[functions]{gotcha_uncopyable}
