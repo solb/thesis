@@ -622,7 +622,16 @@ shared library at runtime by calling the internal \texttt{\_dl\_open()} or
 functions in \texttt{libdl.so}, the same interface that \textit{libgotcha} uses to
 populate libsets.  We considered adding all of this library's functions to the
 allowlist, but this presents a problem:\@ in order to decide which namespace to load
-the library into, \texttt{dlopen()} checks which module contains its return address.
+the library into, \texttt{dlopen()} checks which module contains its return
+address.\footnote{Note that this means a \texttt{dlopen()} loads the module into the
+current libset rather than the next one.  We preserve this standard system behavior
+even though it is somewhat surprising.  The only time it could cause unexpected
+results is when a module containing a preemptible function definition loads other
+modules at runtime, and since it used preemptible functions, such a module could be
+expected to be aware of this case.  If this choice later proved problematic to
+application designers (e.g., of systems that make heavy use of runtime plugins), it
+would be possible to instead base the destination on the next libset by injecting a
+trampoline return address from the appropriate copy of \textit{libgotcha}.}
 Treating it as uninterruptible would result in a libset switch when calling it from
 outside the starting libset, pushing a \textit{libgotcha} trampoline ``return''
 address onto the stack and thereby causing all dynamically-loaded libraries to be
