@@ -4,6 +4,8 @@ AddressSanitizer
 AddressSanitizer's
 adherance
 ad-hoc
+allowlist
+allowlisted
 async
 AWS
 backend
@@ -21,15 +23,19 @@ composable
 const
 cp
 cpp
+\_\_cxa\_thread\_atexit\_impl()
 datacenter
 datacenters
 .data.rel.ro
 debuggability
 destructure
 DF_
+DF\_1\_NODELETE
+\_dl\_close()
 dlclose
 dlmopen
 DL\_NNS
+\_dl\_open()
 dlopen
 E5-2683
 ERIM
@@ -46,6 +52,7 @@ function-attrs
 GC
 gcc
 GDB
+getaddrinfo()
 getpid
 gettimeofday
 glibc
@@ -59,10 +66,12 @@ GOTs
 GPRs
 hardcode
 HPETs
+iconv()
 IFUNC
 'ing
 ingerc
 inlining
+int3
 IPC
 IPI
 IPIs
@@ -79,10 +88,12 @@ ld-linux
 libac-safe
 libas-safe
 libc
+libdl.so
 libgcc
 libgotcha
 libgotcha's
 libiberty
+Libidn
 libinger
 libingerOS
 libpng
@@ -143,6 +154,7 @@ pcoffset
 PLOTs
 PLT
 POSIX
+posix\_spawn()
 precompiled
 preemptibility
 preemptible
@@ -163,6 +175,8 @@ retarget
 retargeting
 .rodata
 RPC
+\_rtld\_global
+\_rtld\_global\_ro
 runtime's
 runtimes
 rustc
@@ -181,6 +195,7 @@ SIGCHLD
 SIGEV
 SIGSYS
 sigtimedwait
+SIGTRAP
 SLA
 SLO
 sret
@@ -201,6 +216,7 @@ TypeScript
 u64
 ud2
 uncopyable
+uselocale()
 userland
 v4
 Valgrind
