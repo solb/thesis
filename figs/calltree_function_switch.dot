@@ -15,11 +15,11 @@ strict digraph {
 		gotcha -> gotchaA;
 		gotchaA -> gotchaB [style=solid, penwidth=2];
 		gotchaB -> gotchaC;
-		gotchaC -> gotchaD [style=solid, penwidth=2];
+		gotchaC -> gotchaD [style=solid, penwidth=2, color=red];
 		gotchaD -> gotchaE;
 
 		callee -> calleeA -> calleeB;
-		calleeB -> calleeC [style=solid, penwidth=2];
+		calleeB -> calleeC [style=solid, penwidth=2, color=red];
 		calleeC -> calleeD -> calleeE;
 	}
 
@@ -31,12 +31,12 @@ strict digraph {
 
 	{
 		rank=same;
-		gotchaB -> calleeB [label="callee()", fontname="monospace", arrowhead=normal];
+		gotchaB -> calleeB [label="callee()", fontname="monospace", arrowhead=normal, color=red];
 	}
 
 	{
 		rank=same;
-		gotchaC -> calleeC [style=dashed, arrowhead=normal, dir=back];
+		gotchaC -> calleeC [style=dashed, arrowhead=normal, dir=back, color=red];
 	}
 
 	{

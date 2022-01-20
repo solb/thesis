@@ -14,23 +14,23 @@ strict digraph {
 		caller -> callerA -> callerB -> callerC -> callerD -> callerE -> callerF -> callerG -> callerH -> callerI;
 
 		control -> controlA -> controlB;
-		controlB -> controlC [style=solid, penwidth=2];
+		controlB -> controlC [style=solid, penwidth=2, color=red];
 		controlC -> controlD -> controlE -> controlF;
-		controlF -> controlG [style=solid, penwidth=2];
+		controlF -> controlG [style=solid, penwidth=2, color=red];
 		controlG -> controlH -> controlI;
 
 		gotcha -> gotchaA;
 		gotchaA -> gotchaB [style=solid, penwidth=2];
 		gotchaB -> gotchaC;
-		gotchaC -> gotchaD [style=solid, penwidth=2];
+		gotchaC -> gotchaD [style=solid, penwidth=2, color=red];
 		gotchaD -> gotchaE;
-		gotchaE -> gotchaF [style=solid, penwidth=2];
+		gotchaE -> gotchaF [style=solid, penwidth=2, color=red];
 		gotchaF -> gotchaG;
-		gotchaG -> gotchaH [style=solid, penwidth=2];
+		gotchaG -> gotchaH [style=solid, penwidth=2, color=red];
 		gotchaH -> gotchaI;
 
 		callee -> calleeA -> calleeB -> calleeC -> calleeD;
-		calleeD -> calleeE [style=solid, penwidth=2];
+		calleeD -> calleeE [style=solid, penwidth=2, color=red];
 		calleeE -> calleeF -> calleeG -> calleeH -> calleeI;
 	}
 
@@ -42,32 +42,32 @@ strict digraph {
 
 	{
 		rank=same;
-		controlB -> gotchaB [label="call_callback()", fontname="monospace" arrowhead=normal, dir=back];
+		controlB -> gotchaB [label="call_callback()", fontname="monospace" arrowhead=normal, dir=back, color=red];
 	}
 
 	{
 		rank=same;
-		controlC -> gotchaC [style=dashed, arrowhead=normal];
+		controlC -> gotchaC [style=dashed, arrowhead=normal, color=red];
 	}
 
 	{
 		rank=same;
-		gotchaD -> calleeD [label="callee()", fontname="monospace", arrowhead=normal];
+		gotchaD -> calleeD [label="callee()", fontname="monospace", arrowhead=normal, color=red];
 	}
 
 	{
 		rank=same;
-		gotchaE -> calleeE [style=dashed, arrowhead=normal, dir=back];
+		gotchaE -> calleeE [style=dashed, arrowhead=normal, dir=back, color=red];
 	}
 
 	{
 		rank=same;
-		controlF -> gotchaF [label="return_callback()", fontname="monospace", arrowhead=normal, dir=back];
+		controlF -> gotchaF [label="return_callback()", fontname="monospace", arrowhead=normal, dir=back, color=red];
 	}
 
 	{
 		rank=same;
-		controlG -> gotchaG [style=dashed, arrowhead=normal];
+		controlG -> gotchaG [style=dashed, arrowhead=normal, color=red];
 	}
 
 	{
