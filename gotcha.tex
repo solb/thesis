@@ -205,17 +205,18 @@ practice, it is undesirable to hardcode the address of a dynamic linker function
 each module.  Therefore, instead of jumping directly to the symbol resolver, the slow
 lookup path jumps to a dedicated PLT stub that loads its address from another GOT
 entry.  Technically, there are separate identifiers for the symbol and the module,
-each pushed to the stack by one of these two involved PLT stubs.}  \textcircled{1}
-The program calls the PLT stub, just as it would for an eagerly-resolved function.
-\textcircled{2} The PLT stub is longer (three instructions instead of one), but still
+each pushed to the stack by one of these two involved PLT stubs.}
+\textcircled{1}~The
+program calls the PLT stub, just as it would for an eagerly-resolved function.
+\textcircled{2}~The PLT stub is longer (three instructions instead of one), but still
 begins with an indirect jump to the pointer found in the corresponding GOT entry.
-\textcircled{3} The GOT entry initially contains the address of the PLT stub's second
+\textcircled{3}~The GOT entry initially contains the address of the PLT stub's second
 instruction, so the indirect jump is a no-op and merely advances the instruction
-pointer.  \textcircled{4} The rest of the PLT stub pushes a constant identifying the
+pointer.  \textcircled{4}~The rest of the PLT stub pushes a constant identifying the
 module and symbol onto the stack, then jumps to a symbol-lookup function in the
-dynamic linker.  \textcircled{5} After looking up the address of the symbol's
+dynamic linker.  \textcircled{5}~After looking up the address of the symbol's
 definition, the dynamic linker uses the identifier from the stack to find and update
-the GOT entry in the calling module.  \textcircled{6} The dynamic linker jumps to the
+the GOT entry in the calling module.  \textcircled{6}~The dynamic linker jumps to the
 symbol in the defining module.  Because the GOT entry has been updated, future calls
 proceed exactly like eagerly-resolved ones and jump directly to the symbol definition
 from the first instruction of the PLT stub.  Of course, the GOT entries associated
@@ -603,8 +604,8 @@ establish information flow from the dynamic linker to the specific copy of
 libpthread.}  These changes would create a hazardous dependency between the dynamic
 linker and whichever copy of libpthread was last loaded (in our case, the one in the
 last libset).  To avoid this problem, \textit{libgotcha}'s constructor checks for
-libraries that (1) directly access \texttt{\_rtld\_global}, (2) have the type of
-constructor in question, and (3) are marked with the ELF configuration flag
+libraries that (1)~directly access \texttt{\_rtld\_global}, (2)~have the type of
+constructor in question, and (3)~are marked with the ELF configuration flag
 \texttt{DF\_1\_NODELETE} to indicate that they are unsafe to unload once present in
 the process image.  Before loading copies of a library with all of these properties
 into any libsets, we create a temporary copy of its shared library with its ELF
