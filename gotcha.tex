@@ -644,6 +644,20 @@ called.  Once we have found both pointers, we record their original values, mark
 their containing page writeable, replace them with pointers to our hook functions,
 and restore the page protections.
 
+\begin{figure*}
+	\begin{minipage}{\textwidth}
+	\includegraphics[width=\textwidth]{figs/calltree_function-crop}
+	\subcaption{Interruptible call, or uninterruptible call when no callbacks are registered}
+	\end{minipage}
+
+	\begin{minipage}{\textwidth}
+	\includegraphics[width=\textwidth]{figs/calltree_function_hook-crop}
+	\subcaption{Uninterruptible call when callbacks are registered for both calls and returns}
+	\end{minipage}
+\caption{Interception of cross-module function calls}
+\label{fig:gotchahooks}
+\end{figure*}
+
 
 \begin{promotesubsections}
 \input[functions]{gotcha_uncopyable}
