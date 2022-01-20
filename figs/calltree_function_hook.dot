@@ -42,7 +42,7 @@ strict digraph {
 
 	{
 		rank=same;
-		controlB -> gotchaB [label=<<i>prehook</i> ?>, arrowhead=normal, dir=back];
+		controlB -> gotchaB [label="call_callback()", fontname="monospace" arrowhead=normal, dir=back];
 	}
 
 	{
@@ -62,7 +62,7 @@ strict digraph {
 
 	{
 		rank=same;
-		controlF -> gotchaF [label=<<i>hook</i> ?>, arrowhead=normal, dir=back];
+		controlF -> gotchaF [label="return_callback()", fontname="monospace", arrowhead=normal, dir=back];
 	}
 
 	{
