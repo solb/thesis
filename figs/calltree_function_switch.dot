@@ -1,0 +1,46 @@
+strict digraph {
+	edge [arrowhead=none];
+	node [shape=none, width=0, height=0, label=""];
+
+	caller [label="caller module"];
+	gotcha [label=<<i>libgotcha</i>>];
+	callee [label="callee module"];
+
+	{
+		// This weight must be at least the number of horizontal arrows.
+		edge [style=dotted, weight=3];
+
+		caller -> callerA -> callerB -> callerC -> callerD -> callerE;
+
+		gotcha -> gotchaA;
+		gotchaA -> gotchaB [style=solid, penwidth=2];
+		gotchaB -> gotchaC;
+		gotchaC -> gotchaD [style=solid, penwidth=2];
+		gotchaD -> gotchaE;
+
+		callee -> calleeA -> calleeB;
+		calleeB -> calleeC [style=solid, penwidth=2];
+		calleeC -> calleeD -> calleeE;
+	}
+
+	{
+		rank=same;
+		callerA -> controlA [label=<<font face="monospace">callee()</font>                                                               >, headlabel=<(redirected to <font face="monospace">procedure_linkage_override()</font>)>];
+		controlA -> gotchaA [arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		gotchaB -> calleeB [label="callee()", fontname="monospace", arrowhead=normal];
+	}
+
+	{
+		rank=same;
+		gotchaC -> calleeC [style=dashed, arrowhead=normal, dir=back];
+	}
+
+	{
+		rank=same;
+		callerD -> gotchaD [style=dashed, arrowhead=normal, dir=back];
+	}
+}

@@ -8,6 +8,7 @@ OVERRIDE_DOT := false
 
 thesis.pdf: figs/calltree_function-crop.pdf
 thesis.pdf: figs/calltree_function_hook-crop.pdf
+thesis.pdf: figs/calltree_function_switch-crop.pdf
 thesis.pdf: figs/jstables-crop.pdf
 thesis.pdf: figs/gotables-crop.pdf
 thesis.pdf: figs/pltables-crop.pdf
