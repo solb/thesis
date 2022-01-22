@@ -406,6 +406,7 @@ selective relinking, it also preserves memoization.
 
 
 \subsection{Intercepting global variable accesses}
+\label{sec:libgotcha:globals}
 
 Unlike function calls, global variable accesses do not provide an opportunity for
 hijacking the flow of control to detect the dereference, so we rely on operating
@@ -514,6 +515,7 @@ instead of constant average-case ones).
 
 
 \section{Uninterruptible functions}
+\label{sec:libgotcha:unint}
 
 Unlike prior work, we support safe asynchronous pausing and cancellation on almost
 almost any instruction boundary, including within most third-party libraries without
@@ -566,6 +568,7 @@ so using the \texttt{libset\_thread\_get\_next()} function.
 
 
 \subsection{Other uninterruptible functions}
+\label{sec:libgotcha:unintfuns}
 
 The memory allocator interfaces are not the only functions in the allowlist.  The
 dynamic linker behaves specially with respect to namespaces:\@ although it appears to
@@ -779,11 +782,139 @@ The semantics of a control library depend on how it is built:
 	rebuilding the control library.
 \end{itemize}
 
-\solb{Types of control libraries from the frontmatter}
 
-\solb{Stipulate that libgotcha itself is always uncopyable}
+\subsection{Enforced interposition}
 
-\solb{Address monomorphization}
+A few libc functions either present an opportunity to circumvent the libset
+abstraction or misbehave when called from a program that uses libsets.  To address
+this, \textit{libgotcha} uses a dynamic-linking trick called \textbf{interposition}
+to substitute its own implementation of these functions.  Interposition occurs when
+one module defines a symbol with the same name as another module's symbol, resulting
+in calls intended for the other module being routed to it instead.  This relies on
+the interposing library appearing earlier in the dynamic linker's dependency search
+order, so the technique is only reliable when the application binary is the
+interposer or the interposing library is preloaded by defining the
+\texttt{LD\_PRELOAD} environment variable before executing the application.
+
+While \textit{libgotcha} supports being preloaded, it is intended to work seamlessly
+even when the application is launched normally, so normal interposition is not strong
+enough.  Fortunately, we already control dynamic linking by rewriting GOT entries, so
+at the same time, we implement a variant that we term \textbf{enforced
+interposition}.  Whenever we encounter a relocation in a third-party module
+referencing a dynamic symbol with the same name as one defined in
+\textit{libgotcha}'s module, we replace its GOT entry with the address of the PLOT
+stub corresponding to that definition, so that all calls to that symbol from any
+other module are redirected to \textit{libgotcha}.\footnote{We export a minimal and
+deliberate subset of \textit{libgotcha}'s functions as dynamic symbols to avoid
+unexpected applications of this rule.}  Conversely, whenever we encounter such a
+dynamic symbol that is also referenced from \textit{libgotcha}'s module, we replace
+its GOT entry there with a reference to the real third-party definition (or
+interposition, as the case may be).  In this way, the code in \textit{libgotcha} can
+implement wrappers around standard library (or any other) functions without
+inadvertently interposing its own uses thereof.
+
+We saw in Section~\ref{sec:libgotcha:globals} that one fraught case is the
+\texttt{sigaction()} function, which could be used to replace the \textit{libgotcha}
+signal handler that resolves global variable accesses at runtime to the appropriate
+definition under the rules of selective relinking.  As such, we provide a replacement
+implementation that checks whether the caller is trying to install a \texttt{SIGSEGV}
+handler; if so, instead of honoring the request, we store the handler internally and
+our handler calls it whenever it is unable to recover from a segmentation fault by
+fixing one of our fake addresses.  We provide a similar replacement for the legacy
+\texttt{signal()} function.  One other signal-related problem can occur when an
+application or library temporarily blocks signals to establish a critical section.
+Blocking our handler would cause the critical section to crash if it accessed a
+global variable, so we replace \texttt{sigprocmask} and \texttt{pthread\_sigmask} to
+leave \texttt{SIGSEGV} alone.  Finally, we replace \texttt{sigfillset()} and
+\texttt{sigaddset()} to exclude \texttt{SIGSEGV}, which prevents signal handlers from
+implicitly masking and unmasking it (e.g., via Linux's \texttt{sigreturn()}
+implementation in the memory-mapped vdso).  The latter replacements are simple enough
+to make good examples, so we include them in Listing~\ref{lst:gotcharepl}.  Note that
+although they may appear recursive, they are not:\@ enforced interposition rebinds
+their references to their own names to the external definitions in \texttt{libc.so}.
+
+\begin{figure}
+\begin{lstlisting}[label=lst:gotcharepl,caption=\textit{libgotcha} \texttt{sigfillset()} and \texttt{sigaddset()} replacements]
+int sigfillset(sigset_t *set) {
+	int res = sigfillset(set);
+	if(!config_noglobals())
+		sigdelset(set, SIGSEGV);
+	return res;
+}
+
+int sigaddset(sigset_t *set, int signum) {
+	if(!config_noglobals() && signum == SIGSEGV)
+		return 0;
+	return sigaddset(set, signum);
+}
+\end{lstlisting}
+\end{figure}
+
+Another troublesome call is \texttt{dlsym()}, used to manually look up the address of
+a dynamic symbol by name.  For the same reason we encountered with \texttt{dlopen()}
+in Section~\ref{sec:libgotcha:unintfuns}, simply marking it as uninterruptible would
+cause it to search the wrong libset.  Because it implements its logic directly in
+\texttt{libdl.so} rather than deferring to a private dynamic linker interface, we
+initially assumed it would work fine out of the box; however, when we implemented the
+warning about direct accesses to \texttt{\_rtld\_global} described in that section,
+we were surprised to find that \texttt{dlsym()} triggered it.  Some investigating
+revealed that \texttt{dlsym()} was directly taking the dynamic linker's big lock for 
+the entire duration of every lookup because, whenever it hands one module the address
+of a symbol defined in another, it adds a dependency edge between them to ensure the
+defining module cannot be unloaded before the referencing one.\footnote{Technically,
+there is one other reason for taking the big lock:\@ to prevent a concurrent
+\texttt{dlclose()} from removing the defining module and/or corrupting the dependency
+graph while the symbol search is in progress.  Unloading modules is a rare operation
+that we currently consider out of scope, so we do not guard against this situation.
+However, one feasible approach would be to replace \texttt{dlclose()} with a version
+that took a \textit{libgotcha}-local lock to establish mutual exclusion with symbol
+lookups without taking the big lock.  To avoid making symbol lookups uninterruptible,
+\texttt{libset\_reinit()} could break the local lock in response to cancellation.  A
+simpler option would be a \texttt{dlclose()} replacement that disallowed unloading
+modules from libsets other than the starting one; this would have the additional
+benefit of preventing a preemptible function from making a lasting change to the
+modules available in its (reusable) libset.}  To solve this and prevent many manual
+symbol lookups from being uninterruptible, we implemented a \texttt{dlsym()}
+replacement that becomes interruptible (by restoring the next libset) and does not
+take the big lock when it detects that the calling code's current libset is not the
+starting one and that it is looking up a symbol in some specific other module in that
+libset.  This is safe because such lookups can only modify the dynamic linker state
+corresponding to their own libset, and the state changes (or any breakage caused by
+pausing or cancellation) will therefore not impact any other libsets.\footnote{We
+currently remain interruptible if it is traversing the entire global search list
+rather than searching a specific module, because the symbol might resolve to a
+definition in the dynamic linker.  In this case, the dynamic linker would add a
+dependency edge into the starting libset because of the dynamic linker's special
+proxying.  We suspect that such searches could safely be made preemptible if one
+checked the symbol being searched against the dynamic linker's symbol table to ensure
+this outcome was impossible.}  As part of this change, we also had to add a
+\texttt{dlerror()} replacement to report errors encountered during symbol lookups.
+
+Finally, we discovered one apparent incompatibility between exception handling and
+dynamic linker namespaces.  After noticing that Rust panics would crash the program
+when the current libset was not the starting one, we discovered that libgcc and
+libunwind's implementations of the \texttt{\_Unwind\_RaiseException()} function from
+the C++ ABI call glibc's \texttt{dl\_iterate\_phdr()} function to find each module's
+\texttt{.eh\_frame} section containing metadata about the stack frame address.  We
+then noticed that the latter function only searches the invoking namespace, which
+causes unwinding to fail as soon as it encounters a function call that crossed a
+namespace boundary.  We fixed this by adding a replacement implementation that
+extends the search to other namespaces as long it has not yet found the module the
+caller is seeking.
+
+Because internal control libraries are within the same module as \textit{libgotcha},
+enforced interposition treats them in the same special way.  This enables such
+control libraries to define their own replacements merely by implementing a function
+with a well-known name and exporting it in their dynamic symbol table.  By default,
+all of their own uses of such a symbol refer to the third-party definition.  We
+recognize that control libraries may need to further wrap our replacement functions
+instead of overriding them completely, however, so for each symbol
+\texttt{\textit{name}} that \textit{libgotcha} implements a replacement for, it also
+exports a symbol \texttt{libgotcha\_\textit{name}} that refers unambiguously to that
+replacement.  These symbols are local by default to prevent abuse, but any control
+library that needs them can configure its build system to change their type before
+linking against the \textit{libgotcha} static library.
+
 
 \solb{\textbf{Subsection on thread-local storage}}
 
@@ -792,6 +923,8 @@ The semantics of a control library depend on how it is built:
 \solb{Reinitialization diagram (TLS part)}
 
 \solb{Remove all uses of the term uncopyable}
+
+\solb{Static interposition}
 
 
 \begin{promotesubsections}

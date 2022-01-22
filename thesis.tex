@@ -340,25 +340,6 @@ applications that depend on \texttt{libinger.so} need only define a custom inter
 \texttt{ld-linux-x86-64.so.2} file in your build directory.
 
 
-\section{Control libraries (gotcha 8224235)}
-
-If an internal control library needs to alter the behavior of any additional third-party library
-functions, it may designate them as dangerous by defining its own implementation of the same name.
-Calls to the function from the rest of the process image will be rerouted to this implementation,
-but calls from the control library (and \textit{libgotcha} itself) will be routed to the original
-third-party implementation.  For more details, see the documentation in \texttt{libgotcha\_api.h}, the
-advice about compiler optimizations in \texttt{libgotcha\_repl.h}, and the example control libraries in the
-projects under the \texttt{example} directory.
-
-Note that internal control libraries' calls to \textit{existing} dangerous C library functions are also
-routed directly to the real implementation, but the control library may instead choose to call
-\textit{libgotcha}'s safer wrapper.  A control library might even use this feature to wrap \textit{libgotcha}'s
-own wrapper of a third-party library function!  These use cases are considered advanced: see the
-documentation in \texttt{libgotcha\_repl.h}, and be prepared for some additional build system complexity
-(e.g., our Make integration supports replacing calls to \texttt{cp} via the \texttt{\$(CP)} variable, which could
-be used to inject an intermediate \texttt{objcopy} step into the build process).
-
-
 \section{Lessons for system builders (slides)}
 
 Resuming is a useful feature that is cheap, but introduces concurrency.
