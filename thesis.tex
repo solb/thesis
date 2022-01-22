@@ -164,28 +164,6 @@ case~\cite{getcontext-manpage}.}.
 Signal pool trick:\@ see 17b86d2.
 
 
-\section{ELF \textit{NODELETE} dynamic flag workaround (8dcf62b)}
-
-The one place this does not work
-is when a library monkey-patches the dynamic linker itself.  This
-requires the use of a private interface, and the only offending library to our
-knowledge is GNU libpthread, which replaces function pointers in order to cause the
-dynamic linker to take locks when performing potentially concurrent operations; we
-handle this by preventing the monkey-patching constructor code from running in our
-modified copy of that library.
-
-
-\section{Uncopyable function calls diagram (424387e)}
-
-See Figure~\ref{fig:uncopyable}.
-
-\begin{figure}
-\includegraphics[width=\columnwidth]{functions/figs/calltree}
-\caption{What happens when a program calls an uncopyable function}
-\label{fig:uncopyable}
-\end{figure}
-
-
 \section{Program automatically repaired by \textit{libas-safe} (ee2602a)}
 
 The main use of \textit{libgotcha} is to make library function calls async-signal safe when
