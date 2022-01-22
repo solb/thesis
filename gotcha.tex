@@ -711,7 +711,16 @@ pass a function pointer to either of the registration functions to have it invok
 entry to or exit from uninterruptible code.  In developing this interface, we
 discovered it was very hard to write correct callbacks that could tolerate being
 preempted, so we elected to run all callbacks with the next libset set to the
-starting one.  Recall that it is never safe to pause or cancel execution in this
+starting one.\footnote{This is actually only currently true of the call callback, as
+return callbacks run in the caller's libset for largely historical reasons.  We
+originally made this decision because this callback type predated the mechanism for
+querying the caller's libset.  After adding both this feature and call callbacks, we
+planned to change the behavior for consistency between the two callback types, but
+encountered a complication.  Some publicly-callable and initially uninterruptible
+\textit{libgotcha} functions sometimes need to change the next libset partway through
+in order to finish in an interruptible state, and we did not want such changes to be
+observable by the callback.}
+Recall that it is never safe to pause or cancel execution in this
 state, so the control library's preemption mechanism will defer preemption in
 callbacks, just as it was already required to do in other such places.  Because the
 control library's callback might want to know which libset control switched from, we
