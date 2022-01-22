@@ -319,6 +319,7 @@ rather than leveraging copy on write to later restore to the version on disk.
 
 
 \section{Selective relinking}
+\label{sec:libgotcha:relink}
 
 Most of the complexity of \textit{libgotcha} lies in the implementation of selective
 relinking, the mechanism underlying libset switches.  To establish the libset
@@ -925,15 +926,133 @@ library that needs them can configure its build system to change their type befo
 linking against the \textit{libgotcha} static library.
 
 
-\solb{\textbf{Subsection on thread-local storage}}
+\subsection{Thread-local storage}
 
-\solb{Diagram of thread-local data layout}
+Selective relinking seeks to isolate global state that would otherwise infect the
+entire program if left corrupted or inconsistent by pausing or cancellation.  We saw
+in Section~\ref{sec:libgotcha:relink} that this state includes global variables and
+functions (which might be nonreentrant).  However, there is a third class of state
+that escapes a function's scope:\@ thread-local variables.
 
-\solb{Reinitialization diagram (TLS part)}
+Thread-local variables reside in a memory region known as the TLS (Thread-Local
+Storage).  This, in turn, is located just before the TCB (Thread-Control Block), a
+region storing metadata about the thread (Figure~\ref{fig:procimgthd}).  The pthreads
+implementation maintains a pointer to the current thread's TCB in the \texttt{\%fs}
+segment register for fast access, so the compiler simply translates references to
+thread-local variables into negative offsets into that segment.\footnote{This is a
+slight simplification because the layout of the TLS depends on the order in which
+libraries are loaded, and therefore is not fully known until \textit{runtime}.
+Depending on the thread-local variable's scope and which module it is defined in, the
+dynamic linker may have to determine the offset in the middle of program execution.
+Each combination of these two factors constitutes a different access ``model,'' and
+causes the compiler to emit a different sequence of instructions to find the
+variable.}
 
-\solb{Remove all uses of the term uncopyable}
+Unlike the types of state we have seen so far, the desired semantics of thread-local
+variable accesses depend on how the control library is using libsets.  For some use
+cases, it may even be necessary to widen the scope of thread-locals \textit{beyond
+their thread}; for instance, this is required to support pausing code on one kernel
+thread and then resuming its execution on a different one.  Furthermore, there is no
+efficient way to consistently make relinking selective based on the module
+relationship between the referee and the referent because TLS pointer calculations do
+not use GOT entries and can use hardcoded offsets.  But neither is it clear whether
+the abstraction provided by any given control library can tolerate a thread-local
+variable's apparent value changing as soon as the next libset does and while the
+current libset remains the same, which would make \texttt{thread\_local} variables
+fail assertions analogous to (2) and (3) from Listing~\ref{lst:exmplstate}.
 
-\solb{Static interposition}
+Rather than being opinionated and choosing the wrong stance, \textit{libgotcha}
+decides to default to the system behavior, where thread-local variables are
+associated with the thread and unaffected by the next libset (though of course they
+do depend on the current libset, since the TLS contains a separate copy of each
+thread local for each copy of its defining module).  However, it anticipates that the
+control library might want to maintain multiple sets of ``thread''-local variables by
+allocating custom TCBs and swapping their pointers into the segment register.  One
+hazard for this approach is that \texttt{pthread\_self()} simply retrieves the TCB
+pointer from the thread segment register, so changing it alters the thread's view of
+its own identifier.  The most significant consequence of this is that if the thread
+attempts to send itself a signal (e.g., to support preemption), the thread ID it
+passes will be invalid and the operation will fail.  To address this, we provide
+replacement functions for the \texttt{arch\_prctl()} function for updating segment
+registers\footnote{Although x86-64 processors provide an instruction for updating the
+segment registers, the operating system can disable its use by non-supervisor code.
+The Linux kernel does so to guard against a class of privilege-escalation bugs, and
+instead provides a system call for changing segment registers so that it can validate
+the new location before applying the update.  While a rogue application could avoid
+our replacement function by calling \texttt{syscall()} instead of the glibc wrapper
+function, this is a rare case and a difficult one to guard against.} and the
+\texttt{pthread\_kill()} function for sending signals directed at a specific thread.
+Respectively, our replacements store the pointer to the original TCB the installed
+one is replacing and substitute the original pointer when they see one saved.
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/procimg_perthd}
+\caption{Per-thread portion of process image}
+\label{fig:procimgthd}
+\end{figure}
+
+One thing that \textit{libgotcha} does have to do is restore the TLS upon a
+cancellation, since failing to do so might leave it permanently corrupt.  A na\"ive
+approach would be to do this for every thread's TLS, but this could be quite
+expensive, especially since it would require thread synchronization.  Instead, we
+observe that each libset is likely to only ever be used by a single thread, and that
+threads that never use a particular libset will never reference their TLS areas that
+correspond to it.  Consequently, we reinitialize TLSes lazily only as necessary:
+We allocate a thread-local variable (per TCB, of course) to track each TLS's current
+``version'' of each libset.  Whenever a control library calls
+\texttt{libset\_reinit()} to signal a cancellation, we merely increment a separate
+program-wide version watermark for that libset, as show at the bottom of
+Figure~\ref{fig:reinit}.  We know that a libset whose execution has just been
+canceled cannot currently be in use by any thread, so we do not need to do anything
+further unless and until the libset is reused.  We can recognize such reuse because
+it begins with the control library passing the libset identifier to
+\texttt{libset\_thread\_set\_next()}, and we respond by checking the current TCB's
+current version for that library against the watermark.  If the TCB is out of date,
+we iterate over the TLS's regions and restore the contents corresponding to modules
+from that libset using the each module's initialization image in its \texttt{.tdata}
+and \texttt{.tbss} sections.  Then we update the TCB's current version for that
+libset to match the watermark.  Of course, the control library might have multiple
+TCBs that it uses with the same libset, but we detect this by following the same
+procedure from our \texttt{arch\_prctl()} replacement function.
+Figure~\ref{fig:tlsreinit} summarizes the algorithm; note that it is even robust to
+control libraries that use the same libset from multiple threads concurrently, as
+long as they never illegally reinitialize a libset while it is in use by any thread.
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/reinit_tls-crop}
+\caption{Lazy TLS reinitialization following asynchronous cancellation and libset reuse}
+\label{fig:tlsreinit}
+\end{figure}
+
+It is important that if a control library switches the TCB, it does not affect
+\textit{libgotcha}'s internal state.  Yet \textit{libgotcha} relies on thread-local
+variables to store information such as the pointer to the thread's original TCB.  In
+addition to the enforced dynamic interposition mechanism described in the previous
+section, \textit{libgotcha} includes a static interposition system whereby it can
+define statically-linked replacement functions (not exported to the dynamic symbol
+table) that apply throughout its own code but not to the rest of the program, even
+internal control libraries.  This works because the static linker prefers to link
+against static symbols provided directly in object files so that it can avoid
+generating relocations against the GOT, but given the choice between (static) symbols
+in a static library and (dynamic) ones in a shared library, it prefers to link
+against the latter (so for internal control libraries, the third-party definition
+rather than \textit{libgotcha}'s static replacement).  To insulate its own
+thread-local variables against TCB changes, \textit{libgotcha} includes a static
+replacement for the dynamic linker's \texttt{\_\_tls\_get\_addr()} function that
+reroutes all its accesses to its own thread locals to the original TCB for the
+current thread.\footnote{There are currently three thread locals that
+\textit{libgotcha} deliberately accesses via static offsets from the TCB instead of
+using \texttt{\_\_tls\_get\_addr()}.  The first stores the current version counters
+for each libset, and is truly specific to the TCB rather than the kernel thread.  The
+other two still correspond to the kernel thread, but are accessed from assembly by
+\texttt{procedure\_linkage\_override()} and its return trampoline, whose
+implementation is greatly simplified by being able to access them without calling
+into C code.  One is the thread's record of the next libset before the libset switch,
+which our \texttt{arch\_prctl()} replacement manually copies over whenever the
+control library swaps in a different TCB.  The other is the actual next libset, which
+is always set to the starting libset while a TCB swap occurs because of said
+function replacement, and the trampoline will automatically restore its value from
+the aforementioned upon return from the uninterruptible call.}
 
 
 \begin{promotesubsections}
