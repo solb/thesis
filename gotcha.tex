@@ -733,7 +733,51 @@ callback orders of magnitude slower.  Fortunately, we anticipate rarer need for 
 \end{sloppypar}
 
 
-\solb{\textbf{Section More on control libraries}}
+\section{Control libraries}
+
+All of \textit{libgotcha}'s setup work is wasted if the application never leaves the
+starting libset.  But libsets are a low-level abstraction that are not useful on
+their own:\@ their only value is in legalizing types of concurrency that would
+otherwise exhibit undefined behavior.  As such, \textit{libgotcha} takes no stance on
+how libsets should be applied, instead leaving it up to other code to use them (by
+changing the next libset).  We refer to this other code as a control library because
+it controls \textit{libgotcha} using the API shown in Listings~\ref{lst:gotchaapi}
+and \ref{lst:gotchacbapi}.
+
+The semantics of a control library depend on how it is built:
+\begin{itemize}
+\item An \textbf{internal} control library is statically linked with
+	\textit{libgotcha} to form a single shared object file that is loaded (or
+	preloaded) as one unit.  Because each libset contains a separate copy of
+	its module, \textit{libgotcha} adds itself to the uninterruptible allowlist
+	described in Section~\ref{sec:libgotcha:unint}.  This redirects all calls to
+	it into the starting libset, rendering its other copies dormant in a manner
+	similar to the dynamic linker's proxying mechanism.  By virtue of being part
+	of \textit{libgotcha}'s module, internal control libraries enjoy the same
+	guarantee that their code always executes in the base libset.\footnote{There
+	is actually one exception to this rule:\@ control libraries written in Rust
+	can include generic functions in their public interface.  Because rustc
+	monomorphizes such functions for the client code that uses them,
+	\textit{their implementations are not actually in \textrm{libgotcha}'s
+	module!}  Rather, there are one or more copies of them (specialized for
+	various type arguments) in each program module that calls them.  It is
+	difficult to write correct control library code that can tolerate preempting
+	itself or interacting with other copies of itself, so we recommend that
+	control libraries with generic interfaces manually transfer control to the
+	starting libset before doing the bulk of their work.}  This also means that
+	they, like \textit{libgotcha}, are automatically considered uninterruptible.
+\item An \textbf{external} control library is dynamically linked with
+	\textit{libgotcha}, and therefore constitutes a separate shared object file
+	that depends on \texttt{libgotcha.so} (or, perhaps, a compatible internal
+	control library).  Calls into such a library do not cause an automatic libset
+	switch unless explicitly allowlisted within \textit{libgotcha}, so the
+	library is responsible for coping with preemption and multiple copies of
+	itself.  Despite these limitations, support for external control libraries
+	enables control libraries to compose without mutual build system support,
+	allows a single application to have more than one unrelated control library,
+	and supports updating to a new version of \textit{libgotcha} without
+	rebuilding the control library.
+\end{itemize}
 
 \solb{Types of control libraries from the frontmatter}
 

@@ -307,10 +307,7 @@ given kernel thread while \textit{libinger}'s own code is executing on that thre
 
 Of course, things are not quite that simple.  There are noteworthy exceptions to the rule:
 \begin{itemize}
-\item The public \textit{libinger} Rust interface includes a number of generic functions.  Because the Rust
-	compiler monomorphizes such functions for the client code that uses them, \textit{their implementations
-	are \textrm{not} in \texttt{libinger.so}!}  Rather, there is, roughly speaking, one or more copies of them
-	(specialized for various type arguments) in each program module that calls them.  The generic
+\item The generic
 	functions are therefore implemented such that they package everything that differs by type, then
 	call into non-specialized functions such as \texttt{setup\_stack()} and \texttt{switch\_stack()} to do the scary
 	stuff.
@@ -344,25 +341,6 @@ applications that depend on \texttt{libinger.so} need only define a custom inter
 
 
 \section{Control libraries (gotcha 8224235)}
-
-There are two possible types of control library:
-\begin{itemize}
-\item An \textit{internal control library} is statically linked with \textit{libgotcha} to form a single shared
-   object file that is loaded (or preloaded) as one unit.  In addition to having access to the
-   \textit{libgotcha} control API (declared in \texttt{libgotcha\_api.h}), internal libraries enjoy the guarantee
-   that their code always executes in the base libset, and have direct access to the C library
-   functions deemed by \textit{libgotcha} to be too dangerous for the rest of the program to call
-   (enumerated in \texttt{libgotcha\_repl.h}).
-\item An \textit{external control library} is dynamically linked with \textit{libgotcha}, and therefore constitutes
-   a separate shared object file that depends on \texttt{libgotcha.so} (or, perhaps, a compatible internal
-   control library).  Calls into such a library do not cause an automatic libset switch unless
-   explicitly \whitelist{ed} (which is currently not pluggable and done via \texttt{whitelist.c}), and the
-   library does not have special access to dangerous C library functions.  External control
-   libraries haven't been tested as extensively as internal ones, but are necessary when you want to
-   have more than one control library in a single application, if you want to be able to update
-   \textit{libgotcha} without rebuilding the control library, and maybe for other reasons yet to be
-   discovered.
-\end{itemize}
 
 If an internal control library needs to alter the behavior of any additional third-party library
 functions, it may designate them as dangerous by defining its own implementation of the same name.
