@@ -897,7 +897,11 @@ definition in the dynamic linker.  In this case, the dynamic linker would add a
 dependency edge into the starting libset because of the dynamic linker's special
 proxying.  We suspect that such searches could safely be made preemptible if one
 checked the symbol being searched against the dynamic linker's symbol table to ensure
-this outcome was impossible.}  As part of this change, we also had to add a
+this outcome was impossible.}  Our replacement function also makes one important
+tweak to the symbol lookup semantics:\@ if we have a PLOT entry or fake global
+address for the requested symbol, we return that instead of its true definition to
+avoid creating a backdoor around selective relinking and to preserve pointer
+comparison.  As part of these changes, we also had to add a
 \texttt{dlerror()} replacement to report errors encountered during symbol lookups.
 
 Finally, we discovered one apparent incompatibility between exception handling and
