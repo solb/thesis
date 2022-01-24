@@ -405,6 +405,28 @@ restoring the protection bits.  This fools the dynamic linker's lazy symbol look
 into later updating the shadow GOT entry instead.  Not only does this avoid breaking
 selective relinking, it also preserves memoization.
 
+The GNU system supports a second, nonstandard type of lazy function call resolution
+known as indirect function calls.  Compared to the lazy resolution specified in the
+ELF standard, this variant allows the defining library to provide custom code to
+resolve the address of the function definition.  We have to support this mechanism
+because glibc relies on it to select among architecture-specific implementations for
+reasons of optimization (e.g., \texttt{strstr()}, which leverages vector extensions
+on processors that have them) or simply portability (e.g., \texttt{clock\_gettime()},
+which depends on the best available time source).  Indirect symbols require special
+handling because their definitions are misleading:\@ the symbol table entry in the
+defining module describes the location not of the definition but of a function that
+returns that definition's location.  If we placed such addresses into our shadow
+GOTs, each caller would unwittingly invoke the resolver function instead of the
+function it was trying to call.  Whenever we see a symbol table entry marked with the
+\texttt{STT\_GNU\_IFUNC} type, we instead invoke it and place the returned pointer in
+the shadow GOT.  A final complication is that some indirect resolver functions
+retrieve their return values from the GOT, so if we call them after we have
+manipulated it, they can create inefficient chains of calls through multiple shadowed
+GOT entries, or even infinite recursion where a resolver returns the PLOT stub that
+leads to the very shadow GOT entry it was intended for.  To avoid these problems, we
+call all of a module's indirect resolvers eagerly and save the results into the
+shadow GOTs before making any changes to the real GOT.
+
 
 \subsection{Intercepting global variable accesses}
 \label{sec:libgotcha:globals}
