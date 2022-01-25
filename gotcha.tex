@@ -880,8 +880,8 @@ fixing one of our fake addresses.  We provide a similar replacement for the lega
 \texttt{signal()} function.  One other signal-related problem can occur when an
 application or library temporarily blocks signals to establish a critical section.
 Blocking our handler would cause the critical section to crash if it accessed a
-global variable, so we replace \texttt{sigprocmask} and \texttt{pthread\_sigmask} to
-leave \texttt{SIGSEGV} alone.  Finally, we replace \texttt{sigfillset()} and
+global variable, so we replace \texttt{sigprocmask()} and \texttt{pthread\_sigmask()}
+to leave \texttt{SIGSEGV} alone.  Finally, we replace \texttt{sigfillset()} and
 \texttt{sigaddset()} to exclude \texttt{SIGSEGV}, which prevents signal handlers from
 implicitly masking and unmasking it (e.g., via Linux's \texttt{sigreturn()}
 implementation in the memory-mapped vdso).  The latter replacements are simple enough
