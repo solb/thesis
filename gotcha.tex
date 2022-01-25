@@ -401,7 +401,7 @@ the GOT happens within the symbol-lookup code in the dynamic linker, so there is
 way to skip it.  Luckily, the dynamic linker keeps each module's dynamic relocation
 table in memory and uses that to determine which GOT entry to update.  The
 \textit{libgotcha} constructor exploits this by marking the relocation table pages
-writeable, changing the relocation entries corresponding to cross-library calls, then
+writeable, changing the relocation entries corresponding to cross-module calls, then
 restoring the protection bits.  This fools the dynamic linker's lazy symbol lookup
 into later updating the shadow GOT entry instead.  Not only does this avoid breaking
 selective relinking, it also preserves memoization.
