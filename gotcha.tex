@@ -589,6 +589,25 @@ is not equal to the starting one.  It is crucial that the control library check 
 before deciding to preempt, and as we saw in Listing~\ref{lst:gotchaapi}, it can do
 so using the \texttt{libset\_thread\_get\_next()} function.
 
+Unlike function calls, accesses to global variables do not have defined end points
+after which they are complete.  That is, a single write might leave a structure in a
+temporarily-invalid state that is corrected by a subsequent one, but there is no
+structural association between the two.  We do not currently change the next libset
+when we resolve a global variable access, which means a control library might pause
+or cancel code in the middle of such a write or sequence of writes.  This is safe
+because the allowlist does not contain any writeable variables, so the only time that
+a global variable write can resolve to a definition in a different libset is when the
+current libset is the starting one, the next libset is any other one, and the program
+performs an access such as (1) from Listing~\ref{lst:exmplstate}.  Such an access
+would be routed to the code's own libset, so any corruption due to concurrency would
+remain properly isolated and could not infect the starting libset.\footnote{If one
+did need support for allowlisted writeable global variables, the resolver signal
+handler described in Section~\ref{sec:libgotcha:globals} would need to serve a
+read-only copy of such variables; this way, each write would generate an additional
+segmentation fault and the handler could batch writes to the backing object.
+Determining a safe boundary for this batching would require at least additional
+runtime heuristics, if not static analysis.}
+
 
 \subsection{Other uninterruptible functions}
 \label{sec:libgotcha:unintfuns}
