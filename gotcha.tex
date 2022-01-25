@@ -954,7 +954,8 @@ Finally, we discovered one apparent incompatibility between exception handling a
 dynamic linker namespaces.  After noticing that Rust panics would crash the program
 when the current libset was not the starting one, we discovered that libgcc and
 libunwind's implementations of the \texttt{\_Unwind\_RaiseException()} function from
-the C++ ABI call glibc's \texttt{dl\_iterate\_phdr()} function to find each module's
+the C++ ABI (Application Binary Interface) call glibc's \texttt{dl\_iterate\_phdr()}
+function to find each module's
 \texttt{.eh\_frame} section containing metadata about the stack frame address.  We
 then noticed that the latter function only searches the invoking namespace, which
 causes unwinding to fail as soon as it encounters a function call that crossed a
