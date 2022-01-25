@@ -1199,9 +1199,9 @@ delays program startup in proportion to both the number of libsets and the numbe
 modules.  The good news is that doing this work up front significantly reduces the
 latency at runtime.  That said, initializing libsets at runtime would allow control
 libraries to strike their own balance between startup time and runtime cost.
-Selective relinking is not fundamentally incompatible with such a feature, although
-iCurrent \texttt{libc.so}t would require significant engineering effort, most notably modification of all
-existing data structures to support resizing.
+Selective relinking is not fundamentally incompatible with such a feature, but
+supporting it would require significant engineering effort, most notably modification
+of all existing data structures to support resizing.
 
 Initializing more than a few libsets reveals another scaling limitation in glibc:\@
 certain dynamic libraries include eager relocations that require their thread-local
