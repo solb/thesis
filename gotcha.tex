@@ -819,7 +819,10 @@ The semantics of a control library depend on how it is built:
 	difficult to write correct control library code that can tolerate preempting
 	itself or interacting with other copies of itself, so we recommend that
 	control libraries with generic interfaces manually transfer control to the
-	starting libset before doing the bulk of their work.}  This also means that
+	starting libset before doing the bulk of their work.  One way to improve the
+	experience for control library authors would be to provide a procedural macro
+	compiler plugin that would at least partially automate this using custom Rust
+	attributes.}  This also means that
 	they, like \textit{libgotcha}, are automatically considered uninterruptible.
 \item An \textbf{external} control library is dynamically linked with
 	\textit{libgotcha}, and therefore constitutes a separate shared object file
