@@ -883,8 +883,11 @@ Blocking our handler would cause the critical section to crash if it accessed a
 global variable, so we replace \texttt{sigprocmask()} and \texttt{pthread\_sigmask()}
 to leave \texttt{SIGSEGV} alone.  Finally, we replace \texttt{sigfillset()} and
 \texttt{sigaddset()} to exclude \texttt{SIGSEGV}, which prevents signal handlers from
-implicitly masking and unmasking it (e.g., via Linux's \texttt{sigreturn()}
-implementation in the memory-mapped vdso).  The latter replacements are simple enough
+implicitly masking and unmasking it (via Linux's \texttt{sigreturn()} helper
+function\footnote{This function is provided by the kernel for direct use by
+unprivileged code.  It is defined in the VDSO (Virtual Dynamic Shared Object), an
+emulated shared library that the kernel maps into each processes's address space.}).
+The latter replacements are simple enough
 to make good examples, so we include them in Listing~\ref{lst:gotcharepl}.  Note that
 although they may appear recursive, they are not:\@ enforced interposition rebinds
 their references to their own names to the external definitions in \texttt{libc.so}.
