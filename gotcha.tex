@@ -572,7 +572,7 @@ into the shadow GOTs so lookups will incur no additional runtime overhead.
 Although the next libset does not determine which copy of an uninterruptible function
 gets invoked, it is relevant during the call.  To avoid creating a dependency between
 the starting libset and the current one, it is important that the next libset be set
-to the starting libset while any uninterruptible code is running.  To ensure maintain
+to the starting libset while any uninterruptible code is running.  To preserve
 this invariant, whenever \texttt{procedure\_linkage\_override()} detects any libset
 other than the starting one calling an uninterruptible function, it resets the next
 libset to the starting libset, storing a backup of its previous value.  Then, just
