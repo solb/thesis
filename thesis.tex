@@ -297,27 +297,6 @@ Of course, things are not quite that simple.  There are noteworthy exceptions to
 \end{itemize}
 
 
-\section{Building glibc from source (inger 7d5b2e2)}
-
-Although \textit{libinger} is compatible with an unmodified glibc in principle, in practice the build
-configuration used by most distributions is insufficient for two reasons:
- * By loading numerous copies of the application's libraries, we tend to exhaust the static storage
-   pool provided by the dynamic linker.  If your program hits this limit, it will crash at load time
-   with an error like: \texttt{yourprogram: libgotcha error: Unable to load ancillary copies of library:
-   somelibrary.so: cannot allocate memory in static TLS block}.
- * Stock glibc builds are limited to 16 linker namespaces, enough to support only 15 preemptible
-   functions at any given time.  If your program hits this limit, it will crash at runtime with an
-   error like: \texttt{launch(): too many active timed functions}.
-
-Unfortunately, these configuration parameters are baked into the dynamic linker at build time.
-What's more, changing (at least) the latter alters the size of internal structures that are shared
-between \texttt{ld-linux.so}, \texttt{libc.so}, \texttt{libpthread.so}, and others, so making changes requires rebuilding
-all of glibc.  Fortunately, provided you set the prefix properly when building glibc, the dynamic
-linker will know where to search (by absolute path) for the other libraries; as such, most
-applications that depend on \texttt{libinger.so} need only define a custom interpreter path pointing to the
-\texttt{ld-linux-x86-64.so.2} file in your build directory.
-
-
 \section{Lessons for system builders (slides)}
 
 Resuming is a useful feature that is cheap, but introduces concurrency.

@@ -337,6 +337,7 @@ definition.  The fake address used depends upon the type of symbol:
 
 
 \subsection{Intercepting function calls}
+\label{sec:libgotcha:functions}
 
 When setting up selective relinking, we do not know whether a particular function
 call needs to be rerouted until runtime.  However, the fact that dynamic function
@@ -835,6 +836,7 @@ The semantics of a control library depend on how it is built:
 
 
 \subsection{Enforced interposition}
+\label{sec:libgotcha:interpose}
 
 A few libc functions either present an opportunity to circumvent the libset
 abstraction or misbehave when called from a program that uses libsets.  To address
@@ -972,6 +974,7 @@ linking against the \textit{libgotcha} static library.
 
 
 \subsection{Thread-local storage}
+\label{sec:libgotcha:tls}
 
 Selective relinking seeks to isolate global state that would otherwise infect the
 entire program if left corrupted or inconsistent by pausing or cancellation.  We saw
@@ -1100,17 +1103,163 @@ function replacement, and the trampoline will automatically restore its value fr
 the aforementioned upon return from the uninterruptible call.}
 
 
-\begin{promotesubsections}
-\input[functions]{gotcha_tls}
+\section{Limitations}
 
-\solb{Drop TLS stuff, incorporating whatever is salvageable earlier}
+Selective relinking successfully mitigates the shared state problem to allows safe
+forms of asynchronous pausing and cancellation on top of the existing systems stack.
+That said, we should emphasize a few shortcomings of our approach:
 
-\input[functions]{gotcha_linker}
 
-\solb{Recompiling glibc from the frontmatter}
+\subsection{Portability}
 
-\input[functions]{gotcha_relocations}
-\end{promotesubsections}
+Selective relinking is grounded in general principles of dynamic linking and the ELF
+specification.  The main burden of porting \textit{libgotcha} to another architecture
+would be rewriting the assembly portions (\texttt{procedure\_linkage\_override()},
+its trampolines, and the PLOT stubs), which currently account for under 300 lines of
+code.  However, porting to another operating system would be more difficult, as
+selective relinking requires linker namespaces, which are only available natively on
+Solaris derivatives and the GNU system (although modern versions of Android's Bionic
+runtime appear to include internal dynamic linker features sufficient to support the
+namespace abstraction~\cite{www-bionic-bypass}).  And of course, selective relinking
+is only relevant to dynamically-linked applications, which precludes its use in
+embedded systems or with those programming languages that do not bother to support
+dynamic linking.
+
+Furthermore, getting \textit{libgotcha} to run real unmodified applications has
+required handling many GNU/Linux-specific features and behaviors.  Examples include
+indirect function calls (Section~\ref{sec:libgotcha:functions}); dynamic linker
+proxying, glibc-wide shared state, monkey patching, and implicit module loading
+(Section~\ref{sec:libgotcha:unintfuns}); \texttt{sigreturn()} signal masking, big
+locks that escape the dynamic linker, and the interaction between namespaces and
+exception handling (Section~\ref{sec:libgotcha:interpose}); and thread-local storage
+details such as TCB switching and \texttt{\_\_tls\_get\_addr()}'s interface
+(Section~\ref{sec:libgotcha:tls}).  As such, porting to a different dynamic linker
+and C library would surely require a fair amount of systems hacking and debugging.
+
+Indeed, our level of dependence on glibc means that even upgrades can require some
+work.  We originally developed \textit{libgotcha} atop glibc 2.29, and we found that
+both the 2.30 and 2.31 releases introduced breaking changes.\footnote{The 2.30
+release stopped accepting position-independent executables as arguments to the
+\texttt{dlopen()} family of functions because they can contain \texttt{COPY}
+relocations that break if they are not present from the start of the program.  As we
+discuss later in this section, we do not support such relocations anyway.  However,
+we need to open a copy of the executable in each libset just like any other module,
+so we work around the change by stripping the \texttt{DF\_1\_PIE} ELF flag from the
+executable using the same approach we use for monkey-patching constructors
+(Section~\ref{sec:libgotcha:unintfuns}).  The 2.31 release introduced a dependency
+between the number of supported namespaces and the size of the
+\texttt{\_rtld\_global\_ro} structure.  At hundreds of libsets, this caused the
+member to grow as large as 16 pages, triggering the symbol size limitation discussed
+at the end of Section~\ref{sec:libgotcha:globals}.  We responded by increasing the
+(currently hardcoded) number of inaccessible pages used to intercept global variable
+accesses.}  Fortunately, we have prioritized debuggability throughout the development
+of \textit{libgotcha}, and provide several features to make it less painful.  Among
+these are a shell script for tracing intercepted function calls and global variable
+accesses, a GDB script that automatically loads debugging symbols for namespaces
+other than the starting one, environment variables for disabling features that make
+debugging difficult (e.g., global variable interception, which generates numerous
+segmentation faults), and specific workarounds to support running under
+Valgrind~\cite{seward:usenix2005} and Mozilla's rr reverse
+debugger~\cite{callahan:arxiv2017}.  With the help of these tools, we were able to
+port to both glibc versions; furthermore, \textit{libgotcha} subsequently survived
+the 2.32 and 2.33 upgrades unmodified.\footnote{More recently, glibc 2.34 has
+consolidated the interfaces formerly exposed by \texttt{libpthread.so} and other
+files into a monolithic \texttt{libc.so}.  As of this writing, we have not tried to
+run \textit{libgotcha} atop this version, but we expect this major restructuring to
+require at least minor changes.  We suspect the problem is not unique to us:  In the
+more than six months since the upstream release, most major GNU/Linux distributions
+have not yet stabilized this version.  This includes distributions such as Arch and
+Gentoo that are typically known for shipping bleeding-edge packages.}
+
+
+\subsection{Scalability}
+
+Although \textit{libgotcha} is compatible with an unmodified glibc in principle,
+vanilla glibc builds are limited to 16 dynamic linker namespaces including the main
+one.  This means that we can only create up to 15 new libsets, and that a control
+library can only have this many preemptible tasks running and/or paused at any time.
+To raise this limit, we rebuild the glibc sources after with an increased value of
+the \texttt{DL\_NNS} macro, which controls the number of supported namespaces.  There
+is no need to install the resulting runtime on the host system; instead, we supply a
+custom interpreter path when linking any application that needs more libsets.  We
+have tested this configuration up to 512 namespaces, but this remains a fixed (glibc)
+compile-time limit.  Removing the per-process libset limit altogether would require
+porting \textit{libgotcha} to work with an alternate dynamic linker that allocates
+namespaces at runtime, such as drow~\cite{www-drow-loader}.
+
+Relatedly, \textit{libgotcha} itself prepares all libsets at load time, and therefore
+delays program startup in proportion to both the number of libsets and the number of
+modules.  The good news is that doing this work up front significantly reduces the
+latency at runtime.  That said, initializing libsets at runtime would allow control
+libraries to strike their own balance between startup time and runtime cost.
+Selective relinking is not fundamentally incompatible with such a feature, although
+iCurrent \texttt{libc.so}t would require significant engineering effort, most notably modification of all
+existing data structures to support resizing.
+
+Initializing more than a few libsets reveals another scaling limitation in glibc:\@
+certain dynamic libraries include eager relocations that require their thread-local
+variables to be assigned TLS offsets at load time.  To support this, the GNU dynamic
+linker reserves a certain amount of static TLS space that must be sufficient for all
+libraries with this requirement across all namespaces.  Populating the libsets
+multiplies modules' space requirements, and can quickly exhaust the static area.
+Part of the problem is that \textit{libgotcha} itself includes such relocations to
+make its assembly portions easier to write, and since it currently loads copies of
+itself into each libset, it contributes to the problem.  When launching a program
+that must support more than a few libsets, one must export an environment variable
+to tune glibc's static TLS size.
+
+
+\subsection{Flexibility}
+
+Selective relinking supports all but one of the cross-module dynamic relocation
+types.  All forms of \texttt{GLOB\_DAT} relocations work:\@ global variables,
+eagerly-resolved function calls, and indirect function calls.  Lazily-resolved
+function calls via \texttt{JUMP\_SLOT} relocations work as usual (including
+memoization), except that we have to eagerly resolve some of them to determine
+whether they represent cross-module calls.
+
+All TLS access modes are supported by swapping out the TCB, although the semantics of
+thread-local accesses depend on the control library's choice of when to do so.
+Unlike with global relocations, selective relinking does not reroute cross-module
+accesses based on the next libset, so the control library has the choice between
+resolving all thread-local variable accesses to their definition in either the
+current libset or the next libset at any given time.  While either of these choices
+might be confusing, thread-local ``globals'' are quite rare.  Of the three such
+variables remaining in glibc's \texttt{libc.so}, only \texttt{errno} was ever part of
+its stable interface; even it has been obsoleted, with the Linux Standard Base long
+specifying that it is to be defined as a preprocessor macro invoking the
+\texttt{\_\_errno\_location()} function~\cite{www-lsb-errno}.  The other two are used
+for communication between glibc modules, and hold ephemeral state that needs only
+persist while code is conducting associated calls to the C library's DNS-resolution
+facilities, something that is unlikely to be split up regardless of the control
+library's choice of ``thread'' isolation boundary.
+
+The only cross-module relocation type we do not support is the \texttt{COPY}
+relocation, which exists as an optimization to accelerate the executable's access to
+global variables defined in other modules.  It works by having the static linker
+allocate redundant space for all libraries' globals directly within the executable's
+file, then asking the dynamic linker to initialize them at load time by copying the
+contents of the version in their defining modules.  The dynamic linker then sets all
+other modules' GOT entries to refer to the new copies, thereby rendering the
+libraries' own definitions vestigial.  Because the definitions are all located within
+the executable's module, it can access them directly using instruction-relative
+offsets rather than looking up their addresses in the GOT.  However, this
+transformation breaks selective relinking for three reasons:  (1)~The elision of
+GOT entries from the executable means that we can no longer intercept the
+executable's cross-module accesses to global variables to redirect them to the next
+libset, causing Listing~\ref{lst:exmplstate} to fail assertion (1) if its code is
+located in the executable.  (2)~In performing the setup work, the dynamic linker
+assumes that only one copy of the executable will ever be loaded, an assumption that
+the libset abstraction violates.  (3)~Migrating the effective definitions from
+libraries' modules into the executable's disassociates symbols from their defining
+library, causing Listing~\ref{lst:exmplstate} to fail assertion (3) if its code is
+located in a library.  When building a program that depends on \textit{libgotcha},
+programmers must instruct their compiler to disable \texttt{COPY} relocations, as
+with the \texttt{-fpic} switch to GCC and Clang.  If \textit{libgotcha} encounters
+any \texttt{COPY} relocations at load time, it prints a warning that the application
+is unsupported as compiled.  Forsaking \texttt{COPY} relocations does incur a small
+performance penalty, but exported global variables are rare now that thread safety
+is a pervasive concern in system design.
 
 
 \section{Evaluation}
