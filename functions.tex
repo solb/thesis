@@ -32,6 +32,19 @@ uncopyable resources such as file descriptors or network adapters.}
 
 \section{Preemptible functions: \textit{libinger}}
 
+We observe that today's concurrency abstractions offer either synchronous invocation
+or preemptive scheduling, but not both.  On one hand we have futures, which are now
+synchronous\footnote{Code interfacing with futures via the ``async/await''
+continuation passing style is now prolific.} but purely cooperative.  On the other
+are kernel threads, which are preemptive but asynchronous.  We bridge this gap by
+introducing a novel abstraction that provides synchrony \textit{and} preemption for
+unmanaged languages.
+
+Doing so requires confronting the very nonreentrancy problems that have long doomed
+attempts to support asynchronous cancellation outside of purely functional contexts.
+This turns out to be a slightly harder problem than safely supporting concurrency, so
+in addition to cancellation, we get the ability to externally pause for free.
+
 \begin{swallowsections}
 \input[functions]{inger_inger}
 \end{swallowsections}
