@@ -32,6 +32,61 @@ uncopyable resources such as file descriptors or network adapters.}
 
 \input[functions]{inger_inger}
 
+
+\subsection{Design principles}
+
+Although we are introducing a new concurrency abstraction, we have striven to keep
+the interface simple and understandable.  The following design principles have guided
+this effort:
+\begin{itemize}
+\item \textbf{We do not assume that users need asynchrony.}  Hence, preemptible
+	functions \textit{run on the same kernel thread as their caller}.  This is
+	good for performance (especially invocation latency), but it is also
+	important to be aware of; for instance, it means that a preemptible function
+	will deadlock if it attempts to acquire a lock held by its caller, or vice
+	versa.  Of course, some users may need asynchrony.  The preemptible function
+	abstraction composes naturally with both threads and futures
+	(Chapter~\ref{chap:libturquoise}), so there is no need to reinvent the wheel.
+\item \textbf{We assume that simply calling a preemptible function is the common use
+	case.}  As such, the \texttt{launch()} wrapper both constructs and invokes
+	the preemptible function rather than asking the user to first employ a
+	separate constructor.  Of course, some users may want to separate these two
+	operations.  This is as easy as passing the sentinel \texttt{0} as the
+	timeout, then using \texttt{resume()} to start executing it.
+\item \textbf{We keep argument and return value passing simple yet extensible.}
+	Because Rust supports closures, the Rust version of \texttt{launch()} accepts
+	only nullary functions:\@ those seeking to pass arguments should just capture
+	them from the environment.  C supports neither closures nor generics, so the
+	C version of \texttt{launch()} accepts a single \texttt{void *} argument that
+	can serve as an in/out parameter.  It occupies the last position in the
+	parameter list to permit (possible) eventual support for variable argument
+	lists.
+\item \textbf{We choose defaults to favor flexibility and performance.}  When a
+	preemptible function times out, \textit{libinger} assumes the caller might
+	later want to resume it from where it left off.  As such, both
+	\texttt{launch()} and \texttt{resume()} pause in this situation; this incurs
+	some memory and time overhead to provide a separate execution stack and
+	package the continuation object, but exhibits much lower latency than
+	asynchronous cancellation.  If the program does require cancellation, we
+	provide ways to explicitly request it (Chapter~\ref{chap:libinger}).
+\item \textbf{In addition to preemption, we offer the option to yield.} This feature
+	enables the construction of higher-level synchronization constructs tailored
+	to preemptible functions (Chapter~\ref{chap:libinger}).  It also allows
+	preemptible functions to coexist with cooperatively-schedule scheduled tasks
+	such as futures (Chapter~\ref{chap:libturquoise}).
+\item \textbf{We favor a simple, language-agnostic interface.}  The fact that our
+	interface centers on a higher-order function in the style of the
+	\texttt{pthread\_create()} and \texttt{spawn()} wrapper functions means that
+	using preemptible functions looks very similar between C and Rust.  If and
+	when bindings for other languages are added, we expect those to have the
+	same feel; in the meantime, other languages can use it (unsafely) via their C
+	foreign-function interfaces.  We considered adhering to the futures interface
+	instead, but decided against it because each language has its own
+	incompatible variant thereof.  The relative ease of building a futures
+	adapter type (Chapter~\ref{chap:libturquoise}) affirms our decision.
+\end{itemize}
+
+
 \input[functions]{inger_noninger}
 
 
