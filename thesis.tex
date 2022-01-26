@@ -72,17 +72,24 @@
 	\renewcommand{\includegraphicsdir}{}
 }
 
+\let\figure@\figure
+\let\endfigure@\endfigure
 \let\includegraphixs@\includegraphics
 \let\caption@\caption
 \let\label@\label
 \newenvironment{swallowfigures}{
-	\renewcommand{\includegraphics}[2][]{}
-	\renewcommand{\caption}[1]{}
-	\renewcommand{\label}[1]{}
+	\renewenvironment{figure}{
+		\renewcommand{\includegraphics}[2][]{}
+		\renewcommand{\caption}[1]{}
+		\renewcommand{\label}[1]{}
+	}{
+		\let\includegraphics\includegraphixs@
+		\let\caption\caption@
+		\let\label\label@
+	}
 }{
-	\let\includegraphics\includegraphixs@
-	\let\caption\caption@
-	\let\label\label@
+	\let\figure\figure@
+	\let\endfigure\endfigure@
 }
 
 \let\section@\section
