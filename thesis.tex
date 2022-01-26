@@ -119,6 +119,18 @@
 
 \begin{document}
 
+\makeatletter
+\let\label@\label
+\let\ref@\ref
+\newenvironment{namespacereferences}[1]{
+	\renewcommand{\label}[1]{\label@{#1##1}}
+	\renewcommand{\ref}[1]{\ref@{#1##1}}
+}{
+	\let\label\label@
+	\let\ref\ref@
+}
+\makeatother
+
 \frontmatter
 
 \begin{titlepage}
