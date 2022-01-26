@@ -30,6 +30,8 @@ differs in a few ways:
 
 \thesis{Add listing of the interface, including \texttt{cancel()} and \texttt{pause()}.}
 
+\thesis{Maybe list it in both languages so we can refer back to it for safety discussion}
+
 \paragraph{Closure support.}
 We leverage Rust's first-class closures to enable the caller to pass
 \texttt{launch()} a function that captures state from its environment.  We expect the
@@ -88,15 +90,31 @@ works.
 
 \solb{Reflow because this was moved from another chapter}
 
+\solb{Be sure to emphasize that concurrency has always been hard}
+
+\solb{\textbf{(Sub)section on custom mutex idea}}
+
 
 \begin{promotesubsections}
 \input[functions]{inger_stacks}
+
+\solb{Mention that this preallocation is not fundamental}
+
+\solb{Cover cool disaggregation trick for growable stacks}
+
+\solb{\textbf{Section on POSIX contexts} (which might have once existed in paper)}
+
+\thesis{Give a tour of \textit{libtimetravel}?}
+
+\solb{Fix (mis)uses of the term continuation}
+
+
 \input[functions]{inger_interrupts}
 \end{promotesubsections}
 
-\solb{More on POSIX contexts}
+\solb{\textbf{Section on deferred preemption}}
 
-\thesis{Give a tour of \textit{libtimetravel}?}
+\solb{Include specialized version UML call diagram}
 
 
 \section{Cancellation}
