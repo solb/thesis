@@ -106,7 +106,42 @@ this effort:
 \end{itemize}
 
 
-\input[functions]{inger_noninger}
+\section{The preemptible functions ecosystem}
+
+In divorcing preemption from asynchronous invocation, preemptible functions also
+disentangle it from the idea of parallelism.  Indeed, \textit{libinger} does not
+provide a task scheduler because the only decision it makes is whether to pause the
+currently executing code.  Whenever it opts to do so, it returns control to the
+preemptible function's caller, so there is no scheduling decision to make.
+
+This design allows client code to pick and choose the level of runtime support it
+needs.  If it only invokes preemptible functions synchronously and makes all
+scheduling decisions itself, it can link directly against \textit{libinger} and use
+the interface presented in Section~\ref{sec:libinger}.  If it prefers to delegate
+scheduling to a runtime, we also provide \textit{libturquoise}, a preemptive futures
+executor providing an event loop and optional thread pool
+(Chapter~\ref{chap:libturquoise}).
+
+Figure~\ref{fig:architecture} shows the dependency relationship between
+\textit{libinger} and \textit{libturquoise}, in the context of the other software
+components developed for this thesis.  Notably, both libraries support nonreentrancy
+by depending on another library called \textit{libgotcha}, which provides a novel
+abstraction of its own for enforcing isolation boundaries.  The \textit{libinger}
+library is implemented in approximately 2,500 lines of Rust; \textit{libgotcha}
+comprises another 3,000 lines of C, Rust, and x86-64 assembly.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=\columnwidth]{functions/figs/architecture}
+\end{center}
+\caption{Preemptible functions software stack.  \textnormal{Hexagonal boxes show
+the required runtime environment.  Rectangular boxes represent components
+implementing the preemptible functions abstraction.  Ovals represent components built
+on top of these.  A preemptible function's body (i.e., \texttt{func}) may be defined
+directly in
+your program, or in some other loaded library.}}
+\label{fig:architecture}
+\end{figure}
 
 
 \section{Automatic handling of shared state: \textit{libgotcha}}
