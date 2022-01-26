@@ -254,6 +254,18 @@ The
 example, a custom mutex that paused instead of blocking would allow two or more preemptible
 functions to share state, even when some of them executed from the same kernel thread.
 
+\textbf{We provide wrapper functions rather than a language extension.}  Many
+	have argued that it is a mistake to extend a language's library with
+	threading APIs without also endowing the language itself with an
+	understanding of concurrency.  The number of preventable concurrency bugs
+	that ISO C and POSIX threads have enabled seems to support this view.
+	However, the decision has been made, concurrency is part of the C language,
+	and the resulting bugs have been released upon the unsuspecting world.
+	Fortunately, newer languages such as Rust have demonstrated that sound
+	function-level concurrency is possible.  We provide wrapper functions
+	reminiscent of \texttt{pthread\_create()} and leave it up to the language
+	bindings to provide as much type safety as possible.
+
 
 \section{A note on implementation (inger 7d5b2e2)}
 
