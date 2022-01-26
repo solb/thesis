@@ -8,6 +8,8 @@ A half-read book is a half-finished love affair.
 \end{chapquote}
 \fi
 
+\solb{Reflow this paragraph because we moved safe concurrency to after it}
+
 Chapter~\ref{chap:functions} motivated the need for lightweight preemptible functions
 and introduced the shared state problem.  Therein, we concluded that explicitly
 handling state shared between a preemptible function and the rest of the program must
@@ -78,6 +80,13 @@ whenever they go out of scope.
 
 We now turn our attention from how one interacts with \textit{libinger} to how it
 works.
+
+
+\begin{promotesubsections}
+\input[functions]{inger_pause}
+\end{promotesubsections}
+
+\solb{Reflow because this was moved from another chapter}
 
 
 \begin{promotesubsections}
