@@ -70,6 +70,18 @@ this effort:
 	separate constructor.  Of course, some users may want to separate these two
 	operations.  This is as easy as passing the sentinel \texttt{0} as the
 	timeout, then using \texttt{resume()} to start executing it.
+\item \textbf{We favor a simple, language-agnostic interface.}  The fact that our
+	interface centers on a higher-order function in the style of the
+	\texttt{pthread\_create()} and \texttt{spawn()} wrapper functions means that
+	using preemptible functions looks similar regardless of the programming
+	language.  Currently, \textit{libinger} provides bindings for both C and
+	Rust.  If and when we add bindings for other languages, we expect them to
+	have the same feel; in the meantime, other languages can use preemptible
+	functions (unsafely) through their C
+	foreign-function interfaces.  We considered adhering to the futures interface
+	instead, but decided against it because each language has its own
+	incompatible variant thereof.  The relative ease of building a futures
+	adapter type (Chapter~\ref{chap:libturquoise}) affirms our decision.
 \item \textbf{We keep argument and return value passing simple yet extensible.}
 	Because Rust supports closures, the Rust version of \texttt{launch()} accepts
 	only nullary functions:\@ those seeking to pass arguments should just capture
@@ -91,16 +103,6 @@ this effort:
 	to preemptible functions (Chapter~\ref{chap:libinger}).  It also allows
 	preemptible functions to coexist with cooperatively-schedule scheduled tasks
 	such as futures (Chapter~\ref{chap:libturquoise}).
-\item \textbf{We favor a simple, language-agnostic interface.}  The fact that our
-	interface centers on a higher-order function in the style of the
-	\texttt{pthread\_create()} and \texttt{spawn()} wrapper functions means that
-	using preemptible functions looks very similar between C and Rust.  If and
-	when bindings for other languages are added, we expect those to have the
-	same feel; in the meantime, other languages can use it (unsafely) via their C
-	foreign-function interfaces.  We considered adhering to the futures interface
-	instead, but decided against it because each language has its own
-	incompatible variant thereof.  The relative ease of building a futures
-	adapter type (Chapter~\ref{chap:libturquoise}) affirms our decision.
 \end{itemize}
 
 
