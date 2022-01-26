@@ -8,8 +8,22 @@
 \end{chapquote}
 \fi
 
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.65\columnwidth]{functions/figs/progsupport}
+\end{center}
+\caption{Taxonomy of support for library code.  It is difficult to determine whether
+a library is fully reentrant, so in practice we always
+apply one of the two mitigations.  Library copying is used by default, but deferred
+preemption is needed to preserve the semantics of \texttt{malloc()} and users of
+uncopyable resources such as file descriptors or network adapters.}
+\label{fig:progsupport}
+\end{figure}
+
 \begin{swallowsections}
+\begin{swallowfigures}
 \input[functions]{intro}
+\end{swallowfigures}
 \end{swallowsections}
 \input[functions]{related}
 \input[functions]{inger_inger}
