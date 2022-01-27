@@ -125,23 +125,76 @@ context without first becoming paused.  If a preemptible function times out, the
 compiler knows the lifetime of any references it has captured, so any attempt to pass
 the paused closure to a scope where its shared data no longer exists will be met with
 a compile error.
-\\
-
-We now turn our attention from how one interacts with \textit{libinger} to how it
-works.
 
 
-\begin{promotesubsections}
-\input[functions]{inger_pause}
-\end{promotesubsections}
+\section{Shared responsibility for concurrency control}
 
-\solb{Reflow because this was moved from another chapter}
+The preceding points about concurrency restrictions in the Rust API may seem
+incongruous with Chapter~\ref{chap:libgotcha}, which spent dozens of pages
+introducing selective relinking, a technique billed as solving the concurrency perils
+of preemptible functions.  In fact, that runtime exists to address a completely
+separate (but equally critical) problem.
 
-\solb{Be sure to emphasize that concurrency has always been hard}
+Adding preemptible functions to an application actually introduces two distinct forms
+of concurrency.  Both stem from the fact that code within the same thread is now
+allowed to interleave its execution at almost entirely arbitrary points, but they
+differ in whether the code in question can possibly anticipate this problem, and
+therefore have any hope of addressing it.
 
-\solb{Ability to query whether it yielded}
+First, there is concurrency involving the libraries that the program depends on, many
+of which were probably authored by third parties.  Although such libraries now
+execute concurrently with preemptible functions by virtue of being used from the same
+kernel thread, they conceptually ``predate'' preemptible functions' existence; that
+is, they cannot even be expected to be aware of this concurrency.  The job of
+\textit{libgotcha} is to reconcile this, first by establishing an isolation boundary
+between each library (and the executable, for that matter) and the rest of the
+program, and then by deferring preemption where shared state is still unavoidable.
 
-\solb{\textbf{(Sub)section on custom mutex idea}}
+Separately, there is concurrency involving the code that uses the preemptible
+functions abstraction (i.e., implements and invokes preemptible functions).  Not only
+\textit{can} this code take measures to ensure this concurrency is safe:\@ it has to
+be the one to do so.  This is because there is often a legitimate need to explicitly
+exchange information between a preemptible function and the surrounding program, in
+which case the possibility of interleaving must be directly confronted.  As a simple
+example, consider a preemptible function that is populating some data structure for
+later use by the rest of the program.  If we imagine that the function exhausts its
+time budget and the application is running behind schedule and opts to cancel it.
+Should the application need to retrieve the work done so far, it must use its
+knowledge of how the preemptible function mutates the data structure to individually
+validate each portion thereof before trusting it to be in a consistent state.
+
+Even without using cancellation, the traditional hazards of concurrency arise, just
+as they do with state-of-the-art abstractions.  This problem space has long posed a
+challenge to systems programmers, and we do not pursue any novel solution.  When
+using the C interface, the programmer bears complete responsibility for writing code
+that is free of data races.  Our Rust API, however, leverages that language's
+first-class concurrency support so the compiler can catch such mistakes.
+
+
+\subsection{Locking and deadlocks}
+
+While the Rust compiler rejects all code that shares state unsafely, it is still
+possible to introduce correctness bugs such as deadlock~\cite{www-rustlang-nu}.  This
+is nothing new, a common cause being an ordinary function blocking on a
+mutual-exclusion lock that is already held by its caller.  But it is especially easy
+to make this mistake with preemptible functions.  The developer must remember that
+each preemptible function runs on the same thread as its caller, so blocking is not a
+legitimate way for a preemptible function to synchronize except with independent
+threads.
+
+Still, it is sometimes necessary for a preemptible function to protect a non-atomic
+resource from other code on the same thread.  This is possible to do with yielding.
+When a preemptible function needs to acquire a mutex, it should use a try lock
+operation instead of a blocking lock.  If it fails to acquire exclusive access, it
+should call \texttt{pause()} and wait for the caller to reschedule it at a later time
+when the resource is hopefully available.  To make this more ergonomic, one could
+easily build a custom mutex type that used this algorithm to implement its ``blocking
+lock'' operation when called from a preemptible function.
+
+The Rust API includes a \texttt{yielded()} method that the caller can use to
+determine whether a preemptible function paused cooperatively.  This can be used to
+implement the equivalent of deadlock detection for situations where multiple
+preemptible functions are contending for a resource.
 
 
 \begin{promotesubsections}
