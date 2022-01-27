@@ -32,6 +32,20 @@ differs in a few ways:
 
 \thesis{Maybe list it in both languages so we can refer back to it for safety discussion}
 
+\begin{figure}
+\begin{lstlisting}[label=lst:ingerfullapi,caption=Preemptible functions extended interface]
+struct linger_t {
+	bool is_complete;
+	cont_t continuation;
+};
+
+linger_t launch(Function func,
+                  u64 time_us,
+                  void *args);
+void resume(linger_t *cont, u64 time_us);
+\end{lstlisting}
+\end{figure}
+
 \paragraph{Closure support.}
 We leverage Rust's first-class closures to enable the caller to pass
 \texttt{launch()} a function that captures state from its environment.  We expect the
