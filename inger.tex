@@ -50,6 +50,28 @@ void pause(void);
 \end{lstlisting}
 \end{figure}
 
+\begin{figure}
+\begin{lstlisting}[label=lst:ingerrustapi,caption=Preemptible functions Rust interface,morekeywords={fn,impl,mut,pub,self,u64,Drop,Result,Send}]
+pub enum Linger<T> {
+	Completion(T),
+	Continuation(Continuation),
+	Poison,
+}
+
+pub fn launch<T: Send>(func: impl FnOnce() -> T + Send,
+			 time_us: u64) -> Result<Linger<T>>;
+pub fn resume<T>(func: &mut Linger<T>,
+		   time_us: u64) -> Result<&mut Linger<T>>;
+pub fn pause();
+
+impl<T> Linger<T> {
+	pub fn yielded(&self) -> bool;
+}
+
+impl Drop for Continuation { ... }
+\end{lstlisting}
+\end{figure}
+
 \paragraph{Closure support.}
 We leverage Rust's first-class closures to enable the caller to pass
 \texttt{launch()} a function that captures state from its environment.  We expect the
