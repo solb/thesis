@@ -105,7 +105,8 @@ implement the language's \texttt{Send} trait, which is true provided that all of
 values it captures have this trait.  In Rust, a type is \texttt{Send} if and only if
 ownership of it can be safely transferred between threads.  This includes all objects
 that do not contain any references, as well as those that do but only to data that is
-safe to access concurrently (\texttt{Sync} in Rust parlance).  This restriction on
+safe to access concurrently (\texttt{Sync} in Rust parlance)~\cite{www-rustlang-conc}.
+This restriction on
 the closure means that any attempt to share state between a caller and its
 preemptible function without the use of appropriate concurrency control will fail at
 compile time.
