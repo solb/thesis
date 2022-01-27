@@ -8,29 +8,26 @@ A half-read book is a half-finished love affair.
 \end{chapquote}
 \fi
 
-\solb{Reflow this paragraph because we moved safe concurrency to after it}
+In Chapter~\ref{chap:functions}, we introduced and motivated lightweight preemptible
+functions, a novel concurrency abstraction pairing synchronous invocation with
+preemption.  At that time, we covered the design principles underlying the API for
+managing preemptible functions; in this chapter, we will discuss the API itself in
+more detail and the design and implementation of \textit{libinger}, the library that
+provides preemptible functions.
 
-Chapter~\ref{chap:functions} motivated the need for lightweight preemptible functions
-and introduced the shared state problem.  Therein, we concluded that explicitly
-handling state shared between a preemptible function and the rest of the program must
-necessarily be the responsibility of the programmer using the preemptible function,
-as is the case for any concurrency abstraction.  However, we also reasoned that
-requiring the programmer to reason about all shared state in the program and its
-dependencies was not a tenable approach to solving the other half of the problem.
-Instead, we introduced the \textit{libgotcha} runtime for automatically establishing
-memory isolation boundaries within the process.  Now that we have covered how said
-runtime works in Chapter~\ref{chap:libgotcha}, we are ready to discuss the
-implementation of the preemptible function abstraction itself.
+We start by giving the full \textit{libinger} C interface in
+Listing~\ref{lst:ingerfullapi}.  The \texttt{launch()} and \texttt{resume()}
+functions work as already described:\@ the former creates a new preemptible function
+and lets it run on the caller's thread for the specified number of microseconds
+(which may be zero), and the latter resumes a preemptible function that had become
+paused after exhausting its time budget.  The new \texttt{cancel()} function allows
+the caller to discontinue a paused preemptible function rather than allowing it to
+run to completion.  Finally, the \texttt{pause()} function may be called from within
+a preemptible function to cooperatively yield.  It immediately pauses the function
+and returns to its caller, just as if the function had been preempted.
 
-In this chapter, we turn our attention to the \textit{libinger} library that provides
-the wrapper functions for invoking and working with preemptible functions.  We begin
-by showing a summary of the library's API surface, expanded from that first presented
-in Section~\ref{sec:libinger}.  Figure~TODO shows the C interface; the Rust interface
-differs in a few ways:
-
-\thesis{Add listing of the interface, including \texttt{cancel()} and \texttt{pause()}.}
-
-\thesis{Maybe list it in both languages so we can refer back to it for safety discussion}
+The Rust interface appears in Listing~\ref{lst:ingerrustapi} and differs in several
+important ways:
 
 \begin{figure}
 \begin{lstlisting}[label=lst:ingerfullapi,caption=Preemptible functions extended C interface,morekeywords=uint64_t]
@@ -75,26 +72,43 @@ impl Drop for Continuation { ... }
 \paragraph{Closure support.}
 We leverage Rust's first-class closures to enable the caller to pass
 \texttt{launch()} a function that captures state from its environment.  We expect the
-caller to provide any inputs to the function in this manner, so there is no need to
-wrap the arguments or pass an empty value when the function expects no inputs.
+caller to provide any inputs to the function in this manner.  Unlike with the C
+interface, there is no need to wrap the arguments in a struct when there are
+multiple, or to pass an empty value when there are none.
 
 
 \paragraph{Type safety.}
 The aforementioned interface change means that the Rust wrapper functions do not
 erase the types of the preemptible function's parameters by diluting them to a
 \texttt{void *}; thus, the preemptible function does not have to perform an unsafe
-cast before using them, and any type mismatch is caught at compile time.
+cast before using them, and the compiler can still type check the program.
 Furthermore, both \texttt{launch()} and \texttt{resume()} are generic on the
 preemptible function's return type:\@ instead of a \texttt{linger\_t}, they return a
 tagged union.  Once the preemptible function runs to completion, the caller may
-destructure this type to retrieve the function's return value.
+destructure this type to retrieve the function's return value.  Because the union is
+tagged, it is impossible to destructure it to retrieve the return value unless the
+function has truly run to completion.
+
+
+\paragraph{RAII.}
+Our Rust interface adheres to the RAII (Resource Allocation Is Initialization) idiom,
+allowing continuation deallocation to happen automatically.  Unlike the C interface,
+the Rust one has no \texttt{cancel()} function; instead, its continuation objects
+implement the language's \texttt{Drop} trait.  Whenever a continuation goes out of
+scope without being consumed by running to completion, the language calls its
+destructor, which implicitly performs a cancellation.
 
 
 \paragraph{Safe concurrency.}
 The \texttt{launch()} function requires that the preemptible function closure
-implement the language's automatic \texttt{Send} trait.  This means that any attempt
-to pass a closure that shares external state without the use of concurrency control
-will cause a compilation failure.
+implement the language's \texttt{Send} trait, which is true provided that all of the
+values it captures have this trait.  In Rust, a type is \texttt{Send} if and only if
+ownership of it can be safely transferred between threads.  This includes all objects
+that do not contain any references, as well as those that do but only to data that is
+safe to access concurrently (\texttt{Sync} in Rust parlance).  This restriction on
+the closure means that any attempt to share state between a caller and its
+preemptible function without the use of appropriate concurrency control will fail at
+compile time.
 
 
 \paragraph{Flexibility.}
@@ -103,29 +117,17 @@ restrictions imposed by the standard library's thread \texttt{spawn()} interface
 However, \texttt{launch()} differs in an important way:\@ unlike a thread, a
 preemptible function is not restricted to the \texttt{'static} lifetime, and so is
 able to accept references to local variables and other dynamically-allocated data.
-Attempts to transfer such references to a thread would result in a compile error.
-The difference that makes it safe to use all lifetimes with preemptible functions is
+In contrast, attempts to transfer such references to a thread would result in a
+compile error.  What makes it safe to use all lifetimes with preemptible functions is
 the fact that they execute synchronously, and therefore cannot outlive the calling
-context without becoming paused.  If a preemptible function times out, the Rust
+context without first becoming paused.  If a preemptible function times out, the Rust
 compiler knows the lifetime of any references it has captured, so any attempt to pass
 the paused closure to a scope where its shared data no longer exists will be met with
 a compile error.
-
-
-\paragraph{RAII.}
-Our Rust interface adheres to the RAII (Resource Allocation Is Initialization) idiom,
-allowing continuation deallocation to happen automatically.  Unlike the C interface,
-the Rust one has no \texttt{cancel()} function; instead, its continuation objects
-implement the \texttt{Drop} trait, and their destructor performs cancellation
-whenever they go out of scope.
 \\
 
 We now turn our attention from how one interacts with \textit{libinger} to how it
 works.
-
-\solb{Interface is generic}
-
-\solb{Use of Rust enum (tagged union)}
 
 
 \begin{promotesubsections}
