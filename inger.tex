@@ -69,6 +69,7 @@ impl Drop for Continuation { ... }
 \end{lstlisting}
 \end{figure}
 
+
 \paragraph{Closure support.}
 We leverage Rust's first-class closures to enable the caller to pass
 \texttt{launch()} a function that captures state from its environment.  We expect the
@@ -197,16 +198,40 @@ implement the equivalent of deadlock detection for situations where multiple
 preemptible functions are contending for a resource.
 
 
+\section{Launching a preemptible function}
+
+Invoking the \texttt{launch()} wrapper function with a nonzero time limit does the
+following:
+\begin{enumerate}
+\item Allocates and installs a private thread control block specific to the preemptible function (Section~\ref{sec:libinger:tcbs})
+\item Captures a snapshot of the kernel thread's execution context (Section~\ref{sec:libinger:contexts})
+\item Allocates and switches to a private execution stack specific to the preemptible function (Section~\ref{sec:libinger:stacks})
+\item Allocates a preemption signal specific to the kernel thread (Section~\ref{sec:libinger:signals})
+\item Records a timestamp shortly before invoking the preemptible function (Section~\ref{sec:libinger:pausing})
+\item Allocates and switches to a private libset specific to the preemptible function (Section~\ref{sec:libinger:isolation})
+\item Invokes the preemptible function (Section~\ref{sec:libinger:jumps})
+\end{enumerate}
+
+The following sections discuss each of these steps in detail.
+
+
+\section{Thread control blocks}
+\label{sec:libinger:tcbs}
+
+
+\section{Execution contexts}
+\label{sec:libinger:contexts}
+
+\thesis{Give a tour of \textit{libtimetravel}?}
+
+
 \begin{promotesubsections}
 \input[functions]{inger_stacks}
+\label{sec:libinger:stacks}
 
 \solb{Mention that this preallocation is not fundamental}
 
 \solb{Cover cool disaggregation trick for growable stacks}
-
-\solb{\textbf{Section on POSIX contexts} (which might have once existed in paper)}
-
-\thesis{Give a tour of \textit{libtimetravel}?}
 
 \solb{Fix (mis)uses of the term continuation}
 
@@ -219,7 +244,19 @@ preemptible functions are contending for a resource.
 \solb{Include specialized version UML call diagram}
 
 
-\section{Cancellation}
+\section{Pausing a running preemptible function}
+\label{sec:libinger:pausing}
+
+
+\section{Preemptible function isolation}
+\label{sec:libinger:isolation}
+
+
+\section{Calls and returns}
+\label{sec:libinger:jumps}
+
+
+\section{Canceling a paused preemptible function}
 
 Should a caller decide not to finish running a timed-out preemptible function, it
 must deallocate it.  In Rust, deallocation happens implicitly via the
