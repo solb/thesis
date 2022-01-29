@@ -48,7 +48,7 @@ void pause(void);
 \end{figure}
 
 \begin{figure}
-\begin{lstlisting}[label=lst:ingerrustapi,caption=Preemptible functions Rust interface,morekeywords={fn,impl,mut,pub,self,u64,Drop,Result,Send}]
+\begin{lstlisting}[label=lst:ingerrustapi,caption=Preemptible functions Rust interface,morekeywords={fn,impl,mut,pub,self,u64,Drop,FnOnce,Result,Send}]
 pub enum Linger<T> {
 	Completion(T),
 	Continuation(Continuation),
@@ -410,7 +410,7 @@ and destructors, \textit{libinger} encapsulates boilerplate code with the soluti
 we have developed into a \texttt{getcontext()} wrapper function that restricts the
 scope of the snapshot to that of a callback function (called in the same place as
 \texttt{closure} from the example):
-\begin{lstlisting}[morekeywords={fn,impl}]
+\begin{lstlisting}[morekeywords={fn,impl,FnOnce}]
   fn getcontext(impl FnOnce(&ucontext_t) -> ())
 \end{lstlisting}
 
