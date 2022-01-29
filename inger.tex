@@ -275,7 +275,144 @@ control library, it calls \texttt{libgotcha\_arch\_prctl()} instead to also noti
 \section{Execution contexts}
 \label{sec:libinger:contexts}
 
-\thesis{Give a tour of \textit{libtimetravel}?}
+The \texttt{Continuation} type inside a paused preemptible function must contain
+enough information to resume the function's execution from where it left off, which
+could be any program point because we interrupt synchronously.  To capture a snapshot
+of the machine registers, we use POSIX contexts, a mechanism for non-local jumps.
+Unlike the better known \texttt{setjmp()}/\texttt{longjmp()} interface from the C
+standard, POSIX contexts permit capturing an execution snapshot on one thread and
+resuming it on another.
+
+One of \texttt{launch()}'s early actions is to snapshot its own execution context.
+It keeps this snapshot available while the preemptible function is running; if the
+function times out, \textit{libinger} will use the snapshot to jump directly back
+into \texttt{launch()} (or \texttt{resume()}), which will populate the
+\texttt{Continuation} type and return it to the caller.
+
+
+\subsection{Using POSIX contexts safely}
+
+Any nontrivial use of the POSIX contexts interface requires some boilerplate code
+that is unfortunately subtle in a few ways.  Like the \texttt{setjmp()} function, the
+\texttt{getcontext()} function can return multiple times:\@ it always returns once
+when the snapshot is initially captured, but each subsequent restoration of the
+context causes it to return again.  Unfortunately, it provides no indication of
+whether it is returning for the first time, even though the caller almost always
+needs to know.  For instance, we only want to launch the preemptible function after
+we capture the snapshot, not after it is restored (in which case we want to package
+the \texttt{Continuation} and return).  A simple boolean flag does not work because
+the compiler is likely to store it in a register, so any updates after the capture
+will be undone by the restore.  At a minimum, one must store the flag in a volatile
+variable~\cite{getcontext-manpage}.
+
+In C, getting the flag right would be enough boilerplate to use the context, as long
+as we did so sensibly.  However, RAII in languages such as Rust makes it very easy to
+implicitly create memory corruption.  Consider the example in
+Listing~\ref{lst:ingerdoublefree}, which is correct as written deceivingly brittle.
+It prints:
+\begin{lstlisting}[language=]
+  Snapshot was captured!
+  About to restore snapshot!
+  Snapshot was restored!
+  Deallocating `closure`, `capturing`, and `snapshot`!
+\end{lstlisting}
+
+\begin{figure}
+\begin{lstlisting}[label=lst:ingerdoublefree,caption=Subtly unsound use of POSIX contexts from Rust,morekeywords={let,mut,unsafe}]
+unsafe {
+	// Closure that runs once right after we capture the snapshot
+	let closure = |snapshot| {
+		println!("About to restore snapshot!");
+		setcontext(snapshot);
+	};
+
+	// Flag to track whether we are capturing or restoring the snapshot
+	let mut capturing = Volatile::from(true);
+
+	// Checkpoint in the program
+	let mut snapshot = MaybeUninit::uninit();
+	getcontext(snapshot.as_mut_ptr());
+
+	if capturing.read() {
+		println!("Snapshot was captured!");
+		capturing.write(false);
+		closure(snapshot.assume_init_ref());
+	} else {
+		println!("Snapshot was restored!");
+	}
+
+	println!("Deallocating `closure`, `capturing`, and `snapshot`!");
+}
+\end{lstlisting}
+\end{figure}
+
+The closure here is of type \texttt{Fn(\&ucontext\_t) -> ()}, which means it takes a
+reference to a POSIX context and returns nothing.  However, changing the code in the
+closure might affect that type.  For example, imagine we had a type
+\texttt{OneTimePadded} for storing data that could only be unwrapped once.  We can
+imagine such a value from \texttt{closure}:
+\begin{lstlisting}
+  let secret = OneTimePadded::from("About to restore snapshot!");
+  let closure = move |snapshot| {
+  	println!("{}", secret.into_inner());
+	setcontext(snapshot);
+  };
+\end{lstlisting}
+
+If we make this substitution, the code still compiles.  The program's output
+describes when the existing variables go out of scope, but how about the new
+\texttt{secret} variable?  Recall that it can only be unwrapped once; therefore the
+\texttt{secret.into\_inner()} call consumes it (by taking ownership).  When that call
+returns, it will go out of scope and its destructor will be invoked.  This should be
+troubling:\@ we said earlier that \texttt{closure} was in scope until the end of the
+\texttt{unsafe} block, so it would seem that \texttt{closure} would have to live that
+long as well (so that \texttt{secret} would still be deallocated if \texttt{closure}
+were never called).
+
+In fact, the Rust compiler is aware that the closure ``uses up'' its captured
+variable.  The most important implication of this is that the closure can never be
+called more than once, so the compiler has changed its type to
+\texttt{FnOnce(\&ucontext\_t) -> ()}.  As with our imagined \texttt{into\_inner()}
+method, calling a \texttt{FnOnce} closure consumes the closure.  For this reason, the
+scope of \texttt{closure} has changed and it now gets deallocated either when it is
+called or at the end of the \texttt{unsafe} block, depending on which branch is
+taken.  Unfortunately, when we restore the snapshot, Rust does not know that the
+\texttt{if} has already been taken, so it assumes it is in the latter situation and
+deallocates \texttt{closure} at the end, calling \texttt{secret}'s destructor in the
+process.  If \texttt{secret} includes any heap-allocated memory, this is a double
+free.  Note that this unsoundness was introduced not because \texttt{closure} now
+captures a variable, but because it \textit{consumes} that variable.
+
+Programmers might need to write preemptible functions that consume variables, so we
+want to support this case.  In order for \texttt{launch()} to safely accept a
+\texttt{FnOnce}, however, we need to fix the potential double free.  To do so, we
+need to make Rust ``leak'' \texttt{closure} in the \texttt{else} branch.  We can do
+this by passing it to the standard library function \texttt{mem::forget()}, which
+takes ownership of its argument but wraps it in an untagged union so the compiler is
+unable to invoke its destructor.  Doing so will leak any of \texttt{closure}'s locals
+or captured variables that are still in scope when it called \texttt{setcontext()},
+so it should make sure to explicitly deallocate them before doing so by calling the
+standard library function \texttt{drop()}.\footnote{The reader might notice that this
+will leak the closure itself.  This is inconsequential unless the closure was
+allocated on the heap, in which case the disclaimer from
+Section~\ref{sec:libinger:cancellation} applies.}  The \textit{libinger}
+implementation is careful to do this with its internal variables, but the preemptible
+function cannot because pausing is preemptive and can occur at any point in its body
+(or that of most functions it might call).  If it is eventually run to completion,
+all its variables will go out of scope normally.  Alternatively, it might be
+cancelled before this happens (Section~\ref{sec:libinger:cancellation}).
+
+A more obvious thing that a user of POSIX contexts can do wrong is to restore a
+snapshot after the function that captured it has returned.  This is undefined
+behavior because the stack may have been clobbered, taking with it any local
+variables and the return pointer.  To avoid this and the above problems with the flag
+and destructors, \textit{libinger} encapsulates boilerplate code with the solutions
+we have developed into a \texttt{getcontext()} wrapper function that restricts the
+scope of the snapshot to that of a callback function (called in the same place as
+\texttt{closure} from the example):
+\begin{lstlisting}[morekeywords={fn,impl}]
+  fn getcontext(impl FnOnce(&ucontext_t) -> ())
+\end{lstlisting}
 
 
 \begin{promotesubsections}
@@ -310,6 +447,7 @@ control library, it calls \texttt{libgotcha\_arch\_prctl()} instead to also noti
 
 
 \section{Canceling a paused preemptible function}
+\label{sec:libinger:cancellation}
 
 Should a caller decide not to finish running a timed-out preemptible function, it
 must deallocate it.  In Rust, deallocation happens implicitly via the
