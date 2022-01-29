@@ -310,8 +310,8 @@ variable~\cite{getcontext-manpage}.
 In C, getting the flag right would be enough boilerplate to use the context, as long
 as we did so sensibly.  However, RAII in languages such as Rust makes it very easy to
 implicitly create memory corruption.  Consider the example in
-Listing~\ref{lst:ingerdoublefree}, which is correct as written deceivingly brittle.
-It prints:
+Listing~\ref{lst:ingerdoublefree}, which is correct as written but deceivingly
+brittle.  It prints:
 \begin{lstlisting}[language=]
   Snapshot was captured!
   About to restore snapshot!
