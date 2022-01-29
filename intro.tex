@@ -81,30 +81,87 @@ to encode classic asynchrony primitives.
 }
 
 
-\section{Structure}
+\section{Structure and contributions}
 
-The rest of the chapters of this thesis break down this research as follows:
-\begin{itemize}
-\item We prototype our abstraction on top the GNU/Linux operating system with an
-	unmodified kernel (Chapter~\ref{chap:libinger}).  Although the current
-	implementation is limited to the x86-64 architecture and relies on POSIX
-	features such as signals, timers, and contexts and GNU dynamic linker
-	namespaces, we believe it could be ported to other systems and architectures
-	with additional engineering effort.  We examine the performance properties of
-	preemptible function invocations, pauses, resumes, and cancellations.
-\item Supporting existing nonreentrant code requires an approach we call selective
-	relinking; our implementation includes a lightweight runtime to do this
-	transparently with modest overhead (Chapter~\ref{chap:libgotcha}).  We
-	present the technique, along with its interaction with dynamic linking and
-	loading, in detail and with examples of semantic implications.
-\item Although lightweight preemptible functions are fundamentally synchronous, we
-	demonstrate their expressiveness by applying them to the asynchrony problem
-	of making an existing cooperative thread library preemptive
-	(Chapter~\ref{chap:libturquoise}).  We demonstrate the applicability of this
-	artifact to mitigating head-of-line blocking in a modern Web server.
-\item We discuss the relevance of preemptible functions to serverless computing,
-	where we argue they could be used to accelerate the launch times of
-	microservices, enabling customers to better leverage the low latency of
-	modern datacenter networks and the steady performance improvements of FaaS
-	providers' walled garden services (Chapter~\ref{chap:microservices}).
-\end{itemize}
+The remaining chapters of this thesis break down our contributions as follows:
+
+\paragraph{Function calls with timeouts (Chapter~\ref{chap:functions})}
+We examine prior approaches to running timed code from the literature, triaging the
+state of the art's shortcomings.  In the process, we rediscover an ancient interface
+for making timed function calls, Scheme engines.  The interface is elegant, but only
+capable of handling purely functional code.  By modernizing and enhancing it, we
+devise a novel interface for calling impure \textit{preemptible functions}
+preemptively.  We set the goal of language agnosticism, aiming to demonstrate support
+for unmanaged systems programming languages because they provide few abstractions
+that might be unavailable unavailable in other settings.
+
+\paragraph{Nonreentrancy and selective relinking (Chapter~\ref{chap:libgotcha})}
+We confront nonreentrancy, a program property that permeates the contemporary systems
+stack from the operating system up, and which poses a fundamental safety challenge to
+preempting impure code.  To overcome this hazard, we introduce \textit{selective
+relinking}, a novel technique that repurposes dynamic linking to establish new
+memory isolation boundaries within a process.  Crucially, this new form of isolation
+operates at a granularity finer than a kernel thread; in fact, it can be applied at
+the level of function calls, as is needed to support preemptible functions.
+
+\paragraph{Rethinking POSIX safety (Chapter~\ref{chap:safety})}
+We examine the POSIX safety concepts, the rules that govern what certain parts of a
+Unix program may---or may not---do.  In particular, signal handlers are ordinarily
+only allowed to call a restricted subset of the available standard functions, and
+cancellable threads are conventionally barred from using operating system facilities
+altogether.  We show how selective relinking can be applied to lift either of these
+restrictions and enable \textit{safe signal handlers} or \textit{asynchronously
+cancellable threads}.  While our implementations are only intended as a
+demonstration, we find that selective relinking makes both of these seemingly
+Herculean tasks simple enough to make for short instructive examples.
+
+\paragraph{Function calls with timeouts, revisited (Chapter~\ref{chap:libinger})}
+We return to the topic of preemptible functions and illustrate how to implement them
+atop the existing systems stack.  In the process, we specialize what we had designed
+as a C interface for the more modern Rust programming language.  The result is a
+platform that exhibits both seamless interoperability with legacy code and harmonious
+integration with the memory and concurrency safety features of Rust's type system.
+The discussion serves both as a demonstration of the kind of considerations that
+would go into integrating preemptible functions into other language ecosystems and as
+an example of a more advanced use of selective relinking.
+
+\paragraph{Resource cleanup and async unwinding (Chapter~\ref{chap:ingerc})}
+We discuss the problem of resource leaks that can occur when asynchronously
+cancelling code.  We develop an approach and proof-of-concept system for ensuring the
+cleanup of cancelled code's own resources with assistance from the compiler.  We do
+this by repurposing exception handling, which requires us to repair
+\textit{asynchronous stack unwinding}.  Compilers have struggled to support this
+feature, but we devise runtime workarounds to handle the troublesome cases,
+introducing only very minimal additional overhead on the normal execution path.
+
+\paragraph{Preemptive userland threading (Chapter~\ref{chap:libturquoise})}
+We show how preemptible functions compose with other concurrency abstractions, namely
+threads and futures.  We create a \textit{thread library that implements preemptive
+scheduling in userland} and still supports unmanaged code.  To accomplish this, we
+construct an preemptible future type, which serves as a language-specific adapter of
+the preemptible futures interface.  We use this to add preemption to the thread pool
+of an existing futures executor.
+
+\paragraph{Preemptive remote procedure calls (Chapter~TODO)}
+We observe a pain point common to RPC systems that support impure code:\@ it is
+universally incumbent on the developer of a server-side function to periodically
+and manually check whether it has exceeded its service-level agreement.  We describe
+how a first-year undergraduate student built a \textit{preemptive RPC system} without
+this limitation in two months.  Its server uses a single-process architecture but
+isolates each request within a preemptible function.  It is also capable of memoizing
+both fully- and partially-computed requests; in the latter case, a repeat request
+resumes the paused computation from wherever it left off.
+
+\paragraph{Microsecond-scale microservices (Chapter~\ref{chap:microservices})}
+We discuss how preemptible functions could be applied to address the problem of
+invocation latency in serverless computing.  Whereas contemporary systems typically
+place each tenant in its own separate container comprising one or more processes and
+a virtual filesystem, we propose consolidating numerous tenants into a single worker
+process.  Preemptible functions would provide compute time isolation, whereas memory
+isolation would be achieved by requiring tenants to submit only code that could be
+proven safe and restricting them to a vetted set of dependencies.
+
+\paragraph{Continuations (Chapter~TODO)}
+We summarize our work, including noteworthy technical challenges we faced and
+selected lessons for future systems builders.  We propose possible future research
+directions.
