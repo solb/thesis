@@ -263,7 +263,9 @@ that are mangled as an exploit mitigation, and a field containing the kernel's t
 identifier.}  It then calls \texttt{\_\_ctype\_init()} to select the correct
 \texttt{ctype.h} implementations for the locale.  Thread control blocks are one of
 the resources it pool allocates and reuses unless a preemptible function is
-cancelled.
+cancelled.  This choice was informed by the expense of allocating TCBs as seen in
+Section~\ref{sec:libgotcha:libtlsblock}; however, it is possible to instead reduce
+this cost using a technique like the one we prototyped in that section.
 
 To install the TCB, we need to load it into the thread segment register using
 \texttt{\_\_arch\_prctl()}.  This is one of the functions that \textit{libgotcha}
