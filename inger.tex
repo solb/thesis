@@ -486,9 +486,19 @@ return address.
 \section{Preemptible function isolation}
 \label{sec:libinger:isolation}
 
+\solb{Include discussion of deferred preemption}
+
 
 \section{Calls and returns}
 \label{sec:libinger:jumps}
+
+\solb{Remind them that we end up in the same place regardless of whether they returned or timed out}
+
+\solb{Mention that we save the return value when the preemptible function returns normally}
+
+\solb{Explain that we tell between the two cases by checking whether a return value is present}
+
+\solb{Discuss exception catching and FFI safety}
 
 
 \section{Canceling a paused preemptible function}
