@@ -128,6 +128,16 @@ the paused closure to a scope where its shared data no longer exists will be met
 a compile error.
 
 
+\paragraph{Composability.}
+In addition to the closure being \texttt{Send}, the opaque \texttt{Continuation} type
+is as well.  This means that a preemptible function can be launched on one thread,
+become paused, then be moved to another thread and resumed there.  Applications may
+use this trick to move long-running tasks off the critical path, but it is especially
+important for implementing thread libraries.  In fact, as we will see in
+Chapter~\ref{chap:libturquoise}, it makes it easy to implement preemptive thread
+libraries in userland.
+
+
 \section{Shared responsibility for concurrency control}
 
 The preceding points about concurrency restrictions in the Rust API may seem
