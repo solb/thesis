@@ -417,18 +417,61 @@ scope of the snapshot to that of a callback function (called in the same place a
 \end{lstlisting}
 
 
-\begin{promotesubsections}
-\input[functions]{inger_stacks}
+\section{Execution stacks}
 \label{sec:libinger:stacks}
 
-\solb{Mention that this preallocation is not fundamental}
+When a preemptible function times out, \textit{libinger} returns a continuation
+object.  The caller might pass this object around the program while the function is
+paused, then later call \texttt{resume()} from a different stack frame.  Were
+\textit{libinger} not careful, this would be equivalent to restoring a POSIX context
+whose stack frame had already returned.  To avoid this unsoundness, \texttt{launch()}
+allocates a dedicated execution stack and switches to it before calling the
+preemptible function.
 
-\solb{Cover cool disaggregation trick for growable stacks}
+Figure~\ref{fig:twostacks} shows the frames of both stacks just after we have
+transferred control to the user-supplied preemptible function \texttt{\textit{F}()}.
+Note that the preemptible function can call functions normally, but that if it
+finishes and returns, it will reach the bottom of its stack.  We need a return to
+transfer control back to \texttt{launch()} (or \texttt{resume()}, so we must plant a
+``return'' address within one of those functions' code at the bottom of the
+preemptible function's stack.  To do this, we use the \texttt{makecontext()}
+convenience function, which patches a POSIX context with a dedicated stack so that it
+restores another context when it returns.  We use the snapshot we captured before
+switching stacks (Section~\ref{sec:libinger:contexts}) as the context to restore.
+This means that execution proceeds from the same point in \texttt{launch()} or
+\texttt{resume()} regardless of whether the function returned normally or timed out.
 
-\solb{Fix (mis)uses of the term continuation}
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/twostacks}
+\caption{The stacks just after the preemptible function \texttt{\textit{F}()} has been invoked}
+\label{fig:twostacks}
+\end{figure}
+
+If the function becomes paused, we store its stack in the \texttt{Continuation}
+alongside the TCB so neither gets released until the program is done with the
+preemptible function.  It is infeasible to relocate a stack in virtual memory while a
+preemptible function is paused, so \textit{libinger} currently preallocates large
+2-MB stacks to avoid having to resize them (as this should be large enough for any
+function that does not stack allocate large locals).  As an implementation shortcut,
+it currently allocates the stacks with \texttt{malloc()} but reuses the pool
+allocator code to preallocate and reuse stacks (regardless of whether the preemptible
+function ended in cancellation).
+
+Neither of these limitations is fundamental.  If one wanted to avoid preallocating
+stacks to reduce startup time and physical memory requirements, one could allocate
+stacks with \texttt{mmap()} to avoid faulting the pages.  This technique would also
+allow one to make resizeable stacks by requesting even ``bigger'' stacks that would
+expand to meet functions' needs (up to some fixed maximum size) using demand paging.
+If one needed truly ``boundless'' stack sizes, one could place an unmapped guard page
+at the top of each stack; if the stack tried to grow into this space, one would
+allocate another stack somewhere else and chain them together with another synthetic
+return address.
 
 
+\begin{promotesubsections}
+\begin{swallowfigures}
 \input[functions]{inger_interrupts}
+\end{swallowfigures}
 \end{promotesubsections}
 
 \solb{\textbf{Section on deferred preemption}}
