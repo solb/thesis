@@ -474,19 +474,41 @@ return address.
 \end{swallowfigures}
 \end{promotesubsections}
 
-\solb{\textbf{Section on deferred preemption}}
+\solb{The former of the above should be a subsection that includes the SIGEV\_THREAD\_ID business}
 
-\solb{Include specialized version UML call diagram}
+\solb{We didn't go with that because it couldn't be masked as with signals and we were worried about warmup}
+
+\solb{The latter of the above should be a subsection of the subsequent section instead}
+
+\solb{Need another subsection on the preemption quantum}
+
+\solb{It must make sure to mention that you can always overrun by the quantum and warmup makes this worse}
+
+\solb{Should note that we currently use a fixed quantum}
+
+\solb{It should move the chart from microservices to show what we are capable of}
+
+\solb{It should disclaim that we default to an order of magnitude longer intervals for debuggability}
+
+\solb{Emphasized that the fixed quantum is not fundamental}
+
+\solb{Use the slides figure showing timeout-dependent quanta and setup delays}
 
 
 \section{Pausing a running preemptible function}
 \label{sec:libinger:pausing}
+
+\solb{Include the more complicated version of the stack diagram}
+
+\solb{Subsection on resuming a paused one and the self signaling trick}
 
 
 \section{Preemptible function isolation}
 \label{sec:libinger:isolation}
 
 \solb{Include discussion of deferred preemption}
+
+\solb{Include specialized version of UML call diagram}
 
 
 \section{Calls and returns}
