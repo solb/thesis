@@ -351,8 +351,8 @@ unsafe {
 The closure here is of type \texttt{Fn(\&ucontext\_t) -> ()}, which means it takes a
 reference to a POSIX context and returns nothing.  However, changing the code in the
 closure might affect that type.  For example, imagine we had a type
-\texttt{OneTimePadded} for storing data that could only be unwrapped once.  We can
-imagine such a value from \texttt{closure}:
+\texttt{OneTimePadded} for storing data that could only be unwrapped once.  We might
+want \texttt{closure} to capture such a value and ``decode'' it:
 \begin{lstlisting}
   let secret = OneTimePadded::from("About to restore snapshot!");
   let closure = move |snapshot| {
