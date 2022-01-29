@@ -218,6 +218,39 @@ The following sections discuss each of these steps in detail.
 \section{Thread control blocks}
 \label{sec:libinger:tcbs}
 
+As discussed in Section~\ref{sec:libgotcha:tls}, \textit{libgotcha} leaves it to
+control libraries to decide the scope of thread-local variables.  However, the
+preemptible functions Rust API constrains \textit{libinger}'s choice in the matter.
+Because the \texttt{Continuation} type is \texttt{Send}, preemptible functions may
+resume execution on a different thread than they were running on before becoming
+paused.  To prevent their thread-local variables from changing out from under them,
+we therefore associate thread-local variables with the preemptible function instead
+of the thread.  Application programmers should be aware that, unlike global
+variables, thread locals' values are not shared between a preemptible function and
+its defining module.\footnote{Users of thread pools built on top of preemptible
+functions need not be aware of this detail, or even of preemptible functions.  This
+is because thread pool users must already assume their task will be scheduled on a
+different thread than the code that submitted it.}
+
+To allocate a thread control block, \textit{libinger} calls the dynamic linker's
+\texttt{\_dl\_allocate\_tls()} function (the same one used by
+\texttt{pthread\_create()}).  This function creates a TCB and accompanying TLS area,
+but only initializes the latter.  Unfortunately, there are a few TCB fields that must
+be initialized for the thread to operate properly, so \textit{libinger} manually sets
+those.\footnote{Two of these are self-referential pointers back to the beginning of
+the TCB:  One of these is for locating the TLS area, which is located just before the
+TCB.  The other is the thread identifier returned by \texttt{pthread\_self()}.  There
+is also a pointer guard field that glibc uses to decode some of its internal pointers
+that are mangled as an exploit mitigation, and a field containing the kernel's thread
+identifier.}  It then calls \texttt{\_\_ctype\_init()} to select the correct
+\texttt{ctype.h} implementations for the locale.
+
+To install the TCB, we need to load it into the thread segment register using
+\texttt{\_\_arch\_prctl()}.  This is one of the functions that \textit{libgotcha}
+wraps (Section~\ref{sec:libgotcha:interpose}); since \textit{libinger} is an internal
+control library, it calls \texttt{libgotcha\_arch\_prctl()} instead to also notify
+\textit{libgotcha} of the change.
+
 
 \section{Execution contexts}
 \label{sec:libinger:contexts}
