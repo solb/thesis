@@ -212,7 +212,15 @@ following:
 \item Invokes the preemptible function (Section~\ref{sec:libinger:jumps})
 \end{enumerate}
 
-The following sections discuss each of these steps in detail.
+Several of these steps involve allocating resources assigned to each preemptible
+function.  Some of these allocations are slow as currently implemented, but the
+resources are reusable once a preemptible function has completed or been cancelled.
+We use pool allocators to automatically reuse released resources when available.  To
+take expensive operations off the critical path, some of the allocators preallocate a
+number of instances up front.
+
+The following sections discuss each of the preemptible function invocation steps in
+detail.
 
 
 \section{Thread control blocks}
@@ -243,7 +251,9 @@ TCB.  The other is the thread identifier returned by \texttt{pthread\_self()}.  
 is also a pointer guard field that glibc uses to decode some of its internal pointers
 that are mangled as an exploit mitigation, and a field containing the kernel's thread
 identifier.}  It then calls \texttt{\_\_ctype\_init()} to select the correct
-\texttt{ctype.h} implementations for the locale.
+\texttt{ctype.h} implementations for the locale.  Thread control blocks are one of
+the resources it pool allocates and reuses unless a preemptible function is
+cancelled.
 
 To install the TCB, we need to load it into the thread segment register using
 \texttt{\_\_arch\_prctl()}.  This is one of the functions that \textit{libgotcha}
