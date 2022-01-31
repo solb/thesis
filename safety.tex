@@ -354,7 +354,11 @@ our \texttt{wrapper()} on it, which configures libpthread to run the
 \texttt{release()} handler if the thread ever gets canceled.  It then sets the next
 libset to the one allocated for this thread and initializes the locale selections of
 its copy of libc.\footnote{Without this thread-specific initialization, calls to
-\texttt{ctype.h} functions would invoke \texttt{NULL} pointers inside glibc.
+\texttt{ctype.h} functions would invoke \texttt{NULL} pointers inside glibc.  The
+reason we have to invoke it manually is that libpthread does so from within its
+\texttt{pthread\_create()} implementation, but that (intentionally) happens before we
+switch away from the starting libset.  Third-party libraries do not receive such
+special glibc initialization treatment; instead, their ELF constructors handle setup.
 Technically, a direct call into \texttt{\_\_ctype\_init()} as shown in the listing
 will not work because \textit{libac-safe}'s status as an internal control library
 means that its calls only ever resolve back into the starting libset
