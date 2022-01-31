@@ -78,6 +78,64 @@ of \textit{libinger}, a more complicated control library.
 
 \section{Establishing async-signal safety:\@ \textit{libas-safe}}
 
+Our approach to artificially establishing async-signal safety is to repurpose
+selective relinking to isolate signal handlers from the rest of the program.  We do
+so by running the entire program, with the exception of uninterruptible library
+functions (Section~\ref{sec:libgotcha:unint}) and custom signal handlers, in a
+newly-allocated libset.  Whenever a signal with a handler arrives, we switch to the
+starting libset before executing it, then switch back before returning to the rest of
+the program.
+
+As a demonstration of our technique, we have implemented \textit{libas-safe}, a tiny
+runtime comprising 127 lines of C code that automatically fixes programs whose signal
+handlers call functions that are not async-signal safe.  To use it you, either
+preload it at load time or link your buggy application directly against it at build
+time.  Note that it only fixes bugs truly arising from async-signal safety:\@ it will
+neutralize most resulting undefined behavior, but it will not address logic errors in
+the program itself (e.g., a handler's attempt to traverse a corrupt or otherwise
+inconsistent data structure).  Furthermore, it is a proof of concept and there are
+cases it does not bother to handle.  Most notably, it does not isolate handlers for
+different signals from one another, so programs that handle multiple signals must
+ensure the other(s) are masked while any handler that calls unsafe functions is
+running.\footnote{Technically, this stipulation is slightly stronger than necessary,
+both in terms of scope (all other handlers) and enforcement mechanism (signal masks).
+The exact requirement is that no two handlers that both use unsafe functions can be
+allowed to interleave their execution.}
+
+To avoid affecting the initialization of the C runtime, we perform our own setup as
+late as possible by replacing libc's \texttt{\_\_libc\_start\_main()} function,
+responsible for calling the program's \texttt{main()} function.  Because
+\textit{libas-safe} is an internal control library
+(Section~\ref{sec:libgotcha:control}), doing so is as simple as defining a
+non-static function with that name and \textit{libgotcha} automatically considers it
+a forced interposition (Section~\ref{sec:libgotcha:interpose}).  Our replacement
+wraps the libc implementation, but allocates and switches to a new libset just before
+jumping to \texttt{main()}.  It also registers an uninterruptible return callback
+(Section~\ref{sec:libgotcha:callbacks}) and checks an environment variable to
+determine wither to run in verbose mode and log its actions.
+
+The bulk of \textit{libas-safe}'s code merely wraps the \texttt{sigaction()} function
+for installing signal handlers.  We show the replacement for this function in
+Listing~\ref{lst:assafe_sigaction}, slightly simplified for
+brevity.\footnote{Compared to our actual prototype, the version in these source
+listings runs internal \textit{libas-safe} wrapper code with the same signal mask that
+the caller requested for \textit{its} signal handler.  This can lead to conflicts
+between \textit{libas-safe}'s own handlers for different signals, or even between its
+handler for one signal and that handler itself if the caller installs the handler
+with the \texttt{SA\_NODEFER} flag.  Unrelatedly, the depicted version of the
+\texttt{sigaction()} wrapper does not roll back its changes if the underlying
+implementation reports an error.}  If used to set a signal's disposition to default
+(\texttt{SIG\_DFL}) or ignored (\texttt{SIG\_IGN}) or query the configuration of a
+signal without a custom handler, neither of the conditionals is taken and it defers
+to the underlying \texttt{sigaction()} (in this case, \textit{libgotcha}'s own
+wrapper).  Otherwise, if the caller is installing a custom handler, it saves a
+pointer to the provided handler into the persistent \texttt{handlers} array and
+installs its own \texttt{stub()} function as the handler instead; this function
+expects three arguments rather than System V's traditional one, so it sets the
+\texttt{SA\_SIGINFO} flag~\cite{sigaction-manpage}.  If the caller is querying the
+configuration of a custom handler, it looks up the handler the program had requested
+and furnishes that instead of a pointer to \texttt{stub()}.
+
 \begin{figure}
 \begin{lstlisting}[label=lst:assafe_sigaction,caption=\textit{libas-safe}'s \texttt{sigaction()} replacement]
 typedef void (*handler_t)(int, siginfo_t *, void *);
@@ -112,6 +170,37 @@ int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 }
 \end{lstlisting}
 \end{figure}
+
+The \texttt{stub()} function serves as a wrapper for each installed signal handler,
+and is shown in Listing~\ref{lst:assafe_helpers}.  If the program is interruptible
+(that is, the next libset is not equal to the starting one), neither of the
+conditionals is taken.  In this case, the wrapper simply switches to the starting
+libset, calls the real handler for the arriving signal, then resets the libset.
+
+Things are more complicated if the signal arrives while uninterruptible code is
+running, in which case \textit{libas-safe} defers invoking its handler until the end
+of the uninterruptible section.  In this case, \texttt{stub()} takes its
+\texttt{else if} branch and stores the \texttt{siginfo\_t} structure describing the
+cause of the signal into the thread-local \texttt{pending} variable.\footnote{Our
+prototype does not support deferring more than one distinct signal at a time, and
+always forwards the \texttt{siginfo\_t} corresponding to the first instance thereof
+to arrive.  It follows the semantics of non-realtime Unix signals and only delivers
+a deferred signal once, regardless of how many times it occurred while blocked.}  It
+then changes the signal mask of the \textit{calling} code to block the signal from
+arriving and returns without invoking the handler.  Whenever the program becomes
+interruptible again, \textit{libgotcha} will invoke the \texttt{restorer()} callback,
+also show in in Listing~\ref{lst:assafe_helpers}.
+
+If it finds a deferred signal to deliver, the callback sends the current thread that
+signal if it is not already pending (i.e., if it has not arrived again since the
+instance that prompted us to defer it).  It then uses \texttt{sigsuspend()} to
+temporarily unblock the signal and atomically wait for its handler to run.  This
+jumps back to \texttt{stub()}, which now enters its \texttt{if} branch, sets the
+signal as no longer deferred, configures it to be unblocked upon return from the
+handler, and substitutes the saved \texttt{siginfo\_t} for the real one (in case
+\texttt{restorer()} had to signal the thread).  Finally, it calls the real
+handler and leaves the starting libset.\footnote{If curious why restoring the libset
+in this way works, see the sister footnote in Section~\ref{sec:libgotcha:callbacks}.}
 
 \begin{figure}
 \begin{lstlisting}[label=lst:assafe_helpers,caption=\textit{libas-safe}'s signal handler wrapper and control library callback]
@@ -160,7 +249,3 @@ static void restorer(void) {
 }
 \end{lstlisting}
 \end{figure}
-
-\begin{promotesubsections}
-\input[functions]{gotcha_assafe}
-\end{promotesubsections}
