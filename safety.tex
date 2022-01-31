@@ -461,17 +461,9 @@ struct args {
 	char name[NAMESZ];
 };
 
-static void handler(void *ign) {
-	(void) ign;
-	close(STDERR_FILENO + 1);
-}
-
-static void *thread(void *arg) {
-	struct args *args = arg;
-	pthread_cleanup_push(handler, NULL);
+static void *thread(struct args *args) {
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	getnameinfo(args->addr, args->addrlen, args->name, NAMESZ, NULL, 0, 0);
-	pthread_cleanup_pop(false);
 	return NULL;
 }
 
@@ -489,37 +481,19 @@ int main(void) {
 		.addrlen = salen,
 		.addr = (struct sockaddr *) &sa,
 	};
-	char acter = '|';
+	char spinner = '|';
 	unsigned canceled = 0;
 	while(true) {
-		printf("%c\b", acter);
-		fflush(stdout);
-		switch(acter) {
-		case '|':
-			acter = '/';
-			break;
-		case '/':
-			acter = '-';
-			break;
-		case '-':
-			acter = '\\';
-			break;
-		case '\\':
-			acter = '|';
-			break;
-		}
+		print_and_advance_spinner(&spinner);
 
 		pthread_t tid;
+		void *res;
 		pthread_create(&tid, NULL, thread, &args);
 		pthread_cancel(tid);
-
-		void *res;
 		pthread_join(tid, &res);
-		if(res != PTHREAD_CANCELED) {
-			printf("%d ", canceled);
-			puts(args.name);
-			assert(!strcmp(args.name, "localhost"));
-		} else
+		if(res != PTHREAD_CANCELED)
+			printf("%d %s\n", canceled, args.name);
+		else
 			++canceled;
 	}
 	return 0;
