@@ -269,111 +269,78 @@ acceptable.
 \section{Establishing async-cancel safety:\@ \textit{libac-safe}}
 
 \begin{figure}
-\begin{lstlisting}
-#define MAGIC "isolate"
-
-struct isolate {
-	libgotcha_group_t group;
-	char magic[sizeof MAGIC];
+\begin{lstlisting}[label=lst:acsafe,caption=\textit{libac-safe} source code]
+struct reuse {
+	bool available;
+	libset_t libset;
 };
 
-static thread_local struct isolate group;
-
-void *isolate(void *(*fun)(void *), void *arg) {
-	return isolate_r(fun, arg, &group);
-}
-
-static void init(struct isolate *isolate, libgotcha_group_t group) {
-	assert(group);
-	assert(group != LIBGOTCHA_GROUP_ERROR);
-	isolate->group = group;
-	strcpy(isolate->magic, MAGIC);
-}
-
-void *isolate_r(void *(*fun)(void *), void *arg, struct isolate *ctx) {
-	assert(fun);
-	assert(sizeof *ctx == ISOLATE_OPAQUE_BYTES);
-
-	libgotcha_group_t group;
-	if(ctx && !strncmp(ctx->magic, MAGIC, sizeof MAGIC))
-		group = ctx->group;
-	else {
-		group = libgotcha_group_new();
-		if(ctx)
-			init(ctx, group);
-	}
-
-	libgotcha_group_thread_set(group);
-
-	void (*__ctype_init)(void) =
-		(void (*)(void)) (uintptr_t) libgotcha_group_symbol(group, "__ctype_init");
-	assert(__ctype_init);
-	__ctype_init();
-
-	void *res = fun(arg);
-
-	libgotcha_group_thread_set(LIBGOTCHA_GROUP_SHARED);
-	return res;
-}
+static struct reuse reuse;
 
 struct wrapper {
 	void *(*fun)(void *);
 	void *arg;
 	bool finished;
-	struct isolate group;
-	char *release;
+	libset_t libset;
 };
 
 static void release(void *release) {
 	struct wrapper *wrapper = release;
 	if(!wrapper->finished) {
-		libgotcha_group_thread_set(LIBGOTCHA_GROUP_SHARED);
-		libgotcha_group_renew(wrapper->group.group);
+		libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
+		libset_reinit(wrapper->libset);
 	}
-	if(wrapper->release)
-		*wrapper->release = *MAGIC;
+	if(!reuse.available) {
+		reuse.libset = wrapper->libset;
+		__asm__ volatile("" ::: "memory");
+		reuse.available = true;
+	}
 	free(wrapper);
 }
 
 static void *wrapper(void *arg) {
 	struct wrapper *wrapper = arg;
 	pthread_cleanup_push(release, wrapper);
-	arg = isolate_r(wrapper->fun, wrapper->arg, &wrapper->group);
+
+	libset_thread_set_next(wrapper->libset);
+	__ctype_init();
+
+	void *res = wrapper->fun(wrapper->arg);
+
+	libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
+
 	wrapper->finished = true;
 	pthread_cleanup_pop(true);
-	return arg;
+	return res;
 }
 
-static void disable(void) {
+static void cooperative(void) {
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 }
 
-static void enable(void) {
+static void preemptive(void) {
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 }
 
-#pragma weak libisolate_pthread_create = pthread_create
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*fun)(void *), void *arg) {
 	static bool bootstrapped;
 	if(!bootstrapped) {
-		libgotcha_shared_prehook(disable);
-		libgotcha_shared_hook(enable);
-		if(strncmp(group.magic, MAGIC, sizeof MAGIC))
-			init(&group, libgotcha_group_new());
+		libset_register_callback(cooperative);
+		libset_register_returnback(preemptive);
 		bootstrapped = true;
 	}
 
 	struct wrapper *args = malloc(sizeof *args);
-	char magic = *MAGIC;
+	bool acquired = true;
 	args->fun = fun;
 	args->arg = arg;
 	args->finished = false;
-	args->release = NULL;
-	if(atomic_compare_exchange_strong(group.magic, &magic, '\0')) {
-		memcpy(&args->group, &group, sizeof args->group);
-		*args->group.magic = *MAGIC;
-		args->release = group.magic;
-	}
+	if(atomic_compare_exchange_strong(&reuse.available, &acquired, false)) {
+		assert(reuse.libset != LIBGOTCHA_LIBSET_STARTING);
+		args->libset = reuse.libset;
+		reuse.libset = LIBGOTCHA_LIBSET_STARTING;
+	} else
+		args->libset = libset_new();
 	return pthread_create(thread, attr, wrapper, args);
 }
 \end{lstlisting}
