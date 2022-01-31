@@ -50,7 +50,7 @@ new seed value.  Thus, the entropy pool needs only to store the current seed val
 It's easy to see that a trivial implementation of \texttt{rand()} using the
 aforementioned approach is subject to data races when used by multiple threads:\@
 the function must update the entropy pool on each invocation, and concurrent accesses
-may interleave.  Establishing thread-safety is as easy as using a thread-local
+may interleave.  Establishing thread safety is as easy as using a thread-local
 variable to maintain a separate entropy pool for each thread of execution, thereby
 eliminating the shared state.  Unfortunately, this mitigation is neither applicable
 to async-signal safety nor to async-cancellation safety:  In the former case, there
