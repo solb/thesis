@@ -270,8 +270,6 @@ acceptable.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:acsafe_gotchas,caption=\textit{libac-safe}'s \texttt{pthread\_create()} replacement and control library callbacks]
-static thread_local libset_t reuse = LIBGOTCHA_LIBSET_STARTING;
-
 struct wrapper {
 	void *(*fun)(void *);
 	void *arg;
@@ -291,11 +289,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*fun)(v
 	args->fun = fun;
 	args->arg = arg;
 	args->finished = false;
-	if(reuse != LIBGOTCHA_LIBSET_STARTING) {
-		args->libset = reuse;
-		reuse = LIBGOTCHA_LIBSET_STARTING;
-	} else
-		args->libset = libset_new();
+	args->libset = alloc_libset();
 	return pthread_create(thread, attr, wrapper, args);
 }
 
@@ -311,6 +305,8 @@ static void preemptive(void) {
 
 \begin{figure}
 \begin{lstlisting}[label=lst:acsafe_helpers,caption=\textit{libac-safe}'s thread initializer and cleanup handler]
+static thread_local libset_t reuse = LIBGOTCHA_LIBSET_STARTING;
+
 static void *wrapper(void *arg) {
 	struct wrapper *wrapper = arg;
 	pthread_cleanup_push(release, wrapper);
@@ -336,6 +332,16 @@ static void release(void *release) {
 	if(reuse == LIBGOTCHA_LIBSET_STARTING)
 		reuse = wrapper->libset;
 	free(wrapper);
+}
+
+static libset_t alloc_libset(void) {
+	libset_t chosen;
+	if(reuse != LIBGOTCHA_LIBSET_STARTING) {
+		chosen = reuse;
+		reuse = LIBGOTCHA_LIBSET_STARTING;
+	} else
+		chosen = libset_new();
+	return chosen;
 }
 \end{lstlisting}
 \end{figure}
