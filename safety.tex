@@ -270,12 +270,7 @@ acceptable.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:acsafe,caption=\textit{libac-safe} source code]
-struct reuse {
-	bool available;
-	libset_t libset;
-};
-
-static struct reuse reuse;
+static thread_local libset_t reuse = LIBGOTCHA_LIBSET_STARTING;
 
 struct wrapper {
 	void *(*fun)(void *);
@@ -290,11 +285,8 @@ static void release(void *release) {
 		libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
 		libset_reinit(wrapper->libset);
 	}
-	if(!reuse.available) {
-		reuse.libset = wrapper->libset;
-		__asm__ volatile("" ::: "memory");
-		reuse.available = true;
-	}
+	if(reuse == LIBGOTCHA_LIBSET_STARTING)
+		reuse = wrapper->libset;
 	free(wrapper);
 }
 
@@ -331,14 +323,12 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*fun)(v
 	}
 
 	struct wrapper *args = malloc(sizeof *args);
-	bool acquired = true;
 	args->fun = fun;
 	args->arg = arg;
 	args->finished = false;
-	if(atomic_compare_exchange_strong(&reuse.available, &acquired, false)) {
-		assert(reuse.libset != LIBGOTCHA_LIBSET_STARTING);
-		args->libset = reuse.libset;
-		reuse.libset = LIBGOTCHA_LIBSET_STARTING;
+	if(reuse != LIBGOTCHA_LIBSET_STARTING) {
+		args->libset = reuse;
+		reuse = LIBGOTCHA_LIBSET_STARTING;
 	} else
 		args->libset = libset_new();
 	return pthread_create(thread, attr, wrapper, args);
