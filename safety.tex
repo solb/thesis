@@ -117,12 +117,13 @@ int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 \begin{lstlisting}[label=lst:assafe_helpers,caption=\textit{libas-safe}'s signal handler wrapper and control library callback]
 static thread_local siginfo_t pending;
 
-static void stub(int no, siginfo_t *si, void *co) {
+static void stub(int no, siginfo_t *si, ucontext_t *uc) {
 	libgotcha_libset_t libset = libset_thread_get_next();
 	if(pending.si_signo) {
 		// It is time to deliver a signal we had previously deferred.
 		assert(pending.si_signo == no);
 		pending.si_signo = 0;
+		sigdelset(&uc->uc_sigmask, no);
 		si = &pending;
 	} else if(group == LIBGOTCHA_LIBSET_STARTING) {
 		// The program is uninterruptible; we need to defer delivery.
@@ -132,8 +133,6 @@ static void stub(int no, siginfo_t *si, void *co) {
 			no);
 
 		memcpy(&pending, si, sizeof pending);
-
-		ucontext_t *uc = co;
 		libgotcha_sigaddset(&uc->uc_sigmask, no);
 
 		// Do not call the handler at this time.
