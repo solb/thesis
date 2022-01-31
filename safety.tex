@@ -348,6 +348,63 @@ static void preemptive(void) {
 \end{lstlisting}
 \end{figure}
 
+Listing~\ref{lst:acsafe_helpers} shows the additional initialization and teardown we
+perform on each thread.  Once libpthread has created the new kernel thread, it runs
+our \texttt{wrapper()} on it, which configures libpthread to run the
+\texttt{release()} handler if the thread ever gets canceled.  It then sets the next
+libset to the one allocated for this thread and initializes the locale selections of
+its copy of libc.\footnote{Without this thread-specific initialization, calls to
+\texttt{ctype.h} functions would invoke \texttt{NULL} pointers inside glibc.
+Technically, a direct call into \texttt{\_\_ctype\_init()} as shown in the listing
+will not work because \textit{libac-safe}'s status as an internal control library
+means that its calls only ever resolve back into the starting libset
+(Section~\ref{sec:libgotcha:control}).  Instead of using a simple function call, it
+uses an additional \textit{libgotcha} API to look up the specific function pointer
+for the allocated libset in the shadow GOTs, then makes an indirect call.}  Then it
+calls into the thread's main function.  Assuming the thread does not get canceled,
+this will eventually return back, at which point \texttt{wrapper()} will return to
+the starting libset, set a flag to indicate that the thread ran to completion, and
+call the \texttt{release()} handler.  This will skip the first conditional in the
+latter function, save the libset identifier for future zero-cost reuse by the parent
+thread (if it does not already have one saved), and deallocate our packaged thread
+information.
+
+If instead the thread gets prematurely cancelled, \texttt{release()} will be called
+and find that the thread is not tagged as \texttt{finished}, at which point it will
+leave the thread's private libset then forcefully reinitialize it.  Thereafter, it
+proceeds as before.  Recall that cancellation will have happened cooperatively if the
+thread was executing uninterruptible code and preemptively otherwise.  This respects
+the selective relinking safety model; that is, assuming the allowlist is configured
+correctly and glibc's implementation of cooperative cancelation, is sound,
+cancelation will neither corrupt the starting libset nor create dependencies between
+it and any thread's private libset (Section~\ref{sec:libgotcha:unint}).
+
+Notice that, regardless of what caused the thread to terminate, it attempted to pass
+its now-unused libset's identifier back to its parent for reuse on the next spawn.
+The decision to reuse happens in \texttt{pthread\_create()}'s call to the
+\texttt{alloc\_libset()} helper function, also shown in
+Listing~\ref{lst:acsafe_helpers}.  This implementation takes two related
+implementation shortcuts, neither of which is central to our approach's design:
+(1)~Terminating child threads assume their parent still exists and directly read and
+write its thread-local \texttt{reuse} record.  (2)~Each parent thread only remembers
+up to one reusable libsets,\footnote{Because child threads do not atomically update
+the parent's variable, the implementation does not guarantee \textit{which} libset
+will be reused in case of a tie.  This is still safe because all contending libsets
+are valid for reuse.} so if two or more of its child threads exit in between
+any two consecutive times that it spawns, it will leak a libset that the process will
+never reuse.  The correct solution is to use a pool allocator for libsets, and we
+will see an example of this in Chapter~\ref{chap:libinger}.
+
+In summary, \textit{libac-safe} makes it possible for Unix applications to use
+asynchronous thread cancelability.  Thus, developers can now leverage a feature that,
+as we saw in Chapter~\ref{chap:functions}, was practically useless out of the box.
+The library also makes a good case study of a \textit{libgotcha} control library for
+which it is correct to adopt the default behavior of tying TCBs to kernel threads
+(Section~\ref{sec:libgotcha:tls}), since the kernel thread corresponds to the unit of
+cancellation, and therefore memory isolation as well.  Because of this,
+\textit{libgotcha} does not need to reinitialize TLS areas, as they are specific to
+each thread and not reused with the libset.
+
 \begin{figure}
 \begin{lstlisting}[label=lst:acsafe_helpers,caption=\textit{libac-safe}'s thread initializer and cleanup handler]
 static void *wrapper(wrapper *wrapper) {
