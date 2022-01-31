@@ -97,6 +97,7 @@ ld-linux
 libac-safe
 libas-safe
 libc
+libc's
 libdl.so
 libgcc
 libgotcha
@@ -197,6 +198,7 @@ runtimes
 rustc
 S3
 sa_
+SA\_NODEFER
 seccomp
 serverless
 setcontext
@@ -208,11 +210,16 @@ sigaction
 sigaddset()
 SIGALRM
 SIGCHLD
+SIG\_DFL
 SIGEV
 sigfillset()
+SIG\_IGN
+SIGINFO
+siginfo\_t
 sigprocmask
 sigreturn()
 SIGSEGV
+sigsuspend()
 SIGSYS
 sigtimedwait
 SIGTRAP
@@ -246,6 +253,7 @@ TypeScript
 u64
 ud2
 uncopyable
+Unrelatedly
 uselocale()
 userland
 v4
