@@ -86,6 +86,7 @@ static struct handler_t *handlers;
 static bool verbose;
 
 int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
+	handler_t oldact = handlers[signum];
 	struct sigaction sa;
 	if(act && act->sa_sigaction != SIG_DFL && act->sa_sigaction != SIG_IGN) {
 		// We have been asked to install a custom signal handler.
@@ -106,7 +107,7 @@ int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 	if(oldact && oldact->sa_sigaction == stub)
 		// We have been asked to provide the previous configuration.
 		// Fib that we installed the provided handler, not our wrapper.
-		oldact->sa_sigaction = handlers[signum];
+		oldact->sa_sigaction = oldact;
 	return status;
 }
 \end{lstlisting}
