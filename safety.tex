@@ -80,46 +80,29 @@ of \textit{libinger}, a more complicated control library.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:assafe_sigaction,caption=\textit{libas-safe}'s \texttt{sigaction()} replacement]
-struct handler {
-	void (*handler)(int, siginfo_t *, void *);
-	sigset_t mask;
-};
+typedef void (*handler_t)(int, siginfo_t *, void *);
 
-static struct handler *handlers;
+static struct handler_t *handlers;
 static bool verbose;
 
 int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
 	struct sigaction sa;
-	struct handler backup;
-	if(act) {
+	if(act && act->sa_sigaction != SIG_DFL && act->sa_sigaction != SIG_IGN) {
 		if(verbose) fprintf(
 			stderr,
-			"LIBAS-SAFE: sigaction() installing new handler for signal %d\n",
+			"LIBAS-SAFE: sigaction() installing signal %d handler\n",
 			signum);
 
-		struct handler *record = handlers + signum;
-		memcpy(&backup, record, sizeof backup);
 		memcpy(&sa, act, sizeof sa);
-		record->handler = sa.sa_sigaction;
+		handlers[signum] = sa.sa_sigaction;
 		sa.sa_sigaction = stub;
-		record->mask = sa.sa_mask;
-		libgotcha_sigfillset(&sa.sa_mask);
-
 		sa.sa_flags |= SA_SIGINFO;
-		if(sa.sa_flags & SA_NODEFER) {
-			sigdelset(&record->mask, signum);
-			sa.sa_flags &= ~SA_NODEFER;
-		} else
-			libgotcha_sigaddset(&record->mask, signum);
-
 		act = &sa;
 	}
 
 	int status = libgotcha_sigaction(signum, act, oldact);
-	if(status)
-		memcpy(handlers + signum, &backup, sizeof backup);
 	if(oldact && oldact->sa_sigaction == stub)
-		oldact->sa_sigaction = handlers[signum].handler;
+		oldact->sa_sigaction = handlers[signum];
 	return status;
 }
 \end{lstlisting}
@@ -135,44 +118,41 @@ struct pending {
 static thread_local struct pending pending;
 
 static void stub(int no, siginfo_t *si, void *co) {
-	libgotcha_group_t group = libgotcha_group_thread_get();
-	siginfo_t extra = {
-		.si_signo = 0,
-	};
+	libgotcha_libset_t libset = libset_thread_get_next();
 	if(pending.info.si_signo) {
 		assert(pending.info.si_signo == no);
-
-		ucontext_t *uc = co;
-		memcpy(&extra, &pending.info, sizeof extra);
-		memcpy(&uc->uc_sigmask, &pending.mask, sizeof uc->uc_sigmask);
 		pending.info.si_signo = 0;
+		si = &pending.info;
 	} else if(group == LIBGOTCHA_GROUP_SHARED) {
 		if(verbose) fprintf(
 			stderr,
-			"LIBAS-SAFE: stub() deferring handling of signal %d to after shared code\n",
+			"LIBAS-SAFE: stub() deferring handling of signal %d\n",
 			no);
 
-		ucontext_t *uc = co;
 		memcpy(&pending.info, si, sizeof pending.info);
-		memcpy(&pending.mask, &uc->uc_sigmask, sizeof pending.mask);
-		libgotcha_sigfillset(&uc->uc_sigmask);
+		lilbgotcha_pthread_sigmask(0, NULL, &pending.mask);
+
+		ucontext_t *uc = co;
+		libgotcha_sigaddset(&uc->uc_sigmask, no);
 		return;
 	}
 
-	struct handler *record = handlers + no;
-	libgotcha_pthread_sigmask(SIG_SETMASK, &record->mask, NULL);
-	libgotcha_group_thread_set(LIBGOTCHA_GROUP_SHARED);
-	if(extra.si_signo)
-		record->handler(no, &extra, co);
-	record->handler(no, si, co);
-	libgotcha_group_thread_set(group);
+	libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
+	handlers[no](no, si, co);
+	libset_thread_set_next(libset);
 }
 
 static void restorer(void) {
-	if(pending.info.si_signo) {
+	int no = pending.info.si_signo;
+	if(no) {
+		sigset_t ready;
+		sigpending(&ready);
+		if(!sigismember(&ready, no))
+			libgotcha_pthread_kill(pthread_self(), no);
+
 		sigset_t full;
 		libgotcha_sigfillset(&full);
-		sigdelset(&full, pending.info.si_signo);
+		sigdelset(&full, no);
 		sigsuspend(&full);
 	}
 }
