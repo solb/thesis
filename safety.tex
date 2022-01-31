@@ -202,6 +202,14 @@ handler, and substitutes the saved \texttt{siginfo\_t} for the real one (in case
 handler and leaves the starting libset.\footnote{If curious why restoring the libset
 in this way works, see the sister footnote in Section~\ref{sec:libgotcha:callbacks}.}
 
+While the technique employed by \textit{libas-safe} makes it easier to write signal
+handlers in C, this is not its most exciting application.  Async-signal safety is a
+very specific case that otherwise sound systems programming type systems have long
+struggled to handle.  Rust is no exception, and writing signal handlers requires
+\texttt{unsafe} code.  Yet this style of runtime assistance may offer a route to
+lifting this requirement in situations where the load time and runtime costs are
+acceptable.
+
 \begin{figure}
 \begin{lstlisting}[label=lst:assafe_helpers,caption=\textit{libas-safe}'s signal handler wrapper and control library callback]
 static thread_local siginfo_t pending;
@@ -249,3 +257,10 @@ static void restorer(void) {
 }
 \end{lstlisting}
 \end{figure}
+
+
+\subsection{Automatically repaired example program}
+
+\solb{Find a nice example, ideally one that works for both copying and deferral}
+
+\solb{Mention that there's actually no need to save and restore errno now!}
