@@ -307,8 +307,7 @@ static void preemptive(void) {
 \begin{lstlisting}[label=lst:acsafe_helpers,caption=\textit{libac-safe}'s thread initializer and cleanup handler,morekeywords=thread_local]
 static thread_local libset_t reuse = LIBGOTCHA_LIBSET_STARTING;
 
-static void *wrapper(void *arg) {
-	struct wrapper *wrapper = arg;
+static void *wrapper(wrapper *wrapper) {
 	pthread_cleanup_push(release, wrapper);
 
 	libset_thread_set_next(wrapper->libset);
@@ -323,8 +322,7 @@ static void *wrapper(void *arg) {
 	return res;
 }
 
-static void release(void *release) {
-	struct wrapper *wrapper = release;
+static void release(void *wrapper) {
 	if(!wrapper->finished) {
 		libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
 		libset_reinit(wrapper->libset);
