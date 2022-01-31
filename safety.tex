@@ -269,7 +269,7 @@ acceptable.
 \section{Establishing async-cancel safety:\@ \textit{libac-safe}}
 
 \begin{figure}
-\begin{lstlisting}[label=lst:acsafe,caption=\textit{libac-safe} source code]
+\begin{lstlisting}[label=lst:acsafe_gotchas,caption=\textit{libac-safe}'s \texttt{pthread\_create()} replacement and control library callbacks]
 static thread_local libset_t reuse = LIBGOTCHA_LIBSET_STARTING;
 
 struct wrapper {
@@ -278,41 +278,6 @@ struct wrapper {
 	bool finished;
 	libset_t libset;
 };
-
-static void release(void *release) {
-	struct wrapper *wrapper = release;
-	if(!wrapper->finished) {
-		libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
-		libset_reinit(wrapper->libset);
-	}
-	if(reuse == LIBGOTCHA_LIBSET_STARTING)
-		reuse = wrapper->libset;
-	free(wrapper);
-}
-
-static void *wrapper(void *arg) {
-	struct wrapper *wrapper = arg;
-	pthread_cleanup_push(release, wrapper);
-
-	libset_thread_set_next(wrapper->libset);
-	__ctype_init();
-
-	void *res = wrapper->fun(wrapper->arg);
-
-	libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
-
-	wrapper->finished = true;
-	pthread_cleanup_pop(true);
-	return res;
-}
-
-static void cooperative(void) {
-	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-}
-
-static void preemptive(void) {
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-}
 
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*fun)(void *), void *arg) {
 	static bool bootstrapped;
@@ -332,6 +297,45 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*fun)(v
 	} else
 		args->libset = libset_new();
 	return pthread_create(thread, attr, wrapper, args);
+}
+
+static void cooperative(void) {
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+}
+
+static void preemptive(void) {
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+}
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[label=lst:acsafe_helpers,caption=\textit{libac-safe}'s thread initializer and cleanup handler]
+static void *wrapper(void *arg) {
+	struct wrapper *wrapper = arg;
+	pthread_cleanup_push(release, wrapper);
+
+	libset_thread_set_next(wrapper->libset);
+	__ctype_init();
+
+	void *res = wrapper->fun(wrapper->arg);
+
+	libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
+
+	wrapper->finished = true;
+	pthread_cleanup_pop(true);
+	return res;
+}
+
+static void release(void *release) {
+	struct wrapper *wrapper = release;
+	if(!wrapper->finished) {
+		libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
+		libset_reinit(wrapper->libset);
+	}
+	if(reuse == LIBGOTCHA_LIBSET_STARTING)
+		reuse = wrapper->libset;
+	free(wrapper);
 }
 \end{lstlisting}
 \end{figure}
