@@ -110,27 +110,21 @@ int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 
 \begin{figure}
 \begin{lstlisting}[label=lst:assafe_helpers,caption=\textit{libas-safe}'s signal handler wrapper and control library callback]
-struct pending {
-	siginfo_t info;
-	sigset_t mask;
-};
-
-static thread_local struct pending pending;
+static thread_local siginfo_t pending;
 
 static void stub(int no, siginfo_t *si, void *co) {
 	libgotcha_libset_t libset = libset_thread_get_next();
-	if(pending.info.si_signo) {
-		assert(pending.info.si_signo == no);
-		pending.info.si_signo = 0;
-		si = &pending.info;
+	if(pending.si_signo) {
+		assert(pending.si_signo == no);
+		pending.si_signo = 0;
+		si = &pending;
 	} else if(group == LIBGOTCHA_LIBSET_STARTING) {
 		if(verbose) fprintf(
 			stderr,
 			"LIBAS-SAFE: stub() deferring handling of signal %d\n",
 			no);
 
-		memcpy(&pending.info, si, sizeof pending.info);
-		lilbgotcha_pthread_sigmask(0, NULL, &pending.mask);
+		memcpy(&pending, si, sizeof pending);
 
 		ucontext_t *uc = co;
 		libgotcha_sigaddset(&uc->uc_sigmask, no);
@@ -143,16 +137,15 @@ static void stub(int no, siginfo_t *si, void *co) {
 }
 
 static void restorer(void) {
-	int no = pending.info.si_signo;
-	if(no) {
+	if(pending.si_signo) {
 		sigset_t ready;
 		sigpending(&ready);
-		if(!sigismember(&ready, no))
-			libgotcha_pthread_kill(pthread_self(), no);
+		if(!sigismember(&ready, pending.si_signo))
+			libgotcha_pthread_kill(pthread_self(), pending.si_signo);
 
 		sigset_t full;
 		libgotcha_sigfillset(&full);
-		sigdelset(&full, no);
+		sigdelset(&full, pending.si_signo);
 		sigsuspend(&full);
 	}
 }
