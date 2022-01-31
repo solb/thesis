@@ -268,6 +268,44 @@ acceptable.
 
 \section{Establishing async-cancel safety:\@ \textit{libac-safe}}
 
+To artificially establish async-cancel safety, we apply selective relinking in a
+slightly different manner.  Instead of establishing partial memory isolation between
+signal handlers and the rest of the program, we establish it between each thread and
+every other.  Whenever the program spawns a new thread, we allocate and install a
+private libset for it, then enable POSIX asynchronous cancelability.  In this way,
+every kernel thread in the application except for the main one becomes cancelable at
+almost any point in its execution.
+
+Our demo of this approach is called \textit{libac-safe}, and consists of 119 lines of
+C that makes threads asynchronously cancelable.  As with \textit{libas-safe}, it can
+be either preloaded or linked against like any other library.  And as before, it only
+fixes problems arising in library functions due to async-cancel safety, not program
+logic errors.  In addition to observing traditional concurrency control practices,
+the developer of an application using asynchronously cancelable threads must exercise
+extreme caution when interacting with threads that might be canceled in this way or
+accessing any data structures that such threads modify.  Our prototype is
+experimental and omits important features such as automatic cleanup of resources
+allocated by canceled threads (a topic we will revisit in
+Chapters~\ref{chap:libinger} and \ref{chap:ingerc}).
+
+As an internal control library, \textit{libac-safe} works by defining a forced
+interposition function (Section~\ref{sec:libgotcha:interpose}) that wraps
+\texttt{pthread\_create()}.  As shown in Listing~\ref{lst:acsafe_gotchas}, the first
+time the application creates a thread, the library bootstraps itself by registering
+uninterruptible call and return callbacks with \textit{libgotcha}
+(Section~\ref{sec:libgotcha:callbacks}).  The former callback is invoked any time the
+thread calls an uninterruptible function (Section~\ref{sec:libgotcha:unint}) and
+automatically transitions the thread back to the default cooperative cancellation
+mode, wherein certain calls into the C standard library implicitly check whether
+there is an outstanding request for the thread to be cancelled.  The latter callback
+happens at the end of the uninterruptible region, and transitions the thread into
+preemptive cancellation mode once more~\cite{pthreadsetcanceltype-manpage}.  Once the
+library has been bootstrapped or on subsequent calls, the wrapper simply packages up
+the supplied pointer to the thread's main function and arguments along with a
+newly-assigned libset.  It then calls into the real \texttt{pthread\_create()},
+substituting the \textit{libac-safe} main function \texttt{wrapper()} and arranging
+for it to be passed all of these items.
+
 \begin{figure}
 \begin{lstlisting}[label=lst:acsafe_gotchas,caption=\textit{libac-safe}'s \texttt{pthread\_create()} replacement and control library callbacks]
 struct wrapper {
