@@ -123,7 +123,7 @@ static void stub(int no, siginfo_t *si, void *co) {
 		assert(pending.info.si_signo == no);
 		pending.info.si_signo = 0;
 		si = &pending.info;
-	} else if(group == LIBGOTCHA_GROUP_SHARED) {
+	} else if(group == LIBGOTCHA_LIBSET_STARTING) {
 		if(verbose) fprintf(
 			stderr,
 			"LIBAS-SAFE: stub() deferring handling of signal %d\n",
