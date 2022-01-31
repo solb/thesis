@@ -277,7 +277,10 @@ struct wrapper {
 	libset_t libset;
 };
 
-int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*fun)(void *), void *arg) {
+int pthread_create(pthread_t *thread,
+		     const pthread_attr_t *attr,
+		     void *(*fun)(void *),
+		     void *arg) {
 	static bool bootstrapped;
 	if(!bootstrapped) {
 		libset_register_callback(cooperative);
