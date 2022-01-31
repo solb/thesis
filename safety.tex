@@ -215,14 +215,14 @@ acceptable.
 static thread_local siginfo_t pending;
 
 static void stub(int no, siginfo_t *si, ucontext_t *uc) {
-	libgotcha_libset_t libset = libset_thread_get_next();
+	libset_t libset = libset_thread_get_next();
 	if(pending.si_signo) {
 		// It is time to deliver a signal we had previously deferred.
 		assert(pending.si_signo == no);
 		pending.si_signo = 0;
 		sigdelset(&uc->uc_sigmask, no);
 		si = &pending;
-	} else if(group == LIBGOTCHA_LIBSET_STARTING) {
+	} else if(libset == LIBGOTCHA_LIBSET_STARTING) {
 		// The program is uninterruptible; we need to defer delivery.
 		if(verbose) fprintf(
 			stderr,
