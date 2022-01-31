@@ -307,12 +307,15 @@ substituting the \textit{libac-safe} main function \texttt{wrapper()} and arrang
 for it to be passed all of these items.
 
 \begin{figure}
-\begin{lstlisting}[label=lst:acsafe_gotchas,caption=\textit{libac-safe}'s \texttt{pthread\_create()} replacement and control library callbacks]
+\begin{lstlisting}[label=lst:acsafe_gotchas,caption=\textit{libac-safe}'s \texttt{pthread\_create()} replacement and control library callbacks,morekeywords=thread_local]
+static thread_local libset_t reuse;
+
 struct wrapper {
 	void *(*fun)(void *);
 	void *arg;
 	bool finished;
 	libset_t libset;
+	struct reuse *parent;
 };
 
 int pthread_create(pthread_t *thread,
@@ -331,6 +334,7 @@ int pthread_create(pthread_t *thread,
 	args->arg = arg;
 	args->finished = false;
 	args->libset = alloc_libset();
+	args->parent = &reuse;
 	return pthread_create(thread, attr, wrapper, args);
 }
 
@@ -345,9 +349,7 @@ static void preemptive(void) {
 \end{figure}
 
 \begin{figure}
-\begin{lstlisting}[label=lst:acsafe_helpers,caption=\textit{libac-safe}'s thread initializer and cleanup handler,morekeywords=thread_local]
-static thread_local libset_t reuse = LIBGOTCHA_LIBSET_STARTING;
-
+\begin{lstlisting}[label=lst:acsafe_helpers,caption=\textit{libac-safe}'s thread initializer and cleanup handler]
 static void *wrapper(wrapper *wrapper) {
 	pthread_cleanup_push(release, wrapper);
 
@@ -368,19 +370,19 @@ static void release(void *wrapper) {
 		libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
 		libset_reinit(wrapper->libset);
 	}
-	if(reuse == LIBGOTCHA_LIBSET_STARTING)
-		reuse = wrapper->libset;
+	if(*wrapper->parent != LIBGOTCHA_LIBSET_STARTING)
+		// Our parent thread does not already have a libset to reuse.
+		*wrapper->parent = wrapper->libset;
 	free(wrapper);
 }
 
 static libset_t alloc_libset(void) {
-	libset_t chosen;
-	if(reuse != LIBGOTCHA_LIBSET_STARTING) {
-		chosen = reuse;
-		reuse = LIBGOTCHA_LIBSET_STARTING;
-	} else
-		chosen = libset_new();
-	return chosen;
+	if(reuse != LIBGOTCHA_LIBSET_STARTING)
+		// This thread has a leftover libset to reuse.
+		return reuse;
+	else
+		// We have to use a fresh one.
+		return libset_new();
 }
 \end{lstlisting}
 \end{figure}
