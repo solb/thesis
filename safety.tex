@@ -449,7 +449,23 @@ static libset_t alloc_libset(void) {
 \end{figure}
 
 
-\subsection{Automatically repaired example program}
+\subsection{Program repaired with the help of our system}
+
+Listing~\ref{lst:acsafe_example} shows an only slightly contrived example program
+that tries to use asynchronous thread cancelation.  It attempts to simulate
+performing a large number of cancelable DNS lookups:  The main thread starts by
+performing a reverse lookup on a link-local IPv4 address (in order to populate a
+socket address structure).  It then enters an infinite loop, each iteration of which
+updates a circular spinner to indicate that the program is making
+progress,\footnote{Specifically, it calls \lstinline'printf("cb", spinner)', then
+\lstinline'fflush(stdout)', and finally rotates \texttt{spinner} to the next of the
+characters \texttt{|}, \texttt{/}, \texttt{-}, and \texttt{\textbackslash}.} spawns
+a thread to resolve the hostname back to an address, cancels the thread, and joins on
+it before spawning the next.  Each time a thread terminates prematurely, the loop it
+increments a success counter; each time one runs to completion, it prints out the
+current counter and the hostname the thread was passed.  Upon creation, each threads
+immediately sets itself as asynchronously cancelable, performs a forward DNS lookup,
+and exits.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:acsafe_example,caption=Example program using asynchronous thread cancellation]
@@ -500,3 +516,33 @@ int main(void) {
 }
 \end{lstlisting}
 \end{figure}
+
+The program does not work.  Asynchronous cancelation both fails to interrupt some
+of the threads (likely due to the proximity between the call and a library
+function that performs system calls) and eventually deadlocks the program, as
+indicated by the spinner becoming frozen.  Here is the output of a representative
+run, which lasted under three seconds before hanging:
+\begin{lstlisting}
+  69437 localhost
+  75670 localhost
+  128996 localhost
+  -
+\end{lstlisting}
+
+Running the program with the environment variable \texttt{LD\_PRELOAD} defined to
+\texttt{./libac-safe.so} almost fixes the problem with no programmer intervention.
+All of the threads are canceled before they can complete, and the only problem is
+that each of the calls to \texttt{getnameinfo()} allocates a new file descriptor that
+is leaked upon the thread's death.  Eventually, this results in the program crashing
+because it has too many open file descriptors.
+
+After adding a cleanup handler, the program runs apparently forever without
+deadlocking, allowing any of the threads to finish, or leaking file descriptors.  The
+cleanup handler is as follows, and is registered from \texttt{thread()} using the
+\texttt{pthread\_cleanup\_push()} function as in Listing~\ref{lst:acsafe_helpers}:
+\begin{lstlisting}
+  static void handler(void *ignored) {
+  {
+  	close(STDERR_FILENO + 1);
+  }
+\end{lstlisting}
