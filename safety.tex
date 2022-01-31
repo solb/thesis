@@ -203,7 +203,7 @@ handler and leaves the starting libset.\footnote{If curious why restoring the li
 in this way works, see the sister footnote in Section~\ref{sec:libgotcha:callbacks}.}
 
 \begin{figure}
-\begin{lstlisting}[label=lst:assafe_helpers,caption=\textit{libas-safe}'s signal handler wrapper and control library callback]
+\begin{lstlisting}[label=lst:assafe_helpers,caption=\textit{libas-safe}'s signal handler wrapper and control library callback,morekeywords=thread_local]
 static thread_local siginfo_t pending;
 
 static void stub(int no, siginfo_t *si, ucontext_t *uc) {
@@ -304,7 +304,7 @@ static void preemptive(void) {
 \end{figure}
 
 \begin{figure}
-\begin{lstlisting}[label=lst:acsafe_helpers,caption=\textit{libac-safe}'s thread initializer and cleanup handler]
+\begin{lstlisting}[label=lst:acsafe_helpers,caption=\textit{libac-safe}'s thread initializer and cleanup handler,morekeywords=thread_local]
 static thread_local libset_t reuse = LIBGOTCHA_LIBSET_STARTING;
 
 static void *wrapper(void *arg) {
