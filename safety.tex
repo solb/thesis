@@ -189,7 +189,7 @@ a deferred signal once, regardless of how many times it occurred while blocked.}
 then changes the signal mask of the \textit{calling} code to block the signal from
 arriving and returns without invoking the handler.  Whenever the program becomes
 interruptible again, \textit{libgotcha} will invoke the \texttt{restorer()} callback,
-also show in in Listing~\ref{lst:assafe_helpers}.
+also shown in Listing~\ref{lst:assafe_helpers}.
 
 If it finds a deferred signal to deliver, the callback sends the current thread that
 signal if it is not already pending (i.e., if it has not arrived again since the
