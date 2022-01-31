@@ -88,6 +88,7 @@ static bool verbose;
 int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
 	struct sigaction sa;
 	if(act && act->sa_sigaction != SIG_DFL && act->sa_sigaction != SIG_IGN) {
+		// We have been asked to install a custom signal handler.
 		if(verbose) fprintf(
 			stderr,
 			"LIBAS-SAFE: sigaction() installing signal %d handler\n",
@@ -100,8 +101,11 @@ int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 		act = &sa;
 	}
 
+	// Call the real sigaction().
 	int status = libgotcha_sigaction(signum, act, oldact);
 	if(oldact && oldact->sa_sigaction == stub)
+		// We have been asked to provide the previous configuration.
+		// Fib that we installed the provided handler, not our wrapper.
 		oldact->sa_sigaction = handlers[signum];
 	return status;
 }
@@ -115,10 +119,12 @@ static thread_local siginfo_t pending;
 static void stub(int no, siginfo_t *si, void *co) {
 	libgotcha_libset_t libset = libset_thread_get_next();
 	if(pending.si_signo) {
+		// It is time to deliver a signal we had previously deferred.
 		assert(pending.si_signo == no);
 		pending.si_signo = 0;
 		si = &pending;
 	} else if(group == LIBGOTCHA_LIBSET_STARTING) {
+		// The program is uninterruptible; we need to defer delivery.
 		if(verbose) fprintf(
 			stderr,
 			"LIBAS-SAFE: stub() deferring handling of signal %d\n",
@@ -128,6 +134,8 @@ static void stub(int no, siginfo_t *si, void *co) {
 
 		ucontext_t *uc = co;
 		libgotcha_sigaddset(&uc->uc_sigmask, no);
+
+		// Do not call the handler at this time.
 		return;
 	}
 
@@ -138,6 +146,7 @@ static void stub(int no, siginfo_t *si, void *co) {
 
 static void restorer(void) {
 	if(pending.si_signo) {
+		// There is a deferred signal to deliver.
 		sigset_t ready;
 		sigpending(&ready);
 		if(!sigismember(&ready, pending.si_signo))
