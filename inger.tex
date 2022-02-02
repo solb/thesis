@@ -468,29 +468,94 @@ allocate another stack somewhere else and chain them together with another synth
 return address.
 
 
-\begin{promotesubsections}
-\begin{swallowfigures}
-\input[functions]{inger_interrupts}
-\end{swallowfigures}
-\end{promotesubsections}
+\section{Signal-based preemption}
+\label{sec:libinger:signals}
 
-\solb{The former of the above should be a subsection that includes the SIGEV\_THREAD\_ID business}
+The defining feature of preemptible functions is that they can be interrupted at any
+point.  We implement this external interruption using POSIX interval timers.  The
+\texttt{launch()} function calls \texttt{timer\_create()} to request that the kernel
+enable fine-grained timer interrupts and periodically signal the process.  When the
+signal arrives, control transfers to a handler function in \textit{libinger} that may
+decide to pause the preemptible function or let it continue running.  Unfortunately,
+the signal is process-directed and gets delivered to an arbitrary thread, not
+necessarily the one that is running the preemptible function.
 
-\solb{We didn't go with that because it couldn't be masked as with signals and we were worried about warmup}
+To achieve thread-directed signaling, \texttt{launch()} allocates the current thread
+a signal number from a pool.  We use the assigned signal to interrupt this specific
+thread.  Once the thread is no longer running a preemptible function, we can release
+the signal for use by a different one.  Of course, the signal might still be received
+by an unintended thread, so the first thing that our signal handler does is check
+whether the arriving signal is assigned to the current thread; if not, it blocks the
+signal on that thread.  After as many time periods as the application has threads,
+this approach converges to delivering the signal only to its corresponding thread.
+Convergence is even faster when reusing a signal from the pool, as it will already
+have been blocked by all except one of the threads that existed when it was last used.
 
-\solb{The latter of the above should be a subsection of the subsequent section instead}
+A limitation of this design is that the number of kernel threads running preemptible
+functions at any given time cannot exceed the number of different signals that the
+operating system provides.  Linux currently has 31 standard signals, of which
+\textit{libinger} uses up to 16 for preemption.\footnote{This limit could be roughly
+tripled by using POSIX real-time signals, although we have not attempted this because
+they have slightly different behavior~\cite{signal-manpage}.  Alternatively, glibc on
+Linux offers a nonstandard \texttt{SIGEV\_THREAD\_ID} configuration parameter for
+directing timer signals at a specific kernel thread; this could be used to remove the
+limit (and the pool allocator) entirely~\cite{timercreate-manpage}.}  It currently
+assumes that the process will not use any of these signals for other purposes, but
+detecting other uses would be as simple as adding forced interposition wrapper
+functions for \texttt{signal()} and \texttt{sigaction()}
+(Section~\ref{sec:libgotcha:interpose}).
 
-\solb{Need another subsection on the preemption quantum}
+If a signal arrives in the middle of a system call, the system call aborts and
+returns an error code.  This is unacceptable because it would mean that moving code
+into a preemptible function would introduce spurious error returns from C library and
+POSIX functions, which the preemptible function would then have to handle.  When we
+install our signal handler, we use \texttt{sigaction()}'s \texttt{SA\_RESTART} flag
+to request BSD signal semantics.  This hides the signal arrivals from the preemptible
+function by making most standard library functions transparently retry interrupted
+system calls.  The \texttt{read()} and \texttt{write()} families of functions change
+their behavior in this configuration:\@ blocking calls that have already transferred
+some data when the signal arrives will return early, reporting successful completion
+and the number of bytes processed.  Programmers using these interfaces should already
+defend against the possibility of short counts, so this should not affect correct
+programs but might expose existing bugs.  There are also some functions that still
+exit with an interruption error code; see Section~\ref{sec:libinger:compatibility}
+for further discussion.
 
-\solb{It must make sure to mention that you can always overrun by the quantum and warmup makes this worse}
+
+\subsection{Interval length and accuracy}
 
 \solb{Should note that we currently use a fixed quantum}
 
-\solb{It should move the chart from microservices to show what we are capable of}
+\solb{Move the accuracy study from the microservices chapter}
+
+\solb{It must make sure to mention that you can always overrun by the quantum and warmup makes this worse}
+
+\solb{It should move the chart from microservices to show what duration is practical}
 
 \solb{It should disclaim that we default to an order of magnitude longer intervals for debuggability}
 
-\solb{Emphasized that the fixed quantum is not fundamental}
+Competing preemption systems sometimes direct timer signals to a central ``watchdog''
+thread that checks whether any tasks are in need of interruption and forwards a
+signal to the kernel thread of each that does.  This avoids reducing each preemptible
+function's compute throughput at the expense of sacrificing one CPU core.  We instead
+opted to use per-thread timer signals for two reasons:  First, assuming most
+preemptible functions achieve over 90\% of their baseline throughput as predicted by
+our benchmark, it would take more than nine cores constantly running preemptible
+functions to break even by committing a watchdog core.  Second, although such a
+design may permit preemption quanta in the single-digit microseconds, the gains would
+be less in practice because moving the decision to pause to a watchdog core would
+increase the worst-case timeout overrun by the latency of propagating the signal
+between cores.  Recent measurements place this latency at just under 5,000 cycles on
+Linux, which on a 2-GHz processor already represent almost 10\% of the quanta
+achievable with marginal throughput cost.  Worse, the sender thread incurs almost
+half of this latency, meaning the effect could compound on the watchdog thread and
+add to the overrun of other preemptible functions as well~\cite{Kaffes:nsdi2019}.
+That said, if an application could not cope with the throughput cost posed by our
+approach, would benefit from dropping the preemption quantum by one additional order
+of magnitude, or found our signal pool to constrain its scaling, it could revisit
+this design decision.
+
+\solb{Emphasize that the fixed quantum is not fundamental}
 
 \solb{Use the slides figure showing timeout-dependent quanta and setup delays}
 
@@ -521,6 +586,10 @@ return address.
 \solb{Explain that we tell between the two cases by checking whether a return value is present}
 
 \solb{Discuss exception catching and FFI safety}
+
+
+\section{Application compatibility}
+\label{sec:libinger:compatibility}
 
 
 \section{Canceling a paused preemptible function}
