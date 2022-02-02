@@ -599,7 +599,25 @@ handler chooses to pause it.
 \label{fig:twostackscontinuations}
 \end{figure}
 
-\solb{Subsection on resuming a paused one and the self signaling trick}
+
+\subsection{Resuming a paused preemptible function}
+
+Should the application resume a paused preemptible function, \texttt{resume()}
+repeats many of the transition actions performed by \texttt{launch()}.\footnote{In
+fact, there is so much overlap that we implement \texttt{launch()} simply by creating
+a \texttt{Continuation} and then calling \texttt{resume()} if the timeout argument is
+nonzero.}  It reuses most resources wholesale from the \texttt{Continuation} object,
+but it may need to allocate a new preemption signal (if the application has
+transferred the paused preemptible function between kernel threads).  To resume
+execution, it must restore the context saved by the signal handler.
+
+Unfortunately, a restriction in the POSIX specification complicates this unstructured
+jump.  The behavior of calling \texttt{setcontext()} on a POSIX context obtained from
+a signal handler is unspecified~\cite{getcontext-manpage}, and it is our experience
+that glibc's Linux implementation is unreliable in this case.  As a workaround, we
+manually raise a signal on the thread and restore the context the same way we
+restored the snapshot when pausing, by overwriting the signal handler's context with
+it.
 
 
 \section{Preemptible function isolation}

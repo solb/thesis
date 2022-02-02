@@ -176,26 +176,6 @@
 
 \chapter{TODOs THESIS}
 
-\section{POSIX contexts self-signaling trick (897fe6b)}
-
-The handler's logic is as follows:  It checks whether
-the preemptible function has exceeded its timeout; if so, it swaps the contents
-of the signal handler's continuation (accessible via the final argument to the
-function~\cite{sigaction-manpage}) with a checkpoint continuation saved by
-\texttt{launch()}.  This causes the subsequent return from the signal handler
-to jump back to \texttt{launch()}, which then returns a \texttt{linger}
-structure containing the signal handler's original context.  A subsequent
-\texttt{resume()} call on this packaged continuation proceeds in much the same
-way as \texttt{launch()}, but resumes the original computation by sending
-itself a special signal with \texttt{pthread\_kill()}, then swapping the saved
-context with the contents of that handler's context\footnote{This is necessary
-because POSIX left the semantics of calling \texttt{setcontext()} on the
-continuation saved by a signal handler invocation unspecified, leading
-implementations such as GNU not to handle this
-case~\cite{getcontext-manpage}.}.
-
-Signal pool trick:\@ see 17b86d2.
-
 
 \section{Program automatically repaired by \textit{libas-safe} (ee2602a)}
 
