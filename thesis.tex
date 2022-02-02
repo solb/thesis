@@ -216,57 +216,6 @@ int main(void) {
 \end{figure}
 
 
-\section{Footnote introducing the concept of \textit{libac-safe} (d3336e4)}
-
-While \textit{libas-safe} reestablishes async-signal safety, it would also be
-possible to write a \textit{libgotcha} control library that did the same for what POSIX calls
-async-cancellation safety.  The obvious application of this would be supporting
-asynchronous thread cancellation (in the common case where \whitelist{ed} code was not
-currently executing):\@ as we saw in Section~\ref{sec:intro}, today's POSIX and
-Windows interfaces for this are broken to the point of practical uselessness.
-
-
-\section{Preemptible functions rebuttal}
-
-\input{functions/rebuttal/atc20-reviews-198.txt}
-
-
-\section{A note on terminology (inger 7d5b2e2)}
-
-We use the term lightweight preemptible function (LPF) to refer to the timed \textit{version} of a
-function, as invoked via the \texttt{launch()} wrapper function in this library.  It's not quite right to
-say that \textit{libinger} "provides preemptible functions"; rather, it provides a transformation from
-an ordinary function into a preemptible one.
-
-To provide the memory isolation necessary to introduce preemption and asynchronous cancellation at
-sub-thread granularity without breaking existing program dependencies, the \textit{libgotcha} runtime
-allocates a separate copy of all the program's loaded dynamic libraries for each preemptible
-function.  While the thesis refers to this isolation unit as a libset, that term was unfortunately
-coined late in development; as such, the source code and configuration variables refer to it as a
-"group" instead.
-
-
-\section{A note on design (inger 7d5b2e2)}
-
-The
-\texttt{pause()} primitive allows a preemptible function to "yield" back to its caller by immediately
-"timing out."  One can imagine building higher-level synchronization constructs atop this; for
-example, a custom mutex that paused instead of blocking would allow two or more preemptible
-functions to share state, even when some of them executed from the same kernel thread.
-
-\textbf{We provide wrapper functions rather than a language extension.}  Many
-	have argued that it is a mistake to extend a language's library with
-	threading APIs without also endowing the language itself with an
-	understanding of concurrency.  The number of preventable concurrency bugs
-	that ISO C and POSIX threads have enabled seems to support this view.
-	However, the decision has been made, concurrency is part of the C language,
-	and the resulting bugs have been released upon the unsuspecting world.
-	Fortunately, newer languages such as Rust have demonstrated that sound
-	function-level concurrency is possible.  We provide wrapper functions
-	reminiscent of \texttt{pthread\_create()} and leave it up to the language
-	bindings to provide as much type safety as possible.
-
-
 \section{A note on implementation (inger 7d5b2e2)}
 
 The timer signal handler in \textit{libinger} refuses to pause while the next libset is set to 0 (the
