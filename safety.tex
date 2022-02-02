@@ -457,7 +457,7 @@ performing a large number of cancelable DNS lookups:  The main thread starts by
 performing a reverse lookup on a link-local IPv4 address (in order to populate a
 socket address structure).  It then enters an infinite loop, each iteration of which
 updates a circular spinner to indicate that the program is making
-progress,\footnote{Specifically, it calls \lstinline'printf("cb", spinner)', then
+progress,\footnote{Specifically, it calls \lstinline'printf("\%c\\b", spinner)', then
 \lstinline'fflush(stdout)', and finally rotates \texttt{spinner} to the next of the
 characters \texttt{|}, \texttt{/}, \texttt{-}, and \texttt{\textbackslash}.} spawns
 a thread to resolve the hostname back to an address, cancels the thread, and joins on
