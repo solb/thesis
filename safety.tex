@@ -260,10 +260,115 @@ acceptable.
 
 
 \subsection{Automatically repaired example program}
+\label{sec:safety:handler}
 
-\solb{Find a nice example, ideally one that works for both copying and deferral}
+Listing~\ref{lst:assafe_example} shows a small example program whose signal handler
+illegally calls the \texttt{printf()} function, which is not async-signal safe.  It
+configures a custom signal handler and an interval timer that invokes it every
+10~$\mu$s, then prints a circular spinner to visually indicate that the program is
+making progress.  When run on glibc 2.29, the program reliably deadlocks in under
+10~s.
 
-\solb{Mention that there's actually no need to save and restore errno now!}
+\begin{figure}
+\begin{lstlisting}[label=lst:assafe_example,caption=Example program with a signal handler that causes undefined behavior]
+static void handler(int ignored) {
+	printf("In signal handler\n");
+}
+
+int main(void) {
+	struct sigaction sa = {
+		.sa_handler = handler,
+	};
+	sigaction(SIGALRM, &sa, NULL);
+
+	struct timeval tv = {
+		.tv_usec = 10000,
+	};
+	struct itimerval it = {
+		.it_interval = tv,
+		.it_value = tv,
+	};
+	setitimer(ITIMER_REAL, &it, NULL);
+
+	char spinner = '|';
+	while(true) {
+		printf("%c\b", spinner);
+		fflush(stdout);
+		switch(spinner) {
+		case '|':
+			spinner = '/';
+			break;
+		case '/':
+			spinner = '-';
+			break;
+		case '-':
+			spinner = '\\';
+			break;
+		case '\\':
+			spinner = '|';
+			break;
+		}
+	}
+	return 0;
+}
+\end{lstlisting}
+\end{figure}
+
+The deadlock occurs because \texttt{main()}'s call to \texttt{fflush()} and
+\texttt{handler()}'s call to \texttt{printf()} both take a lock on the line-buffered
+\texttt{stdout} stream.  Eventually, the signal arrives during the critical section
+within \texttt{fflush()}, causing the thread to block on the same lock it already
+holds.  It is worth emphasizing that this is undefined behavior that is not
+guaranteed to cause any problem.  As such, a change introduced in a subsequent glibc
+release replaced this particular lock with a ``recursive'' one that can be locked
+multiple times by the same thread without blocking.  Although this hides the issue on
+at least glibc 2.33, it does not fix the program, which remains vulnerable to future
+platform changes.
+
+Running the program with the environment variable \texttt{LD\_PRELOAD} defined to
+\texttt{./libas-safe.so} fixes the deadlock automatically.  It does so by resolving
+the standard library calls and \texttt{stdout} reference to a different copy
+depending on whether they occur inside or outside the signal handler.  In this way,
+the stream uses two separate buffers guarded by separate locks.  Note that this does
+alter the stream's interleaving behavior; however, as the upstream glibc change
+demonstrates, these semantics were undefined to begin with.
+
+The program also serves as a demonstration of a second way to fix the problem:\@
+instead of weakening the protection against writing interleaving to the terminal, we
+can prevent the interleaving function calls from happening in the first place.  The
+\textit{libgotcha} implementation recognizes a configuration environment variable
+that can be used to treat the entirety of \texttt{libc.so} (as opposed to only
+allowlisted functions) as uninterruptible code.\footnote{We added this feature when
+we were finalizing the allowlist, as an easy way to eliminate an incomplete allowlist
+as a possible cause of program misbehavior.}  Enabling both this and
+\textit{libas-safe}'s verbose mode shows that deferring signal arrival also fixes the
+program's deadlock.  Here is an example invocation:
+\begin{lstlisting}
+  $ LD_PRELOAD=./libas-safe.so LIBGOTCHA_SHAREDLIBC= LIBASSAFE_VERBOSE= ./signal
+  libgotcha notice: Treating entirety of libc as shared code
+  LIBAS-SAFE: as_safe() initializating...
+  LIBAS-SAFE: sigaction() installing signal 14 handler
+  LIBAS-SAFE: stub() deferring handling of signal 14
+  In signal handler
+  In signal handler
+  LIBAS-SAFE: stub() deferring handling of signal 14
+  In signal handler
+  In signal handler
+  In signal handler
+  LIBAS-SAFE: stub() deferring handling of signal 14
+  In signal handler
+  In signal handler
+  LIBAS-SAFE: stub() deferring handling of signal 14
+  ...
+\end{lstlisting}
+
+The attentive reader may notice that the signal handler has a second mistake:\@ it
+does not save and restore the \texttt{errno} variable, thereby changing its value in
+the middle of execution and potentially interfering with error detection or recovery
+outside the handler.  Interestingly, \textit{libas-safe} makes this step unnecessary
+by providing a separate copy of \texttt{errno} (along with the rest of libc) for the
+code inside versus outside signal handlers.  (Unless, that is, \textit{libgotcha} is
+operating in the special uninterruptible libc execution mode we just saw.)
 
 
 \section{Establishing async-cancel safety:\@ \textit{libac-safe}}
@@ -457,9 +562,7 @@ performing a large number of cancelable DNS lookups:  The main thread starts by
 performing a reverse lookup on a link-local IPv4 address (in order to populate a
 socket address structure).  It then enters an infinite loop, each iteration of which
 updates a circular spinner to indicate that the program is making
-progress,\footnote{Specifically, it calls \lstinline'printf("\%c\\b", spinner)', then
-\lstinline'fflush(stdout)', and finally rotates \texttt{spinner} to the next of the
-characters \texttt{|}, \texttt{/}, \texttt{-}, and \texttt{\textbackslash}.} spawns
+progress,\footnote{We implement this as in Section~\ref{sec:safety:handler}.} spawns
 a thread to resolve the hostname back to an address, cancels the thread, and joins on
 it before spawning the next.  Each time a thread terminates prematurely, the loop it
 increments a success counter; each time one runs to completion, it prints out the

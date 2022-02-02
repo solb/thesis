@@ -177,45 +177,6 @@
 \chapter{TODOs THESIS}
 
 
-\section{Program automatically repaired by \textit{libas-safe} (ee2602a)}
-
-The main use of \textit{libgotcha} is to make library function calls async-signal safe when
-they would not otherwise be.  To more clearly illustrate the library's usefulness, we
-pause to give a minimal example of such usage; specifically, we will leverage
-\textit{libgotcha} to automatically fix the buggy program in Listing~\ref{lst:handlerbug},
-which calls the async-signal-unsafe function \texttt{printf()} from its signal
-handler.  Unfortunately, this function takes a lock on the \texttt{stdout} stream's
-associated file descriptor, and the signal handler eventually interrupts the program
-within \texttt{fflush()} while it is holding this same lock, resulting in deadlock.
-
-\begin{figure}
-\begin{lstlisting}[label=lst:handlerbug,caption=C program with a buggy signal handler]
-static void handler(int ignored) {
-  printf("In signal handler\n");
-}
-
-int main(void) {
-  struct sigaction sa = {
-    .sa_handler = handler,
-  };
-  sigaction(SIGALRM, &sa, NULL);
-
-  struct timeval tv = {
-    .tv_sec = 1,
-  };
-  struct itimerval it = {
-    .it_interval = tv,
-    .it_value = tv,
-  };
-  setitimer(ITIMER_REAL, &it, NULL);
-
-  while(true)
-    fflush(stdout);
-}
-\end{lstlisting}
-\end{figure}
-
-
 \section{A note on implementation (inger 7d5b2e2)}
 
 The timer signal handler in \textit{libinger} refuses to pause while the next libset is set to 0 (the
