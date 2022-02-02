@@ -373,6 +373,14 @@ by providing a separate copy of \texttt{errno} (along with the rest of libc) for
 code inside versus outside signal handlers.  (Unless, that is, \textit{libgotcha} is
 operating in the special uninterruptible libc execution mode we just saw.)
 
+While this example may seem contrived, it is easy to accidentally introduce this
+class of bug into a large application simply by calling a helper function from a
+signal handler without first examining its implementation (and that of every function
+\textit{it} might call) to verify async-signal safety.  Such issues have been used to
+conduct arbitrary code execution attacks on widely-deployed software, including
+gaining root access on systems with vulnerable installations of the (setuid
+\texttt{root}) Sendmail and GNU Screen servers~\cite{www-signals-fun-profit}.
+
 
 \section{Establishing async-cancel safety:\@ \textit{libac-safe}}
 
