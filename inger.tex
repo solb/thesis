@@ -563,7 +563,41 @@ this design decision.
 \section{Pausing a running preemptible function}
 \label{sec:libinger:pausing}
 
-\solb{Include the more complicated version of the stack diagram}
+We base the decision of whether to pause a running preemptible function on elapsed
+wall-clock time, not actual compute time.  One of \texttt{launch()}'s final actions
+before invoking the preemptible function is to save a timestamp.  Each time our
+signal handler runs, it checks whether the function has exceeded its timeout.  If so,
+it pauses it by performing an unstructured jump back to \texttt{launch()} (or
+\texttt{resume()}).  Specifically, the location it jumps to is the snapshot captured
+earlier, as described in Section~\ref{sec:libinger:contexts}.
+
+While it is possible to call \texttt{setcontext()} from a signal
+handler~\cite{getcontext-manpage}, there is an easier way to restore the snapshot.
+When installing our signal handler, we set the \texttt{SA\_SIGINFO} flag to request
+that each invocation receive additional context.  This passes additional arguments to
+the handler function, one of which is a POSIX context recording the execution state
+just before the signal arrived.  This is also the state that will be restored when
+the handler returns, so we implement the jump simply by overwriting it with our saved
+snapshot.  Because the context includes the registers including the stack pointer,
+returning also switches back to the execution stack of the preemptible function's
+caller.
+
+We are only pausing the preemptible function, so the program might later want to
+resume from where it left off.  The preemptible function is already running on its
+own stack, and the context passed to the signal handler contains its remaining state.
+Before overwriting it, we copy its contents for \texttt{launch()} or
+\texttt{resume()} to package into the returned \texttt{Continuation}.
+Figure~\ref{fig:twostackscontinuations} shows the state of both stacks and which
+frames both continuations point to at the start of the signal handler's execution.
+Recall that the snapshot serves as the bridge between the two stacks, and represents
+the location that the preemptible function will return to regardless of whether the
+handler chooses to pause it.
+
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/twostacks_twocontinuations}
+\caption{The stacks and continuations just after \textit{libinger}'s signal handler has been invoked}
+\label{fig:twostackscontinuations}
+\end{figure}
 
 \solb{Subsection on resuming a paused one and the self signaling trick}
 
