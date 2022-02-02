@@ -340,7 +340,10 @@ can prevent the interleaving function calls from happening in the first place.  
 that can be used to treat the entirety of \texttt{libc.so} (as opposed to only
 allowlisted functions) as uninterruptible code.\footnote{We added this feature when
 we were finalizing the allowlist, as an easy way to eliminate an incomplete allowlist
-as a possible cause of program misbehavior.}  Enabling both this and
+as a possible cause of program misbehavior.  Note that it is intended only for
+debugging, as it violates \textit{libgotcha}'s design assumption that all writeable
+global variables are private to each interruptible region
+(Section~\ref{sec:libgotcha:unint}).}  Enabling both this and
 \textit{libas-safe}'s verbose mode shows that deferring signal arrival also fixes the
 program's deadlock.  Here is an example invocation:
 \begin{lstlisting}
