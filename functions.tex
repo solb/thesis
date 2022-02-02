@@ -145,7 +145,12 @@ your program, or in some other loaded library.}}
 
 
 \subsection{Automatic handling of shared state: \textit{libgotcha}}
+\label{sec:libinger:concurrency}
 
 \begin{swallowsubsections}
 \input[functions]{inger_gotcha}
 \end{swallowsubsections}
+
+Note that preemptible functions are still a concurrency abstraction, and our
+automatic handling of shared state internal to dependencies does not exempt the
+author of a preemptible function from writing safe concurrent code.
