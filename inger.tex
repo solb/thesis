@@ -623,6 +623,63 @@ it.
 \section{Preemptible function isolation}
 \label{sec:libinger:isolation}
 
+There is one final resource that \textit{libinger} allocates for each preemptible
+function:\@ a libset (Section~\ref{sec:libsets}).  Here again, it uses a pool
+allocator so that each one is reused automatically once no longer claimed by any
+preemptible function's \texttt{Continuation}.  Recall that a libset represents a copy
+of the program's other dynamically-loaded modules, and is used to isolate these
+modules' nonreentrant state by selectively relinking module entry points against this
+copy if they occur within the preemptible function
+(Section~\ref{sec:libgotcha:relink}).  Where this approach applies, it happens
+transparently to \textit{libinger}.
+
+Recall that some functions cannot be duplicated in this manner, and instead require
+preemption to be deferred until the conclusion of their invocation.  The
+\textit{libinger} implementation observes the selective linking rule that the
+starting libset is uninterruptible (Section~\ref{sec:libgotcha:unint}).  Before
+pausing a preemptible function, the handler checks whether the next libset is equal
+to the starting libset.  If so, it blocks the preemption signal and returns without
+affecting execution, thereby deferring preemption.  When the running uninterruptible
+function returns, \textit{libinger} receives a notification via a control library
+callback (Section~\ref{sec:libgotcha:callbacks}) and unblocks the signal again.  To
+guard against preemptible functions overrunning their timeout by calling
+uninterruptible functions in a loop, the callback also immediately invokes the
+preemption handler, which pauses the function if it has timed out during the
+uninterruptible region.
+
+To illustrate the division of responsibility between \textit{libinger} and
+\textit{libgotcha}, Figure~\ref{fig:ingerhook} shows an example program that calls a
+preemptible function, alongside the resulting control transfers between
+modules.\footnote{We depict \textit{libinger} and \textit{libgotcha} as separate
+modules for clarity.  However, recall that \textit{libinger} is actually located in
+the same module as \textit{libgotcha} because it is an internal control library
+(Section~\ref{sec:libgotcha:control}).} \textcircled{1}~The \texttt{main()} function
+calls \texttt{launch()} to invoke \texttt{F()} as a preemptible function.
+\textcircled{2}~Among \texttt{launch()}'s responsibilities are switching out of the
+starting libset and enabling the preemption signal.  At this point, the preemption
+handler starts executing periodically and checking whether the preemptible function
+is out of execution time.  (If it ever detects a timeout, it will pause the
+preemptible function as described in Section~\ref{sec:libinger:pausing}, effectively
+skipping to step \textcircled{9}.)  \textcircled{3}~Its setup work complete,
+\texttt{launch()} invokes the preemptible function.  \textcircled{4}~This preemptible
+function happens to call another function \texttt{callee()} located in a different
+module, so \textit{libgotcha} interrupts the call for selective relinking.  There are
+two possibilities for what happens next:\@ either \texttt{callee()} is an ordinary
+function (in which case \textit{libgotcha} routes the call to the libset's local copy
+and we skip to step \textcircled{8} once it returns), or it is an uninterruptible
+function.  \textcircled{5}~In the latter case, before transferring control to
+\texttt{callee()}, \textit{libgotcha} automatically switches to the starting libset,
+deferring preemption.  \textcircled{6}~When \texttt{callee()} returns,
+\textit{libgotcha} invokes \textit{libinger}'s callback, which switches back to the
+preemptible function's libset and reenables the preemption signal.
+\textcircled{7}~The callback raises the preemption signal, and the handler checks
+whether the preemptible function has timed out (skipping to step \textcircled{9} if
+so).  \textcircled{8}~The function call has completed without timing out, so
+\textit{libinger} returns control to the preemptible function.  The preemptible
+function happens to return, transferring control back to \texttt{launch()}.
+\textcircled{9}~Before returning to \texttt{main()}, \texttt{launch()} switches back
+to the starting libset, disabling preemption.
+
 \begin{figure}
 	\begin{minipage}{0.25\textwidth}
 	\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,tabsize=2,gobble=2]
@@ -659,13 +716,8 @@ it.
 	\subcaption{\vspace{2pt} Corresponding inter-module control transfers (\texttt{callee()} is uninterruptible)}
 	\end{minipage}
 \caption{Cross-module function calls under \textit{libinger}. Solid lines represent function calls; dashed ones represent returns. Color indicates uninterruptible code (i.e., next libset = starting libset).}
+\label{fig:ingerhook}
 \end{figure}
-
-\solb{Include discussion of deferred preemption}
-
-\solb{Note that deferring without an active notification mechanism would be vulnerable to loosely tight loops that called such a function}
-
-\solb{Include specialized version of UML call diagram}
 
 
 \section{Calls and returns}
