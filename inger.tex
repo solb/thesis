@@ -723,13 +723,28 @@ to the starting libset, disabling preemption.
 \section{Calls and returns}
 \label{sec:libinger:jumps}
 
-\solb{Remind them that we end up in the same place regardless of whether they returned or timed out}
+When invoking the preemptible function, there is a possibility that it will throw an
+exception.  Most of \textit{libinger} is implemented in Rust, but the process of
+switching stacks creates control transfers through C code when calling and returning
+from a preemptible function.  It is undefined behavior for Rust panics to cross these
+call boundaries~\cite{www-rustlang-ub}, so \textit{libinger} must handle exceptions
+specially.  When calling into the preemptible function, \texttt{launch()} stops
+exception unwinding by wrapping the call in the standard library's
+\texttt{catch\_unwind()} function.  When a preemptible function runs to
+``completion,'' \texttt{launch()} and \texttt{resume()} check whether it threw an
+exception and call \texttt{resume\_unwind()} if so.  It is possible that applications
+seeking to limit functions' execution time might also want to prevent them from
+crashing the thread, so one possible revision to the interface would be to provide a
+configuration option to skip this rethrow.
 
-\solb{Mention that we save the return value when the preemptible function returns normally}
-
-\solb{Explain that we tell between the two cases by checking whether a return value is present}
-
-\solb{Discuss exception catching and FFI safety}
+The other state that must be transferred between stacks is the preemptible function's
+return value, so \texttt{launch()} and \texttt{resume()} store it in an optional type
+before switching stacks.  As explained in Section~\ref{sec:libinger:stacks}, each
+stack switch returns to the same point regardless of whether the function ran to
+completion or timed out and became paused.  To disambiguate these cases,
+\texttt{launch()} and \texttt{resume()} check whether they have stored a return
+value.  If so, they return it; otherwise, they package a \texttt{Continuation} object
+containing the paused function's execution state.
 
 
 \section{Application compatibility}
