@@ -623,7 +623,47 @@ it.
 \section{Preemptible function isolation}
 \label{sec:libinger:isolation}
 
+\begin{figure}
+	\begin{minipage}{0.25\textwidth}
+	\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,tabsize=2,gobble=2]
+	int main(void) {
+
+		launch(F, 400, NULL);
+
+	}
+
+	static void F(void *) {
+
+		callee();
+
+
+
+
+
+
+
+
+		return;
+
+
+
+
+
+	}
+	\end{lstlisting}
+	\subcaption{\vspace{12pt} Example program}
+	\end{minipage}
+%
+	\begin{minipage}{0.75\textwidth}
+	\includegraphics[width=\textwidth]{figs/calltree_function_launch-crop}
+	\subcaption{Corresponding inter-module control transfers (\texttt{callee()} is uninterruptible)}
+	\end{minipage}
+\caption{Cross-module function calls under \textit{libinger}. Color indicates uninterruptible code (i.e., next libset = starting libset).}
+\end{figure}
+
 \solb{Include discussion of deferred preemption}
+
+\solb{Note that deferring without an active notification mechanism would be vulnerable to loosely tight loops that called such a function}
 
 \solb{Include specialized version of UML call diagram}
 
