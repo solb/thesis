@@ -18,7 +18,7 @@ strict digraph {
 		callerJ -> callerK -> callerL -> callerM -> callerN;
 
 		control -> controlA;
-		controlA -> controlB [style=solid, penwidth=2];
+		controlA -> controlB [style=solid, penwidth=2, color=red];
 		controlB -> controlC;
 		controlC -> controlD [style=solid, penwidth=2];
 		controlD -> controlE -> controlF -> controlG -> controlH
@@ -26,32 +26,32 @@ strict digraph {
 		controlI -> controlJ;
 		controlJ -> controlK [style=solid, penwidth=2];
 		controlK -> controlL;
-		controlL -> controlM [style=solid, penwidth=2];
+		controlL -> controlM [style=solid, penwidth=2, color=red];
 		controlM -> controlN;
 
 		gotcha -> gotchaA -> gotchaB;
-		gotchaB -> gotchaC [style=solid, penwidth=2];
+		gotchaB -> gotchaC [style=solid, penwidth=2, color=red];
 		gotchaC -> gotchaD -> gotchaE;
 		gotchaE -> gotchaF [style=solid, penwidth=2];
 		gotchaF -> gotchaG;
-		gotchaG -> gotchaH [style=solid, penwidth=2];
+		gotchaG -> gotchaH [style=solid, penwidth=2, color=red];
 		gotchaH -> gotchaI -> gotchaJ -> gotchaK;
 		gotchaK -> gotchaL [style=solid, penwidth=2];
 		gotchaL -> gotchaM -> gotchaN;
 
 		callee -> calleeA -> calleeB -> calleeC -> calleeD -> calleeE -> calleeF;
-		calleeF -> calleeG [style=solid, penwidth=2];
+		calleeF -> calleeG [style=solid, penwidth=2, color=red];
 		calleeG -> calleeH -> calleeI -> calleeJ -> calleeK -> calleeL -> calleeM -> calleeN;
 	}
 
 	{
 		rank=same;
-		callerA -> controlA [label=<<font face="monospace">launch(<i>F</i>)</font>>, arrowhead=normal];
+		callerA -> controlA [label=<<font face="monospace">launch(<i>F</i>)</font>>, arrowhead=normal, color=red];
 	}
 
 	{
 		rank=same;
-		controlB -> gotchaB [label=<<font face="monospace">libset_thread_set_next()</font>>, arrowhead=normal];
+		controlB -> gotchaB [label=<<font face="monospace">libset_thread_set_next()</font>>, arrowhead=normal, color=red];
 	}
 
 	{
@@ -72,12 +72,12 @@ strict digraph {
 
 	{
 		rank=same;
-		gotchaF -> calleeF [label=<<font face="monospace">callee()</font>>, arrowhead=normal];
+		gotchaF -> calleeF [label=<<font face="monospace">callee()</font>>, arrowhead=normal, color=red];
 	}
 
 	{
 		rank=same;
-		gotchaG -> calleeG [style=dashed, arrowhead=normal, dir=back];
+		gotchaG -> calleeG [style=dashed, arrowhead=normal, dir=back, color=red];
 	}
 
 	{
@@ -102,11 +102,11 @@ strict digraph {
 
 	{
 		rank=same;
-		controlL -> gotchaL [style=dashed, arrowhead=normal, dir=back];
+		controlL -> gotchaL [style=dashed, arrowhead=normal, dir=back, color=red];
 	}
 
 	{
 		rank=same;
-		callerM -> controlM [style=dashed, arrowhead=normal, dir=back];
+		callerM -> controlM [style=dashed, arrowhead=normal, dir=back, color=red];
 	}
 }
