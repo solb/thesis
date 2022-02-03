@@ -14,7 +14,7 @@ strict digraph {
 		caller -> callerA -> callerB -> callerC -> callerD;
 		callerD -> callerE [style=solid, penwidth=2];
 		callerE -> callerF -> callerG -> callerH -> callerI -> caller_handler;
-		caller_handler -> callerJ [style=solid, penwidth=2];
+		caller_handler -> callerJ [label=" ⑧", style=solid, penwidth=2];
 		callerJ -> callerK -> callerL -> callerM -> callerN;
 
 		control -> controlA;
@@ -23,7 +23,7 @@ strict digraph {
 		controlC -> controlD [style=solid, penwidth=2];
 		controlD -> controlE -> controlF -> controlG -> controlH
 		controlH -> controlI [style=solid, penwidth=2, color=red];
-		controlI -> control_handler [style=solid, penwidth=2];
+		controlI -> control_handler [label=< ⑦ <font face="monospace">handler()</font>>, style=solid, penwidth=2];
 		control_handler -> controlJ;
 		controlJ -> controlK [style=solid, penwidth=2];
 		controlK -> controlL;
@@ -47,12 +47,12 @@ strict digraph {
 
 	{
 		rank=same;
-		callerA -> controlA [label=<<font face="monospace">launch(<i>F</i>)</font>>, arrowhead=normal, color=red];
+		callerA -> controlA [label=<①<br/><font face="monospace">launch(<i>F</i>)</font>>, arrowhead=normal, color=red];
 	}
 
 	{
 		rank=same;
-		controlB -> gotchaB [label=<<font face="monospace">libset_thread_set_next()</font>>, arrowhead=normal, color=red];
+		controlB -> gotchaB [label=<②<br/><font face="monospace">libset_thread_set_next()</font>>, arrowhead=normal, color=red];
 	}
 
 	{
@@ -62,18 +62,18 @@ strict digraph {
 
 	{
 		rank=same;
-		callerD -> controlD [label=<<font face="monospace"><i>F</i>()</font>>, arrowhead=normal, dir=back];
+		callerD -> controlD [label=<③<br/><font face="monospace"><i>F</i>()</font>>, arrowhead=normal, dir=back];
 	}
 
 	{
 		rank=same;
-		callerE -> controlE [label=<<font face="monospace">callee()</font>                                                               >, headlabel=<(redirected to <font face="monospace">procedure_linkage_override()</font>)>];
+		callerE -> controlE [label=<④                                                                <br/><font face="monospace">callee()</font>                                                               >, headlabel=<(redirected to <font face="monospace">procedure_linkage_override()</font>)>];
 		controlE -> gotchaE [arrowhead=normal];
 	}
 
 	{
 		rank=same;
-		gotchaF -> calleeF [label=<<font face="monospace">callee()</font>>, arrowhead=normal, color=red];
+		gotchaF -> calleeF [label=<⑤<br/><font face="monospace">callee()</font>>, arrowhead=normal, color=red];
 	}
 
 	{
@@ -83,7 +83,7 @@ strict digraph {
 
 	{
 		rank=same;
-		controlH -> gotchaH [label=<<font face="monospace">return_callback()</font>>, arrowhead=normal, dir=back, color=red];
+		controlH -> gotchaH [label=<⑥<br/><font face="monospace">return_callback()</font>>, arrowhead=normal, dir=back, color=red];
 	}
 
 	{
@@ -98,7 +98,7 @@ strict digraph {
 
 	{
 		rank=same;
-		controlK -> gotchaK [label=<<font face="monospace">libset_thread_set_next()</font>>, arrowhead=normal];
+		controlK -> gotchaK [label=<⑨<br/><font face="monospace">libset_thread_set_next()</font>>, arrowhead=normal];
 	}
 
 	{

@@ -643,20 +643,20 @@ it.
 
 
 
-		return;
 
+		return;
 
 
 
 
 	}
 	\end{lstlisting}
-	\subcaption{\vspace{12pt} Example program}
+	\subcaption{Example program}
 	\end{minipage}
 %
 	\begin{minipage}{0.75\textwidth}
 	\includegraphics[width=\textwidth]{figs/calltree_function_launch-crop}
-	\subcaption{Corresponding inter-module control transfers (\texttt{callee()} is uninterruptible)}
+	\subcaption{\vspace{2pt} Corresponding inter-module control transfers (\texttt{callee()} is uninterruptible)}
 	\end{minipage}
 \caption{Cross-module function calls under \textit{libinger}. Solid lines represent function calls; dashed ones represent returns. Color indicates uninterruptible code (i.e., next libset = starting libset).}
 \end{figure}
