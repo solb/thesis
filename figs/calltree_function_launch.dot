@@ -13,8 +13,8 @@ strict digraph {
 
 		caller -> callerA -> callerB -> callerC -> callerD;
 		callerD -> callerE [style=solid, penwidth=2];
-		callerE -> callerF -> callerG -> callerH -> callerI;
-		callerI -> callerJ [style=solid, penwidth=2];
+		callerE -> callerF -> callerG -> callerH -> callerI -> caller_handler;
+		caller_handler -> callerJ [style=solid, penwidth=2];
 		callerJ -> callerK -> callerL -> callerM -> callerN;
 
 		control -> controlA;
@@ -22,8 +22,9 @@ strict digraph {
 		controlB -> controlC;
 		controlC -> controlD [style=solid, penwidth=2];
 		controlD -> controlE -> controlF -> controlG -> controlH
-		controlH -> controlI [style=solid, penwidth=2];
-		controlI -> controlJ;
+		controlH -> controlI [style=solid, penwidth=2, color=red];
+		controlI -> control_handler [style=solid, penwidth=2];
+		control_handler -> controlJ;
 		controlJ -> controlK [style=solid, penwidth=2];
 		controlK -> controlL;
 		controlL -> controlM [style=solid, penwidth=2, color=red];
@@ -35,13 +36,13 @@ strict digraph {
 		gotchaE -> gotchaF [style=solid, penwidth=2];
 		gotchaF -> gotchaG;
 		gotchaG -> gotchaH [style=solid, penwidth=2, color=red];
-		gotchaH -> gotchaI -> gotchaJ -> gotchaK;
+		gotchaH -> gotchaI -> gotcha_handler -> gotchaJ -> gotchaK;
 		gotchaK -> gotchaL [style=solid, penwidth=2];
 		gotchaL -> gotchaM -> gotchaN;
 
 		callee -> calleeA -> calleeB -> calleeC -> calleeD -> calleeE -> calleeF;
 		calleeF -> calleeG [style=solid, penwidth=2, color=red];
-		calleeG -> calleeH -> calleeI -> calleeJ -> calleeK -> calleeL -> calleeM -> calleeN;
+		calleeG -> calleeH -> calleeI -> callee_handler -> calleeJ -> calleeK -> calleeL -> calleeM -> calleeN;
 	}
 
 	{
@@ -82,12 +83,12 @@ strict digraph {
 
 	{
 		rank=same;
-		controlH -> gotchaH [label=<<font face="monospace">return_callback()</font>>, arrowhead=normal, dir=back];
+		controlH -> gotchaH [label=<<font face="monospace">return_callback()</font>>, arrowhead=normal, dir=back, color=red];
 	}
 
 	{
 		rank=same;
-		callerI -> controlI [style=dashed, arrowhead=normal, dir=back];
+		caller_handler -> control_handler [style=dashed, arrowhead=normal, dir=back];
 	}
 
 	{
