@@ -177,28 +177,6 @@
 \chapter{TODOs THESIS}
 
 
-\section{A note on implementation (inger 7d5b2e2)}
-
-The timer signal handler in \textit{libinger} refuses to pause while the next libset is set to 0 (the
-starting libset).  Because \textit{libinger} is statically linked with \textit{libgotcha}, the latter enforces a
-transparent switch to this libset whenever a dynamic function call transfers control into the module
-in the process image that corresponds to \texttt{libinger.so}.  This means that preemption is deferred on a
-given kernel thread while \textit{libinger}'s own code is executing on that thread.
-
-Of course, things are not quite that simple.  There are noteworthy exceptions to the rule:
-\begin{itemize}
-\item The generic
-	functions are therefore implemented such that they package everything that differs by type, then
-	call into non-specialized functions such as \texttt{setup\_stack()} and \texttt{switch\_stack()} to do the scary
-	stuff.
-\item The \texttt{resume\_preemption()} function is installed as a \textit{libgotcha} callback hook, and is implicitly
-	invoked at the end of each deferred-preemption library call made by a preemptible function.
-	\textit{This happens in the preemptible function's libset rather than the starting one}; this is
-	essential because the callback's main task is to force the timer signal handler to run
-	\textit{immediately} and check for a timeout, and we don't want the libset to inhibit preemption!
-\end{itemize}
-
-
 \section{Lessons for system builders (slides)}
 
 Resuming is a useful feature that is cheap, but introduces concurrency.
