@@ -214,6 +214,13 @@ Chapter~\ref{chap:libturquoise}.
 \section{Lessons for systems builders}
 \label{sec:thatsawrap:lessons}
 
-\solb{List lessons for systems builders}
+\solb{
+Resuming is a useful feature that is cheap, but introduces concurrency.
+Cannot get CPU time isolation without memory isolation.
+Design abstractions modularly and with an eye to simple use cases (e.g., \textit{libgotcha} as a separate
+runtime with a very small control API, things listed in the note on design).
+Treat debuggability as a first-order concern (e.g., permit disabling features that interfere at
+runtime, test and maintain support for running under debugging and diagnostic tools).
+}
 
 \solb{Debugging tools in 3.8 libgotcha limitations and 4.1.1 handler example program and 3.6.1 monkey patching warning and 5.4.1 plus debug build runtime checks}
