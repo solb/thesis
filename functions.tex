@@ -20,6 +20,11 @@ uncopyable resources such as file descriptors or network adapters.}
 \label{fig:progsupport}
 \end{figure}
 
+\solb{Explicitly disambiguate the term ``asynchronous,'' which means ``background''
+in the context of invocation, ``deferred'' in the context of I/O and futures, and
+``preemptive'' in the context of signals and threads.  A chart showing where we fall
+on the invocation and interruption axes will help with this.}
+
 \begin{swallowsections}
 \begin{swallowfigures}
 \input[functions]{intro}
