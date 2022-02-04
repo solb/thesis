@@ -36,27 +36,3 @@ microservices to crash the worker process, since most segmentation faults are
 prevented, and runtime errors such as integer overflow generate Rust panics that we
 can catch.  Microservices cannot get references to data that does not belong to them
 thanks to the variable and pointer initialization rules.
-
-Given our performance goals, there is a crucial isolation aspect that
-Rust does not provide: there is nothing to stop users from monopolizing the CPU\@.
-Our system, however, must be preemptive. We are unaware of existing preemption
-techniques that work at microsecond scales. Note that coroutine-like
-cooperative multitasking approaches (such as lightweight threads in
-Go~\cite{www-golang} and Erlang~\cite{www-erlang}) are not preemptive, so they
-do not work for us. We briefly discuss our solution to this in the following section;
-it depends on installing a \texttt{SIGALRM} handler and ensuring that trusted
-code within the process handles the signal.
-
-Our defense-in-depth comes from using lightweight operating-system protections
-to block access to certain system calls, as well as the proposed mechanisms
-in Section~\ref{sec:future}.  Some system calls must be blocked to have any
-defense at all; otherwise, the microservice could create kernel threads (e.g.,
-\texttt{fork()}), create competition between threads (e.g., \texttt{nice()}), or even
-terminate the entire worker (e.g., \texttt{exit()}). Finally, user functions should
-not have unmonitored file system access.
-
-We propose to block system calls using Linux's \texttt{seccomp()} system
-call~\cite{seccomp-manpage}; each worker process should call this during
-initialization to limit itself to a \whitelist{ed} set of system calls.
-Prior to lockdown, the worker process should install a \texttt{SIGSYS} handler
-for regaining control from any microservice that attempts to violate the policy.

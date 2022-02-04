@@ -1,0 +1,9 @@
+Given our performance goals, there is a crucial isolation aspect that
+Rust does not provide: there is nothing to stop users from monopolizing the CPU\@.
+Our system, however, must be preemptive. We are unaware of existing preemption
+techniques that work at microsecond scales. Note that coroutine-like
+cooperative multitasking approaches (such as lightweight threads in
+Go~\cite{www-golang} and Erlang~\cite{www-erlang}) are not preemptive, so they
+do not work for us. We briefly discuss our solution to this in the following section;
+it depends on installing a \texttt{SIGALRM} handler and ensuring that trusted
+code within the process handles the signal.
