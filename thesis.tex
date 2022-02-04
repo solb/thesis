@@ -224,24 +224,6 @@ runtime, test and maintain support for running under debugging and diagnostic to
 
 I propose extending the work already completed in all three of the following ways:
 
-\paragraph{Cancellation resource cleanup for the Rust interface}
-Although we currently support asynchronous cancellation of timed-out preemptible
-functions via \textit{libinger}'s \texttt{cancel()} facility, we do not yet perform
-any automatic cleanup of already-allocated resources.  This is impossible
-in general for C programs because the language lacks a destructor mechanism; however,
-I intend to add at least partial support for doing so for Rust programs.  The basic
-principle will be to throw an artificial exception (Rust panic) on the preemptible
-function's execution stack, thereby unwinding the stack and invoking local variables'
-destructors.  This approach alone will not guarantee comprehensive cleanup, because
-such variables may not have been fully initialized at the time of preemption; for the
-same reason, it may have safety ramifications that will merit additional study.  I
-have some ideas about how to augment the technique, such as by extending
-\textit{libgotcha} to keep a running cache of the several most recent allocations and
-deallocations of common resources (e.g., memory and file descriptors) from each
-libset.  While exhaustive cleanup may prove difficult to achieve, I hope to at least
-catalogue situations where we guarantee not to leak certain classes of resource, and
-perhaps provide a tunable allowing users to request full resource tracking if needed.
-
 \paragraph{Automatic selection and variation of timer frequency}
 For simplicity, the current \textit{libinger} implementation subscribes to timer
 signals spaced a globally constant interval apart throughout the entire duration of
@@ -280,34 +262,6 @@ into a single process whose thread(s) are timeshared between the ``programs'' us
 preemptible functions.  Obviously, this would only provide memory isolation for
 programs implemented in memory-safe languages.  This would be implemented on top of
 \textit{libinger} as a sample application.
-
-\paragraph{Implement a caching RPC framework}
-The preemptible functions API naturally lends itself to problems of caching partial
-computations, and one interesting case study would be a caching RPC framework.  I
-imagine this working as follows:  Clients would enclose alongside each request the
-timeout they were using when listening.  The server would process each request inside
-its own preemptible function.  When the client timed out waiting for a response, the
-server would simultaneously time out and cache the continuation.  Subsequent requests
-for the same procedure with identical inputs would resume the interrupted computation
-from where it left off.
-
-
-\section{Timeline}
-
-\begin{itemize}
-\item 24 April 2020: ATC '20 author notification
-\item 4 June 2020: ATC '20 camera-ready deadline (if applicable)
-\item June 2020: Start cancellation resource cleanup, fix OpenSSL support
-\item July 2020: Continue cancellation resource cleanup, fix OpenSSL support
-\item August 2020: Finish cancellation resource cleanup
-\item September 2020: Speaking skills talk, start automatic preemption intervals
-\item October 2020: Finish and evaluate automatic preemption intervals
-\item November 2020: Start committee-selected project
-\item December 2020: Finish and evaluate committee-selected project
-\item January--March 2021: Thesis writing, run any final experiments
-\item April 2021: Finish thesis
-\item May 2021: Defense
-\end{itemize}
 
 
 \cleardoublepage
