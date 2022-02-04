@@ -29,6 +29,7 @@ thesis.pdf: ingerc.tex
 thesis.pdf: intro.tex
 thesis.pdf: microservices.tex
 thesis.pdf: safety.tex
+thesis.pdf: statement.tex
 thesis.pdf: turquoise.tex
 
 figs/jstables.pdf: private OVERRIDE_DOT := true
