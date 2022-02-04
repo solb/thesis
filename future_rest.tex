@@ -1,0 +1,103 @@
+\paragraph{Host process.}
+Our current implementation does not provide isolation between the dispatcher
+and worker processes.  We plan to apply standard OS techniques to reduce
+the chance of interference by a misbehaving worker.  Examples
+include auditing interactions with the shared memory region to ensure invalid
+or inconsistent data originating from a worker cannot create an unrecoverable
+dispatcher error; handling the \texttt{SIGCHLD} signal to detect a worker that has
+somehow crashed; and keeping a recovery log in the dispatcher process so that any
+user jobs lost to a failed worker process can be reassigned to operational
+workers.  
+
+\paragraph{Further defense in depth with ERIM.}
+ERIM outlines a set of techniques and binary rewriting tools useful for using
+Intel's Memory Protection Keys to restrict memory access by 
+threads within a process~\cite{vahldiek2018erim}.  While preliminary and without
+source yet available, this appears to be an attractive approach for
+defense-in-depth both within worker processes and between the workers and the dispatcher.
+
+%We believe it would be unwise to run the system in production without isolating the
+%dispatcher process from interference or corruption by a misbehaving worker.  In
+%practice, this should include at least:\
+
+
+\paragraph{Library functions.}
+As with system calls, there may exist library functions in Rust (and certainly
+in libc, which we deny by default) that are unsafe for microservices to access.
+Because the Rust standard library requires unsafe
+code, defense-in-depth suggests that a \whitelist{ing}-based approach should be
+employed for access to its functions.  Certainly library functions must
+be masked---for example, our use of Rust's panic handler for
+preemption means that we must deny microservice code the ability to catch the
+panic and return to execution.  Although we mitigate this possibility by
+detecting and \blacklist{ing} microservices that fail to yield under a SIGALRM, it
+would be desirable to block such behavior entirely.
+Possible
+options include using the dynamic linker to interpose stub implementations or
+linking against a custom build of the library, or using more in-depth static analysis.
+
+
+
+% Similar steps may be needed in the Rust standard library as well; for
+% instance, we currently have no way to stop a user from catching the panic we trigger
+% and preventing control from returning to the worker loop, although this could be
+% accomplished using static analysis or even a simple search when we compiled submitted
+% code.
+% simple search when we compiled submitted code.
+
+\paragraph{Resource leaks.}
+Safe Rust code provides memory safety, but it cannot prevent memory
+leaks~\cite{www-rustlang-nu}.  For example, destructor invocation is not
+guaranteed using Rust's default reference counting-based reclamation; therefore,
+unwinding the stack during preemption is not guaranteed to free all of a
+microservice's memory or other resources.  Potential solutions are interposing
+on the dynamic allocator to record tracking information (likely proving
+expensive) or using per-microservice heaps that main worker process can simply
+deallocate when terminating a microservice.  The worker can also deallocate
+other resources, such as unclosed file descriptors.  If these checks end up
+being too expensive, the worker could execute its cleanup after a certain number
+of microservices have run or when the load is sufficiently low.
+%, and/or the system could track which microservices were (likely)
+%responsible for resource leaks and impose warnings or bans.
+
+\paragraph{Side channels.}
+Our current approach is vulnerable to side-channel
+attacks~\cite{Lipp2018,Kocher2018}.  For example, microservices have access to
+the memory addresses and timings of dynamic memory allocations, as well as the
+numbers of opened file descriptors.  Although side-channels exist in many
+systems, the short duration of microservice functions may
+make mounting such attacks more challenging; nevertheless, standard
+preventative practices found in the literature should apply.
+
+% As this year's Meltdown~\cite{Lipp2018} and Spectre~\cite{Kocher2018} CPU
+% vulnerabilities reminded our community, the peril of timing attacks and
+% other sidechannels can lurk at any abstraction layer and deserves careful
+% consideration.  We are aware of at least two significant pieces of state
+% that are observable in our approach: microservices have access to the memory
+% addresses and timings of dynamic memory allocations, as well as the numbers of
+% opened file descriptors.  We would not be surprised if an enterprising attacker
+% could use this information to reconstruct private details of recently-executed
+% microservices.  However, we believe that some of the steps proposed for
+% addressing resource leaks could help block these side channels as well.  In the
+% worst case, however, we may need to modify the Rust standard library (e.g., to
+% prevent access to pointer addresses via debug formatting and/or disallow safe
+% access to file descriptor numbers).
+%
+% We freely admit that the pervasive design changes proposed herein require more
+% rigorous verification to catalog and mitigate side-channels; however, we believe this
+% shortcoming is not limited to this project, but that many such severe attacks will be
+% discovered in existing systems, both in the months to come and after the introduction
+% of much-needed tooling to support the looming pervasive vulnerability search.
+
+% The reader may be disheartened by the number of attack vectors we've considered, or
+% even that we've failed to consider.  However, there is a small piece of good news:\
+% because that the worker processes should be well-isolated from the rest of the
+% system, solutions can be inexact, with the dispatcher restarting a failed worker and
+% automatically banning suspect microservices in the worst case.
+
+\vspace{2pt}
+\noindent
+Despite the security challenges of running microservice as functions, worker
+processes are still well-isolated from the rest of the system.
+Worst case, the central dispatcher process can restart a failed worker and
+automatically ban suspect microservices.

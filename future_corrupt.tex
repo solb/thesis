@@ -1,0 +1,16 @@
+% This being preliminary work, there remain security problems in need of addressing.
+% While a couple of them represent unresolved limitations in our implementation, most
+% of these are simply defense in depth to ensure that an unexpected failure (e.g., due
+% to a compiler bug or the operator allowing use of a buggy or malicious library) is
+% contained.  We endeavor to catalog many of these here, along with proposed solutions
+% that we intend to implement going forward.
+
+\paragraph{Nonreentrancy.}
+Our use of Rust panics to unwind the stack during preemption can
+corrupt the internal state of non-reentrant functions (e.g., Rust's dynamic
+allocator).  Possible fixes include \blacklist{ing} these functions and delaying
+preemption until they are finished or replacing the problematic function with a
+safe one (e.g., a custom memory allocator).
+%allocator with a custom one that manages a separate heap for each microservice.  The
+%latter approach would also open the possibility of one-shot memory deallocation by
+%simply ``deallocating'' an entire heap.
