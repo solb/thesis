@@ -102,7 +102,8 @@ demonstration, we find that selective relinking makes both of these seemingly
 Herculean tasks simple enough to make for short instructive examples.
 
 \paragraph{Function calls with timeouts, revisited (Chapter~\ref{chap:libinger})}
-We return to the topic of preemptible functions and illustrate how to implement them
+We return to the topic of preemptible functions and illustrate \textit{how to
+implement them}
 atop the existing systems stack.  In the process, we specialize what we had designed
 as a C interface for the more modern Rust programming language.  The result is a
 platform that exhibits both seamless interoperability with legacy code and harmonious
@@ -140,7 +141,8 @@ resumes the paused computation from wherever it left off.
 
 \paragraph{Microsecond-scale microservices (Chapter~\ref{chap:microservices})}
 We discuss how preemptible functions could be applied to address the problem of
-invocation latency in serverless computing.  Whereas contemporary systems typically
+\textit{invocation latency in serverless computing}.  Whereas contemporary systems
+typically
 place each tenant in its own separate container comprising one or more processes and
 a virtual filesystem, we propose consolidating numerous tenants into a single worker
 process.  Preemptible functions would provide compute time isolation, whereas memory
