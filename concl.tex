@@ -124,6 +124,34 @@ Chapter~\ref{chap:libturquoise}.
 
 \solb{Mention case studies built on top (incl. the safety ones) and other possibilities (incl. finishing them)}
 
+\solb{Redesign global variable interception to leverage symbol sizes instead of disassembler and heuristics}
+
+\solb{Port \textit{libgotcha} to drow}
+
+\solb{Make \textit{libtlsblock} robust and incorporate it into the system}
+
+\solb{Logic to avoid signal conflicts}
+
+\solb{Remove signal scaling limit}
+
+\solb{Smarter time quanta and measurement study/profiler component}
+
+\solb{Add option to insulate against preemptible function exceptions}
+
+\solb{Systematic replacements to prevent circumventing isolation}
+
+\solb{Systematic replacements to hide library function semantics changes}
+
+\solb{Make \textit{\_dl\_signal\_exception()} workaround robust and incorporate it into the system}
+
+\solb{Complete implementation of \textit{ingerc} and integrate the runtime components into \textit{libinger}}
+
+\solb{Port \textit{libturquoise} to modern Tokio, eliminating the compatibility glue code and properly supporting TLSes, as I've ported the main system to modern Rust and glibc}
+
+\solb{Build a microservices platform on top of \textit{libinger}}
+
+\solb{Issues to report and/or patch upstream... \texttt{\_Unwind\_Resume()}, \texttt{\_\_libc\_dlopen()}, libunwind, GDB namespace debug symbols}
+
 
 \section{Technical challenges}
 \label{sec:thatsawrap:challenges}
@@ -187,3 +215,5 @@ Chapter~\ref{chap:libturquoise}.
 \label{sec:thatsawrap:lessons}
 
 \solb{List lessons for systems builders}
+
+\solb{Debugging tools in 3.8 libgotcha limitations and 4.1.1 handler example program and 3.6.1 monkey patching warning and 5.4.1 plus debug build runtime checks}
