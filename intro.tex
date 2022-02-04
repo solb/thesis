@@ -85,9 +85,8 @@ that might be unavailable unavailable in other settings.
 \paragraph{Nonreentrancy and selective relinking (Chapter~\ref{chap:libgotcha})}
 We confront nonreentrancy, a program property that permeates the contemporary systems
 stack from the operating system up, and which poses a fundamental safety challenge to
-preempting impure code.  To overcome this hazard, we introduce \textit{selective
-relinking}, a novel technique that repurposes dynamic linking to establish new
-memory isolation boundaries within a process.  Crucially, this new form of isolation
+preempting impure code.  To overcome this hazard, we introduce a new form of memory
+isolation called \textit{selective relinking}.  Crucially, this new primitive
 operates at a granularity finer than a kernel thread; in fact, it can be applied at
 the level of function calls, as is needed to support preemptible functions.
 
