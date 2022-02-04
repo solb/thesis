@@ -294,6 +294,7 @@ into \texttt{launch()} (or \texttt{resume()}), which will populate the
 
 
 \subsection{Using POSIX contexts safely}
+\label{sec:libinger:boilerplate}
 
 Any nontrivial use of the POSIX contexts interface requires some boilerplate code
 that is unfortunately subtle in a few ways.  Like the \texttt{setjmp()} function, the
@@ -646,6 +647,7 @@ handler chooses to pause it.
 
 
 \subsection{Resuming a paused preemptible function}
+\label{sec:libinger:resuming}
 
 Should the application resume a paused preemptible function, \texttt{resume()}
 repeats many of the transition actions performed by \texttt{launch()}.\footnote{In
