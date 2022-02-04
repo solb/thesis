@@ -73,11 +73,12 @@ The remaining chapters of this thesis break down our contributions as follows:
 
 \paragraph{Function calls with timeouts (Chapter~\ref{chap:functions})}
 We examine prior approaches to running timed code from the literature, triaging the
-state of the art's shortcomings.  In the process, we rediscover an ancient interface
+state of the art's shortcomings.  In the process, we rediscover a nigh-forgotten
+interface
 for making timed function calls, Scheme engines.  The interface is elegant, but only
-capable of handling purely functional code.  By modernizing and enhancing it, we
-devise a novel interface for calling impure \textit{preemptible functions}
-preemptively.  We set the goal of language agnosticism, aiming to demonstrate support
+capable of handling purely functional code.  Drawing inspiration from it, we
+devise a novel interface for calling impure \textit{preemptible functions}.
+We set the goal of language agnosticism, aiming to demonstrate support
 for unmanaged systems programming languages because they provide few abstractions
 that might be unavailable unavailable in other settings.
 
