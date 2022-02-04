@@ -7,21 +7,49 @@ The ships hung in the sky in much the same way that bricks don't.
 \end{chapquote}
 \fi
 
-\solb{If this section is too hard to rescue, maybe cut it down and move parts to the conclusion?}
-
-\solb{Probably need to mention JavaScript systems that only require a V8 isolate for each tenant}
-
 This chapter provides a case study of how lightweight preemptible functions could be
-used to create the serverless platform of the future.
+used to create the serverless platform of the future.  We have not prototyped any of
+its ideas on \textit{libinger}; rather, they formed the initial motivation for
+fine-grained preemption and the inspiration for the preemptible function abstraction.
+
+\solb{Probably need to mention newer JavaScript systems that only require a V8 isolate for each tenant}
 
 \begin{namespacereferences}{microservices:}
 \input[microservices]{abstract}
+
+
 \input[microservices]{intro}
+
+
 \input[microservices]{motivation}
+\end{namespacereferences}
+\hspace{-2em}
+Section~\ref{sec:libinger:quantum} demonstrates that interval timers are capable of
+delivering signals with this frequency.
+
+
+\begin{namespacereferences}{microservices:}
 \input[microservices]{isolation}
-\input[microservices]{design}
-\input[microservices]{design_howclean}
+\end{namespacereferences}
+
+Given our performance goals, there is a crucial isolation aspect that Rust does not
+provide:\@ there is nothing to stop users from monopolizing the CPU.  Our system,
+however, must be preemptive.  We can apply preemptible functions
+(Chapter~\ref{chap:functions}) here to impose a time quota on each microservice.
+This has the added benefit of automatically providing memory isolation between
+library dependencies (Chapter~\ref{chap:libgotcha}), insulating unsafe platform code
+from affecting the state of other microservices or the rest of the worker process.
+
+\begin{namespacereferences}{microservices:}
+\input[microservices]{isolation_depth}
+
+
 \input[microservices]{eval}
+
+
 \input[microservices]{future}
+\input[microservices]{future_rest}
+
+
 \input[microservices]{concl}
 \end{namespacereferences}
