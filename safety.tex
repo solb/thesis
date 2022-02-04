@@ -383,6 +383,7 @@ gaining root access on systems with vulnerable installations of the (setuid
 
 
 \section{Establishing async-cancel safety:\@ \textit{libac-safe}}
+\label{sec:safety:acsafe}
 
 To artificially establish async-cancel safety, we apply selective relinking in a
 slightly different manner.  Instead of establishing partial memory isolation between
@@ -566,6 +567,7 @@ static libset_t alloc_libset(void) {
 
 
 \subsection{Program repaired with the help of our system}
+\label{sec:safety:thread}
 
 Listing~\ref{lst:acsafe_example} shows an only slightly contrived example program
 that tries to use asynchronous thread cancelation.  It attempts to simulate

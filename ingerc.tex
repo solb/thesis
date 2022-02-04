@@ -70,6 +70,7 @@ always eventually allow their functions to run to completion.
 
 
 \section{Languages following the RAII principle}
+\label{sec:ingerc:raii}
 
 The situation is more promising in Rust.  Like C++, it adheres to the RAII (Resource
 Allocation Is Initialization) idiom that associates each resource's lifetime with
@@ -519,6 +520,7 @@ preceding basic block.
 
 
 \section{Preemptible function cancellation}
+\label{sec:ingerc:cancellation}
 
 While we have not integrated resource cleanup support into \textit{libinger}, our
 work on asynchronous exception handling suggests a design.  We have prototyped the

@@ -183,6 +183,7 @@ first-class concurrency support so the compiler can catch such mistakes.
 
 
 \subsection{Locking and deadlocks}
+\label{sec:libinger:locks}
 
 While the Rust compiler rejects all code that shares state unsafely, it is still
 possible to introduce correctness bugs such as deadlock~\cite{www-rustlang-nu}.  This
@@ -523,6 +524,7 @@ for further discussion.
 
 
 \subsection{Interval length and accuracy}
+\label{sec:libinger:quantum}
 
 We have described our preemption mechanism, but the question remains of how
 frequently the signal handler should check whether the preemption function has timed
@@ -895,6 +897,7 @@ We detail this approach in Chapter~\ref{chap:ingerc}.
 
 
 \subsection{Microbenchmarks}
+\label{sec:libinger:ueval}
 
 \input[functions]{eval_uinger}
 
