@@ -750,6 +750,78 @@ containing the paused function's execution state.
 \section{Application compatibility}
 \label{sec:libinger:compatibility}
 
+To assess the extent to which \textit{libinger} and \textit{libgotcha} break existing
+code, we ran the Gnulib test suite, which exercises hundreds of POSIX and ISO C
+library functions.  We ran each test in the suite within a preemptible function by
+preloading a library that wrapped \texttt{\_\_libc\_start\_main()} and
+\texttt{launch()}ed the program's real \texttt{main()} with an infinite timeout.  On
+a glibc 2.29 system, we currently pass approximately 495 of the 519 supported tests
+(give or take one or two flaky tests that rely on precise timing behavior affected by
+our high-frequency timer signals).
+
+Of the roughly 25 failing tests, most center around functions that we have not
+prioritized supporting within preemptible functions:\@ 7 use
+\texttt{pthread\_create()} and other thread spawn functions, 6 use \texttt{fork()}
+and other process creation functions, and 4 use functions from the \texttt{exec()}
+family.  We have not decided what behavior is desirable when a preemptible function
+invokes these functions, but the simplest option is to disallow their use by defining
+forced interposition replacement functions (Section~\ref{sec:libgotcha:interpose})
+that return a failure code when called from within a preemptible function.
+
+Three other recurring issues we encountered were conflicting uses of signals,
+replacement of our signal handlers, and interrupted system calls not restarted by
+\texttt{SA\_RESTART} (Section~\ref{sec:libinger:signals}).  The former included tests
+using historical interfaces such as \texttt{alarm()} that use the same
+\texttt{SIGALRM} signal that we allocate for preempting the first preemptible
+function.  This is not unexpected because \textit{libinger} does not currently ensure
+that its preemption signals are not also used by the program.  The handler
+replacement issues mostly involved tests removing our preemption handler by restoring
+the default signal disposition.  This would cause the program to crash when the
+preemption signal came in, so we worked around it by providing a replacement
+\texttt{signal()} wrapper that ignored requests for the \texttt{SIG\_DFL}
+disposition.  It is never desirable for a preemptible function to interfere with its
+own preemption signal, so a more robust solution would be to add a replacement
+wrappers that were aware of its assigned signal and reported failure on all requests
+to reconfigure it.  The most frequently recurring functions that did not respect
+\texttt{SA\_RESTART} were \texttt{sleep()}, \texttt{usleep()}, and
+\texttt{nanosleep()}, which when interrupted return a ``success'' status and the
+remaining duration they would have continued to sleep for.  We added replacement
+wrapper functions to call them repeatedly using this information.  One function that
+returns the \texttt{EINTR} interrupted error code even under \texttt{SA\_RESTART} is
+\texttt{select()}, so we added a replacement wrapper that ran it in a loop as long as
+this happened.  There are other functions with atypical interruption behavior, and
+our system would benefit from systematically adding additional wrappers to hide this
+behavior~\cite{signal-manpage}.
+
+A final interesting complication we encountered is that glibc functions that
+automatically load supporting dynamic libraries at runtime are not functional by
+default in manually-loaded linker namespaces.  For instance, calling the
+\texttt{iconv()} family of character set conversion functions causes libc to attempt
+to load multiple libraries, each of which performs pairwise conversions between two
+specific character sets.  The library attempts to find a minimal sequence of
+available pairwise conversions that provides a route between the requested source and
+destination character sets; to test whether each candidate pairwise conversion is
+supported, it attempts to load a formulaically-named shared library that may or may
+not exist.  This means that it is expected that \texttt{dlopen()} may fail, in which
+case the dynamic linker will notify \texttt{libc.so} by calling its
+\texttt{\_dl\_signal\_exception()} error-handling function.  This function's default
+action is to abort the process, so in the case of \texttt{iconv()}, libc updates some
+internal state to indicate that this behavior should be suppressed if the call fails.
+Unfortunately, the dynamic linker always invokes \texttt{\_dl\_signal\_exception()}
+in the main namespace.  In our case, this means that if a preemptible function calls
+\texttt{iconv()}, the call is routed to the copy of \texttt{libc.so} in its own
+libset, which updates its internal state and then calls into the dynamic linker,
+which in turn calls into the starting libset's \texttt{libc.so} that is still
+configured to crash on failure.  We work around the problem by defining a replacement
+\texttt{\_dl\_signal\_exception()} wrapper that checks the old value of next libset
+and reroutes the call to that libset's libc.  The problem and this solution apply to
+several other glibc features besides \texttt{iconv()}.
+
+We are confident that with additional engineering effort, it would be possible to
+pass the full test suite with the possible exception of the few tests that rely on
+precise timing characteristics or incorrectly assume that short blocking file
+descriptor I/O operations will not return short counts.
+
 
 \section{Canceling a paused preemptible function}
 \label{sec:libinger:cancellation}
