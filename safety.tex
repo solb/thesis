@@ -265,7 +265,7 @@ acceptable.
 Listing~\ref{lst:assafe_example} shows a small example program whose signal handler
 illegally calls the \texttt{printf()} function, which is not async-signal safe.  It
 configures a custom signal handler and an interval timer that invokes it every
-10~$\mu$s, then prints a circular spinner to visually indicate that the program is
+10~\textmu{}s, then prints a circular spinner to visually indicate that the program is
 making progress.  When run on glibc 2.29, the program reliably deadlocks in under
 10~s.
 
