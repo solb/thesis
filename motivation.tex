@@ -123,13 +123,3 @@ delayed:\@ whereas other nodes can only tell that the request hasn't yet
 \textit{completed}, this node alone knows whether it has been \textit{scheduled}.)
 At our scale, this means a preemption interval up to two orders of magnitude faster
 than Linux's default \ms{4} process scheduling quantum.
-
-Fortunately, we find that high-precision event timers (HPETs) on modern CPUs
-are sufficient for this task. We measure the granularity and reliability of
-these timers as follows: We install a signal handler and configure a POSIX timer to
-trigger it every $T$~\textmu{}s.
-Ideally, this handler would always be called exactly $T$~\textmu{}s after its last
-invocation; we measure the deviation from $T$ over 65,535 iterations.
-We find that the variance
-is smaller than 0.5~\textmu{}s for $T \ge 3$~\textmu{}s. This shows that
-intra-process preemption is fast and reliable enough for our needs.
