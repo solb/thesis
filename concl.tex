@@ -59,7 +59,9 @@ even type safe and usable in contexts where the standard library does not allow
 thread spawns (Chapter~\ref{chap:libinger}).  Preemptible functions themselves serve
 as an example application for selective relinking, and Chapters~TODO and
 \ref{chap:microservices} present case studies in building systems atop preemptible
-functions.
+functions.  Simpler applications include detection of pathological cases such as
+adversarially-constructed compressed images (Section~\ref{sec:libinger:bombs}) and
+graceful degradation by dropping video frames.
 
 \paragraph{Unmanaged systems programming languages}
 Unlike prior art, our abstractions are restricted neither to purely functional code
@@ -124,6 +126,10 @@ Chapter~\ref{chap:libturquoise}.
 
 \solb{Mention case studies built on top (incl. the safety ones) and other possibilities (incl. finishing them)}
 
+\solb{Other libgotcha uses:\@ aspect-oriented programming, multiple library versions}
+
+\solb{Other libinger use:\@ resource limits besides wall-clock time}
+
 \solb{Redesign global variable interception to leverage symbol sizes instead of disassembler and heuristics}
 
 \solb{Port \textit{libgotcha} to drow}
@@ -149,6 +155,38 @@ Chapter~\ref{chap:libturquoise}.
 \solb{Port \textit{libturquoise} to modern Tokio, eliminating the compatibility glue code and properly supporting TLSes, as I've ported the main system to modern Rust and glibc}
 
 \solb{Build a microservices platform on top of \textit{libinger}}
+
+\solb{
+\paragraph{Automatic selection and variation of timer frequency}
+For simplicity, the current \textit{libinger} implementation subscribes to timer
+signals spaced a globally constant interval apart throughout the entire duration of
+each preemptible function.  To improve efficiency while preserving preemption
+granularity, I plan to dynamically determine this interval based on the requested
+timeout.  For long-running functions, this will include delaying the first of these
+signals until shortly before the timeout would expire.  Maintaining accuracy across
+multiple CPUs will probably require building in a calibration routine to infer
+configuration parameters.
+}
+
+\solb{
+\paragraph{Achieve even finer--grained preemption}
+The \textit{Shinjuku} authors included IPI microbenchmarks that suggest it should be
+possible for us to achieve interrupt latencies and spacing within a small constant
+factor of theirs.  I could attempt to achieve this by reusing some of their
+optimizations to POSIX contexts and adding a specialized timer signal delivery
+mechanism to the kernel to reduce the number of ISR instructions at the expense of
+generality.
+}
+
+\solb{
+\paragraph{Implement ``\textit{libingerOS}'' container framework}
+Generalizing the serverless platform case study, it should be possible to generate a
+utility that takes two or more position-independent executables and combines them
+into a single process whose thread(s) are timeshared between the ``programs'' using
+preemptible functions.  Obviously, this would only provide memory isolation for
+programs implemented in memory-safe languages.  This would be implemented on top of
+\textit{libinger} as a sample application.
+}
 
 \solb{Issues to report and/or patch upstream... \texttt{\_Unwind\_Resume()}, \texttt{\_\_libc\_dlopen()}, libunwind, GDB namespace debug symbols}
 

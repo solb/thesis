@@ -197,61 +197,6 @@
 
 \backmatter
 
-\chapter{Proposed work}
-
-\solb{Other libinger use:\@ resource limits besides wall-clock time}
-
-\solb{Other libgotcha uses:\@ aspect-oriented programming, multiple library versions}
-
-\begin{swallowsections}
-\input[functions]{concl}
-\end{swallowsections}
-
-
-\section{Remaining work}
-
-I propose extending the work already completed in all three of the following ways:
-
-\paragraph{Automatic selection and variation of timer frequency}
-For simplicity, the current \textit{libinger} implementation subscribes to timer
-signals spaced a globally constant interval apart throughout the entire duration of
-each preemptible function.  To improve efficiency while preserving preemption
-granularity, I plan to dynamically determine this interval based on the requested
-timeout.  For long-running functions, this will include delaying the first of these
-signals until shortly before the timeout would expire.  Maintaining accuracy across
-multiple CPUs will probably require building in a calibration routine to infer
-configuration parameters.
-
-\paragraph{Support OpenSSL and benchmark hyper with HTTPS}
-Earlier in \textit{libgotcha}'s development history, it was able to run nginx with
-OpenSSL.  Recent attempts at getting hyper to run with OpenSSL have ended in crashes,
-yet this configuration is desirable for measurement because it exhibits a far greater
-number of dynamic function calls, of which \textit{libgotcha} alters the performance
-characteristics.  I aim to support and benchmark the configuration, which will likely
-involve regression testing using the old nginx setup.
-
-\hfill \\
-\noindent
-Additionally, I will complete one of the following projects, as selected by the
-committee:
-
-\paragraph{Achieve even finer--grained preemption}
-The \textit{Shinjuku} authors included IPI microbenchmarks that suggest it should be
-possible for us to achieve interrupt latencies and spacing within a small constant
-factor of theirs.  I could attempt to achieve this by reusing some of their
-optimizations to POSIX contexts and adding a specialized timer signal delivery
-mechanism to the kernel to reduce the number of ISR instructions at the expense of
-generality.
-
-\paragraph{Implement ``\textit{libingerOS}'' container framework}
-Generalizing the serverless platform case study, it should be possible to generate a
-utility that takes two or more position-independent executables and combines them
-into a single process whose thread(s) are timeshared between the ``programs'' using
-preemptible functions.  Obviously, this would only provide memory isolation for
-programs implemented in memory-safe languages.  This would be implemented on top of
-\textit{libinger} as a sample application.
-
-
 \cleardoublepage
 \addcontentsline{toc}{chapter}{Bibliography}
 \bibliography{ref}
