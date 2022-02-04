@@ -1,0 +1,25 @@
+\chapter{Preemptible remote procedure calls: \\ the \textit{strobelight} caching RPC server}
+\label{chap:strobelight}
+
+\ifdefined\chapquotes
+\vspace{-1in}
+\begin{chapquote}[1.5in]{Philip Reeve, \textit{Mortal Engines}}
+`Do you really think I am so shortsighted?  The Guild \\
+of Engineers plans further ahead than you suspect. \\
+London will never stop moving.  Movement is life.'
+\end{chapquote}
+\fi
+
+\solb{Last summer, we had a first-year undergraduate student use \textit{libinger} to
+build a preemptive RPC server where requests are transparently served using
+preemptible functions so the developer does not have to manually check for timeouts.
+What's more, the system caches paused preemptible functions and uses them to
+partially ``memoize'' repeated requests for unfinished work (hence the name).  I plan
+to write a few pages briefly summarizing what the undergraduate built.}
+
+\solb{Survey the existing landscape and highlight that existing impure systems are
+cooperative and make the developer of each function responsible for (constantly)
+ensuring that it does not exceed its timeout.}
+
+\solb{Note that this is because, like OSes, languages have failed to solve the thread
+cancellation problem.  Use deprecation examples from the Julia Evans blog post.}
