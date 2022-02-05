@@ -126,39 +126,39 @@ Chapter~\ref{chap:libturquoise}.
 \section{Applications and future work}
 \label{sec:thatsawrap:applications}
 
-\solb{Mention case studies built on top (incl. the safety ones) and other possibilities (incl. finishing them)}
+finishing: \solb{Mention case studies built on top (incl. the safety ones) and other possibilities (incl. finishing them)}
 
-\solb{Other libgotcha uses:\@ aspect-oriented programming, multiple library versions}
+applications: \solb{Other libgotcha uses:\@ aspect-oriented programming, multiple library versions}
 
-\solb{Other libinger use:\@ resource limits besides wall-clock time}
+applications: \solb{Other libinger use:\@ resource limits besides wall-clock time}
 
-\solb{Redesign global variable interception to leverage symbol sizes instead of disassembler and heuristics}
+compatibility: \solb{Redesign global variable interception to leverage symbol sizes instead of disassembler and heuristics}
 
-\solb{Port \textit{libgotcha} to drow}
+scalability: \solb{Port \textit{libgotcha} to drow}
 
-\solb{Make \textit{libtlsblock} robust and incorporate it into the system}
+performance: \solb{Make \textit{libtlsblock} robust and incorporate it into the system}
 
-\solb{Logic to avoid signal conflicts}
+compatibility: \solb{Logic to avoid signal conflicts}
 
-\solb{Remove signal scaling limit}
+scalability: \solb{Remove signal scaling limit}
 
-\solb{Smarter time quanta and measurement study/profiler component}
+performance: \solb{Smarter time quanta and measurement study/profiler component}
 
-\solb{Add option to insulate against preemptible function exceptions}
+defense in depth: \solb{Add option to insulate against preemptible function exceptions}
 
-\solb{Systematic replacements to prevent circumventing isolation}
+defense in depth: \solb{Systematic replacements to prevent circumventing isolation}
 
-\solb{Systematic replacements to hide library function semantics changes}
+compatibility: \solb{Systematic replacements to hide library function semantics changes}
 
-\solb{Make \textit{\_dl\_signal\_exception()} workaround robust and incorporate it into the system}
+compatibility: \solb{Make \textit{\_dl\_signal\_exception()} workaround robust and incorporate it into the system}
 
-\solb{Complete implementation of \textit{ingerc} and integrate the runtime components into \textit{libinger}}
+finishing: \solb{Complete implementation of \textit{ingerc} and integrate the runtime components into \textit{libinger}}
 
-\solb{Port \textit{libturquoise} to modern Tokio, eliminating the compatibility glue code and properly supporting TLSes, as I've ported the main system to modern Rust and glibc}
+finishing: \solb{Port \textit{libturquoise} to modern Tokio, eliminating the compatibility glue code and properly supporting TLSes, as I've ported the main system to modern Rust and glibc}
 
-\solb{Build a microservices platform on top of \textit{libinger}}
+defense in depth: \solb{Build a microservices platform on top of \textit{libinger}}
 
-\solb{
+performance: \solb{
 \paragraph{Automatic selection and variation of timer frequency}
 For simplicity, the current \textit{libinger} implementation subscribes to timer
 signals spaced a globally constant interval apart throughout the entire duration of
@@ -170,7 +170,7 @@ multiple CPUs will probably require building in a calibration routine to infer
 configuration parameters.
 }
 
-\solb{
+performance: \solb{
 \paragraph{Achieve even finer--grained preemption}
 The \textit{Shinjuku} authors included IPI microbenchmarks that suggest it should be
 possible for us to achieve interrupt latencies and spacing within a small constant
@@ -180,7 +180,7 @@ mechanism to the kernel to reduce the number of ISR instructions at the expense 
 generality.
 }
 
-\solb{
+applications: \solb{
 \paragraph{Implement ``\textit{libingerOS}'' container framework}
 Generalizing the serverless platform case study, it should be possible to generate a
 utility that takes two or more position-independent executables and combines them
