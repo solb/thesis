@@ -126,87 +126,121 @@ Chapter~\ref{chap:libturquoise}.
 \section{Applications and future work}
 \label{sec:thatsawrap:applications}
 
-1. applications: libinger -> libingerOS -> libgotcha -> others we cannot imagine
+This thesis leaves ample opportunity for future work on lightweight preemptible
+functions and selective relinking.  Possible directions include exploring other
+applications for our abstractions, conducting a deeper investigation of our example
+applications, making performance improvements, lifting scalability restrictions,
+adding defense in depth, improving application compatibility, and contributing more
+of our discoveries upstream.
 
-2. finishing: safety x2 -> ingerc to eliminate leaks -> libturquoise port
+There are plenty of possible applications we have not explored.  We have focused on
+preemptible functions that use timeouts as a resource limit, but the underlying
+fine-grained preemption we developed to support them is actually more general.  One
+can imagine applying it to real-time scheduling or imposing quotas based on resources
+other than time, such as data transferred or number of page faults.
+Chapter~\ref{chap:microservices} proposed the use of preemptible functions to merge
+multiple cloud tenants' microservices into a single worker process, a technique that
+could be applied to locally-running programs as well.  One could even write a tool
+that took two or more dynamically-linked position-independent executables and merged
+them into a single application that included in-process scheduling.  Selective
+relinking, with its ability to intercept function calls and issue notification
+callbacks, surely has applications in aspect-oriented programming.  Its techniques
+could be applied to other problems as well, such as allowing applications to depend
+on more than one version of a dynamic library.  Both abstractions enable many new use
+cases, and we are sure there are many we have not thought of.
 
-3. performance: libtlsblock -> quanta/profiler -> signals -> dune
+Those applications that we have explored also merit deeper study.
+Section~\ref{sec:safety:assafe} demonstrated how selective relinking can be used to
+lift the primary safety restriction on signal handlers.  Our treatment was brief, but
+in our opinion it represents such a significant improvement to the signal abstraction
+that it would be worth carrying beyond the prototype stage.  In creating an
+implementation suitable for deployment, one might explore isolating each signal
+handler from the others or defining a completely safe interface for signal handling
+in Rust or another language with a sound type system.
+Section~\ref{sec:safety:acsafe} gave a preliminary implementation of asynchronous
+thread cancellation, a feature that operating systems and programming languages alike
+have long struggled to support.  Refining this prototype might involve fixing the
+resource leaks problem by integrating the automatic cleanup approach we sketched in
+Chapter~\ref{chap:ingerc}.
+We think that preemptible futures and preemptive userland threading hold enormous
+potential for building scalable systems with better resistance to denial of service
+attacks.  We implemented these concepts before we had proper support for thread-local
+storage and at a time when the Rust ecosystem was in flux because the language was
+just stabilizing futures and async/await.  As such, the majority of the preemptible
+future code is compatibility calls to convert between different future interfaces,
+and the thread pool works only with a very old version of the Tokio futures executor.
+Porting to a modern futures executor and adding proper support for thread locals
+would permit experiments on the latest high-performance systems.
 
-4. scalability: drow -> startup time -> signal pool
+The performance of our implementation could be improved in several ways.  As
+Section~\ref{sec:libinger:quantum} noted, one current limitation is our use of a
+globally constant preemption quantum.  We could reduce the throughput overhead while
+preserving preemption granularity by varying the interval based on the requested
+timeout and delaying the first signal for longer-running preemptible functions.  Even
+more granular preemption might be achievable by using hardware interrupts directly
+instead of paying the overhead of POSIX signals; options include a custom kernel
+module or porting to the Dune system~\cite{Belay:osdi2012}.  We saw in
+Section~\ref{sec:libgotcha:libtlsblock} that the increased TLS size has an impact on
+thread spawn performance.  Incorporating a more robust implementation of the
+workaround we prototyped in that section into \textit{libgotcha} would mitigate much
+of this effect.  This might also eliminate the need to preallocate TCBs up front to
+keep preemptible function launch latencies low.
 
-5. defense in depth: microservices -> exception -> replacements
+Another area for improvement is scalability, as ours is currently constrained in
+multiple ways.  Preemptible functions' stacks have a fixed size, but leveraging
+demand paging would resolve this problem and also avoid having to preallocate them
+(Section~\ref{sec:libinger:stacks}).  The fact that we need a dedicated preemption
+signal for each preemptible function places a fixed upper bound on parallelism, but
+(mis)using glibc's nonstandard \texttt{SIGEV\_THREAD\_ID} feature intended for thread
+libraries could make a single signal sufficient (Section~\ref{sec:libinger:signals}).
+That the dynamic linker supports a limited number of namespaces determined at compile
+time places a fixed upper bound on concurrency, but one could port selective
+relinking to an alternative dynamic linker such as drow
+(Section~\ref{sec:libgotcha:scalability}).  Our current implementation reduces
+runtime latency at the cost of startup time, which is fine for long-running processes
+or where workers can be spawned from template ``zygote'' processes, but could pose
+issues otherwise.  The performance and scalability improvements proposed thus far are
+likely to make pool allocators unnecessary for TCBs and stacks, the largest resources
+we preallocate.  Our remaining startup overhead comes from preparing all libsets at
+load time, a tradeoff that one would already have to revisit in order to support a
+variable number of libsets.
 
-6. compatibility: replacements -> signal conflicts -> globals interception -> workaround
+Applying our isolation mechanisms to multi-tenancy situations as proposed in
+Chapter~\ref{chap:microservices} would require defense in depth.  Both
+\textit{libgotcha} and \textit{libinger} would benefit from using forced
+interposition (Section~\ref{sec:libgotcha:interpose}) to replace library functions
+that could be used to circumvent selective relinking and preemption in isolated code
+regions (e.g., by interfering with signals).  One might also consider expanding the
+preemptible functions interface to allow configurable isolation of other actions that
+could affect the rest of the application, such as raising exceptions
+(Section~\ref{sec:libinger:jumps}).
 
-7. upstreaming: already filed multiple bugs -> others that may or may not pertain outside our situation
+There are a few enhancements that would improve compatibility, making more unmodified
+existing code work with libsets and within preemptible functions.  One could replace
+library functions that exhibit unusual signal interruption behavior with wrappers
+that hid those differences (Section~\ref{sec:libinger:compatibility}).  One could
+detect signals already used by the application to avoid conflicting allocation of the
+same signals for preemption (Section~\ref{sec:libinger:signals}).  One could improve
+interception of global variable accesses to properly support symbols of any size and
+remove the reliance on heuristics that cannot handle certain instruction sequences
+(Section~\ref{sec:libgotcha:globals}).  One could consider supporting preemptible
+functions that spawned threads and/or forked new processes.  Finally, one could
+implement support for nested preemptible functions.
 
-finishing: \solb{Mention case studies built on top (incl. the safety ones) and other possibilities (incl. finishing them)}
-
-applications: \solb{Other libgotcha uses:\@ aspect-oriented programming, multiple library versions}
-
-applications: \solb{Other libinger use:\@ resource limits besides wall-clock time}
-
-compatibility: \solb{Redesign global variable interception to leverage symbol sizes instead of disassembler and heuristics}
-
-scalability: \solb{Port \textit{libgotcha} to drow}
-
-scalability: \solb{Revisit startup time tradeoff if applications not long running and zygotes processes not appropriate}
-
-performance: \solb{Make \textit{libtlsblock} robust and incorporate it into the system}
-
-compatibility: \solb{Logic to avoid signal conflicts}
-
-scalability: \solb{Remove signal scaling limit}
-
-performance: \solb{Smarter time quanta and measurement study/profiler component}
-
-defense in depth: \solb{Add option to insulate against preemptible function exceptions}
-
-defense in depth: \solb{Systematic replacements to prevent circumventing isolation}
-
-compatibility: \solb{Systematic replacements to hide library function semantics changes}
-
-compatibility: \solb{Make \texttt{\_dl\_signal\_exception()} workaround robust and incorporate it into the system}
-
-finishing: \solb{Complete implementation of \textit{ingerc} and integrate the runtime components into \textit{libinger}}
-
-finishing: \solb{Port \textit{libturquoise} to modern Tokio, eliminating the compatibility glue code and properly supporting TLSes, as I've ported the main system to modern Rust and glibc}
-
-defense in depth: \solb{Build a microservices platform on top of \textit{libinger}}
-
-performance: \solb{
-\paragraph{Automatic selection and variation of timer frequency}
-For simplicity, the current \textit{libinger} implementation subscribes to timer
-signals spaced a globally constant interval apart throughout the entire duration of
-each preemptible function.  To improve efficiency while preserving preemption
-granularity, I plan to dynamically determine this interval based on the requested
-timeout.  For long-running functions, this will include delaying the first of these
-signals until shortly before the timeout would expire.  Maintaining accuracy across
-multiple CPUs will probably require building in a calibration routine to infer
-configuration parameters.
-}
-
-performance: \solb{
-\paragraph{Achieve even finer--grained preemption}
-The \textit{Shinjuku} authors included IPI microbenchmarks that suggest it should be
-possible for us to achieve interrupt latencies and spacing within a small constant
-factor of theirs.  I could attempt to achieve this by reusing some of their
-optimizations to POSIX contexts and adding a specialized timer signal delivery
-mechanism to the kernel to reduce the number of ISR instructions at the expense of
-generality.
-}
-
-applications: \solb{
-\paragraph{Implement ``\textit{libingerOS}'' container framework}
-Generalizing the serverless platform case study, it should be possible to generate a
-utility that takes two or more position-independent executables and combines them
-into a single process whose thread(s) are timeshared between the ``programs'' using
-preemptible functions.  Obviously, this would only provide memory isolation for
-programs implemented in memory-safe languages.  This would be implemented on top of
-\textit{libinger} as a sample application.
-}
-
-\solb{Issues to report and/or patch upstream... \texttt{\_Unwind\_Resume()}, \texttt{\_\_libc\_dlopen()}, libunwind, GDB namespace debug symbols}
+While we have discovered and reported multiple bugs over the course of this project,
+we have encountered other issues that may or may not be worth addressing upstream.
+In some cases, it was unclear whether issues truly represented a misimplementation of
+the relevant specification, or whether they were relevant outside our own specific
+and arcane use of runtime features.  It is likely worth revisiting our workarounds
+and considering which could be reimplemented upstream to benefit other users.
+Examples include \texttt{\_Unwind\_RaiseException()}'s linker namespace limitations
+(Section~\ref{sec:libgotcha:interpose}), GDB's reluctance to load symbols from
+modules loaded in alternate namespaces (Section~\ref{sec:libgotcha:portability}),
+scaling problems in glibc's allocation of TCBs
+(Section~\ref{sec:libgotcha:libtlsblock}), certain glibc functions misbehaving in
+alternate namespaces (Section~\ref{sec:libinger:compatibility}), and what may be an
+off-by-one error in libgcc and libunwind's implementation of the DWARF specification
+(Section~\ref{sec:ingerc:boundary}).
 
 
 \section{Technical challenges}
