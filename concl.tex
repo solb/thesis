@@ -246,61 +246,93 @@ off-by-one error in libgcc and libunwind's implementation of the DWARF specifica
 \section{Technical challenges}
 \label{sec:thatsawrap:challenges}
 
-\solb{Second reason \textit{libgotcha} is called that}
+Manipulating GOTs is not the only thing that gives \textit{libgotcha} its name.  Over
+the course of this project, we encountered and had to adapt to a number of tricky
+low-level details of other systems.  We also developed some possibly novel insights
+and had to create some hackery of our own.
 
-insight: \solb{Cross-module symbol references Section~\ref{sec:libgotcha:crossref} 3.3.1}
+We spent a lot of time comprehending and responding to implementation details of
+glibc, and especially its dynamic linker.  One of the early setbacks was its use of
+\texttt{NODELETE} shared libraries (Section~\ref{sec:gotchainit}) that monkey patch
+one another's internal state (Section~\ref{sec:libgotcha:unintfuns}).  Debugging
+unexpected crashes while calling some library functions, we learned about the
+nonstandard \texttt{GNU\_IFUNC} relocation type that we had not accounted for because
+of its absence from the ABI specification (Section~\ref{sec:libgotcha:functions}).
+Once we had more complex programs running, we were surprised to find that exceptions
+were causing Rust programs to abort, even though we had built with exception
+unwinding and were careful not to allow exceptions to propagate across foreign
+function call boundaries (Section~\ref{sec:libinger:jumps}).  The cause turned out
+to be poor interplay between the stack unwind library and the dynamic linker's
+\texttt{\_dl\_iterate\_phdr()} interface in the presence of calls between linker
+namespaces (Section~\ref{sec:libgotcha:interpose}).  When we started to run programs
+with multiple libsets, they crashed and we learned about the dynamic library's static
+TLS surplus (Section~\ref{sec:libgotcha:scalability}); at the time, tweaking this
+required modifying a macro in the dynamic linker sources, but it has since been moved
+to a tunable configured via an environment variable.  This is not the only recent
+upstream change to affect us (Section~\ref{sec:libgotcha:portability}).  When we
+added support for thread-local storage, we found that in order to allocate our own
+TCBs without creating POSIX threads, we needed to manually initialize some critical
+fields (Section~\ref{sec:libinger:tcbs}).  This led to another issue that briefly
+broke threads' abilities to signal themselves (Section~\ref{sec:libgotcha:tls}).
+Finally, when writing \textit{libas-safe}, we had to grok libc's initialization code
+in order to inject a libset switch late enough in startup that it did not leave the
+starting libset's C runtime broken (Section~\ref{sec:safety:assafe}).
 
-glibc: \solb{\texttt{NODELETE} shared libraries Section~\ref{sec:gotchainit} 3.4}
+We also encountered a few dark corners of the Rust language.  Although Rust's ABI is
+technically unstable, it mostly follows the C ABI.  However, there are exceptions,
+and the lack of stability means there is no single reference of the deviations.
+After hours debugging mysterious crashes, we learned the hard way about one such
+difference:\@ Rust uses \texttt{\%rdx} as a second return register to store the other
+half of fat pointers.  We had to tweak our trampoline code to preserve this register
+on return callbacks following uninterruptible code
+(Section~\ref{sec:libgotcha:callbacks}).  Once we started implementing preemptible
+functions, we quickly ran into double frees caused by the interaction between POSIX
+contexts and destructors (Section~\ref{sec:libinger:boilerplate}).  Another thing we
+discovered about POSIX contexts is that they contain a self-referential pointer in
+the glibc implementation.  This can lead to undefined behavior if they are not heap
+allocated or when we need to copy one over another
+(Section~\ref{sec:libinger:pausing}).  In such cases, we manually update the
+troublesome pointer just before restoring the context.
 
-hacking: \solb{Need to write \texttt{procedure\_linkage\_override()} in assembly and design data structures and thread locals to be friendly to use Sections~\ref{sec:libgotcha:functions} and \ref{sec:libgotcha:tls} 3.5.1 3.7.2}
+Implementing \textit{libgotcha} required writing some elaborate low-level code.  To
+reroute dynamic function calls based on runtime information, we had to inject code
+at the start of the call.  We had to write this code in assembly to avoid clobbering
+registers, and design our data structures to be easy to access without
+compiler-generated code (Section~\ref{sec:libgotcha:functions}).  This also meant
+storing thread-local variables using a TLS model that did not require making calls
+into the runtime in order to resolve addresses (Section~\ref{sec:libgotcha:tls}).  To
+disambiguate which function was being called, we had to generate executable pages of
+stub functions based on a common template, but with slight differences between each
+entry (Section~\ref{sec:libgotcha:functions}).  Supporting control library callbacks
+required pushing a trampoline onto the stack to mark the call that had prompted the
+transition into uninterruptible code  (Section~\ref{sec:libgotcha:callbacks}).  We
+had to size the trampoline's stack frame to maintain stack alignment, and incorporate
+logic to prevent any libset switches inside the callback from prompting recursive
+callbacks.  Intercepting global variable accesses was challenging in a different way,
+requiring a difficult-to-debug segmentation fault handler, a dependency on a
+disassembler library, and custom heuristics based on patterns we observed in compiled
+code (Section~\ref{sec:libgotcha:globals}).  We wanted forced interposition functions
+to be able to call the functions they wrapped without manually resolving the
+underlying symbol (Section~\ref{sec:libgotcha:interpose}).  Preventing GCC and Clang
+from assuming these calls were recursive required a combination of the
+\texttt{-fno-optimize-sibling-calls} compiler switch and symbol aliases.
 
-Rust: \solb{Clobbering Rust fat pointers in \texttt{procedure\_linkage\_override()}}
-
-hacking: \solb{Generating executable PLOT stubs Section~\ref{sec:libgotcha:functions} 3.5.1}
-
-insight: \solb{Pointer equality rewrite and subtly that pointers can be the same within a certain context without actually being resolved Section~\ref{sec:libgotcha:functions} 3.5.1}
-
-insight: \solb{Rewriting relocations for lazily-resolved function calls Section~\ref{sec:libgotcha:functions} 3.5.1}
-
-glibc: \solb{GNU indirect symbols caused mysterious crashes Section~\ref{sec:libgotcha:functions} 3.5.1}
-
-hacking: \solb{Intercepting global variable accesses (segfault handler tricky to debug, assembler, heuristics) Section~\ref{sec:libgotcha:globals} 3.5.2}
-
-glibc: \solb{Dealing with \texttt{\_\_rtld\_global} monkey patching and \texttt{\_dl\_open()} use of return address Section~\ref{sec:libgotcha:unintfuns} 3.6.1}
-
-hacking: \solb{Can get callback to fire at end of uninterruptible region by adding a fake stack frame, but must ensure this cannot be triggered again from within the callback itself Section~\ref{sec:libgotcha:callbacks} 3.6.2}
-
-hacking: \solb{Compiler optimizations and alias symbols to get interposition ``recursive'' calls to resolve correctly Section~\ref{sec:libgotcha:interpose} 3.7.1}
-
-glibc: \solb{\texttt{\_Unwind\_RaiseException()} for namespaces Section~\ref{sec:libgotcha:interpose} 3.7.1}
-
-hacking: \solb{Need paused preemptible functions to be able to travel between threads Section~\ref{sec:libgotcha:tls} 3.7.2}
-
-glibc: \solb{Failing to raise our preemption signal in the \textit{libinger} callback Section~\ref{sec:libgotcha:tls} 3.7.2}
-
-insight: \solb{TLS deferred reinitialization laziness scheme Section~\ref{sec:libgotcha:tls} 3.7.2}
-
-glibc: \solb{Working around glibc 2.30's ban on \texttt{dlopen()}'ing executables Section~\ref{sec:libgotcha:portability} 3.8.1}
-
-glibc: \solb{Growing \texttt{\_rtld\_global\_ro} region Section~\ref{sec:libgotcha:portability} 3.8.1}
-
-glibc: \solb{Exhausting the static TLS space Section~\ref{sec:libgotcha:scalability} 3.8.2}
-
-insight: \solb{\texttt{COPY} relocations Section~\ref{sec:limits} 3.8.3}
-
-glibc: \solb{Getting \textit{libas-safe} and the POSIX test preload library to initialize as late as possible before \texttt{main()} Sections~\ref{sec:safety:assafe} and \ref{sec:libinger:compatibility}}
-
-glibc: \solb{Critical TCB fields including self-referential ones Section~\ref{sec:libinger:tcbs} 5.3}
-
-Rust: \solb{Self-referential field in POSIX contexts}
-
-Rust: \solb{Bookkeeping and double frees with POSIX contexts Section~\ref{sec:libinger:boilerplate} 5.4.1}
-
-insight: \solb{Portable thread-directed signals using a pool and convergence Section~\ref{sec:libinger:signals} 5.6}
-
-insight: \solb{Restoring POSIX contexts obtained from signal handlers Section~\ref{sec:libinger:resuming} 5.7.1}
-
-insight: \solb{Asynchronous exception handling Section~\ref{sec:ingerc:async} 6.4}
+Finally, we had to develop some insights of our own that might prove useful to others
+working with signals, POSIX contexts, exceptions, or dynamic linking.  We created a
+portable mechanism for directing external signals at particular threads using a
+signal pool and convergence algorithm (Section~\ref{sec:libinger:signals}).  We also
+discovered a way of safely restoring a POSIX context obtained from a signal handler
+(Section~\ref{sec:libinger:resuming}).  In our exploration of automatic resource
+cleanup, we sketched out workarounds to some of the problems that have long plagued
+asynchronous exception handling (Section~\ref{sec:ingerc:async}).  We designed
+algorithms for detecting cross-module dynamic symbol references
+(Section~\ref{sec:libgotcha:crossref}) and lazily reinitializing portions of the TLS
+area on demand (Section~\ref{sec:libgotcha:tls}).  In extending pointer equality
+to selective relinking, we realized that two pointers can be statically equivalent
+within a certain context even without knowing which libset their calls will be routed
+to at runtime (Section~\ref{sec:libgotcha:functions}).  In the latter section, we
+also invented a trick for convincing the dynamic linker to write the address of
+lazily-resolved symbol addresses to a custom location.
 
 
 \section{Lessons for systems builders}
