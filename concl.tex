@@ -268,6 +268,8 @@ hacking: \solb{Intercepting global variable accesses (segfault handler tricky to
 
 glibc: \solb{Dealing with \texttt{\_\_rtld\_global} monkey patching and \texttt{\_dl\_open()} use of return address Section~\ref{sec:libgotcha:unintfuns} 3.6.1}
 
+hacking: \solb{Can get callback to fire at end of uninterruptible region by adding a fake stack frame, but must ensure this cannot be triggered again from within the callback itself Section~\ref{sec:libgotcha:callbacks} 3.6.2}
+
 hacking: \solb{Compiler optimizations and alias symbols to get interposition ``recursive'' calls to resolve correctly Section~\ref{sec:libgotcha:interpose} 3.7.1}
 
 glibc: \solb{\texttt{\_Unwind\_RaiseException()} for namespaces Section~\ref{sec:libgotcha:interpose} 3.7.1}
