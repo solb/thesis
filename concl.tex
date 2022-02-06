@@ -338,13 +338,28 @@ lazily-resolved symbol addresses to a custom location.
 \section{Lessons for systems builders}
 \label{sec:thatsawrap:lessons}
 
-\solb{
-Resuming is a useful feature that is cheap, but introduces concurrency.
-Cannot get CPU time isolation without memory isolation.
-Design abstractions modularly and with an eye to simple use cases (e.g., \textit{libgotcha} as a separate
-runtime with a very small control API, things listed in the note on design).
-Treat debuggability as a first-order concern (e.g., permit disabling features that interfere at
-runtime, test and maintain support for running under debugging and diagnostic tools).
-}
+We leave the reader with a few higher-level lessons that have saved us time and pain,
+but would have saved us more of each if we had fully appreciated them from the start:
+\begin{itemize}
+\item You cannot have fine-grained time isolation without fine-grained memory
+isolation.
 
-\solb{Debugging tools in 3.8 libgotcha limitations and 4.1.1 handler example program and 3.6.1 monkey patching warning and 5.4.1 plus debug build runtime checks}
+\item Design abstractions modularly and with an eye to other use cases; for instance,
+do not try to fold time and memory isolation into a single tightly-coupled primitive
+as we almost did.
+
+\item The ability to resume interrupted tasks is a useful feature that improves
+composability and is cheaper than cancellation, but it also introduces explicit
+concurrency into the task interface.
+
+\item Treat debuggability as a first-order concern.  Include runtime assertions with
+descriptive errors, trace safety violations in unsound interfaces at runtime in debug
+builds, detect and warn on misuse that could cause confusing or invalid results, make
+it easy to disable complex features that may create or obscure problems, and
+test and maintain support for running under debugging and diagnostic tools.
+
+\item Periodically teach students and peers about aspects of your system.  Often you
+(or they) will discover design shortcomings, interface paper cuts, or pivotal
+enhancements.  Even if not, you will come to better understand its workings and be
+able to clearly articulate its insights and their broader implications.
+\end{itemize}
