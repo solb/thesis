@@ -248,57 +248,57 @@ off-by-one error in libgcc and libunwind's implementation of the DWARF specifica
 
 \solb{Second reason \textit{libgotcha} is called that}
 
-\solb{Cross-module symbol references Section~\ref{sec:libgotcha:crossref} 3.3.1}
+insight: \solb{Cross-module symbol references Section~\ref{sec:libgotcha:crossref} 3.3.1}
 
-\solb{\texttt{NODELETE} shared libraries Section~\ref{sec:gotchainit} 3.4}
+glibc: \solb{\texttt{NODELETE} shared libraries Section~\ref{sec:gotchainit} 3.4}
 
-\solb{Need to write \texttt{procedure\_linkage\_override()} in assembly and design data structures and thread locals to be friendly to use Sections~\ref{sec:libgotcha:functions} and \ref{sec:libgotcha:tls} 3.5.1 3.7.2}
+hacking: \solb{Need to write \texttt{procedure\_linkage\_override()} in assembly and design data structures and thread locals to be friendly to use Sections~\ref{sec:libgotcha:functions} and \ref{sec:libgotcha:tls} 3.5.1 3.7.2}
 
-\solb{Clobbering Rust fat pointers in \texttt{procedure\_linkage\_override()}}
+Rust: \solb{Clobbering Rust fat pointers in \texttt{procedure\_linkage\_override()}}
 
-\solb{Generating executable PLOT stubs Section~\ref{sec:libgotcha:functions} 3.5.1}
+hacking: \solb{Generating executable PLOT stubs Section~\ref{sec:libgotcha:functions} 3.5.1}
 
-\solb{Pointer equality rewrite and subtly that pointers can be the same within a certain context without actually being resolved Section~\ref{sec:libgotcha:functions} 3.5.1}
+insight: \solb{Pointer equality rewrite and subtly that pointers can be the same within a certain context without actually being resolved Section~\ref{sec:libgotcha:functions} 3.5.1}
 
-\solb{Rewriting relocations for lazily-resolved function calls Section~\ref{sec:libgotcha:functions} 3.5.1}
+insight: \solb{Rewriting relocations for lazily-resolved function calls Section~\ref{sec:libgotcha:functions} 3.5.1}
 
-\solb{GNU indirect symbols caused mysterious crashes Section~\ref{sec:libgotcha:functions} 3.5.1}
+glibc: \solb{GNU indirect symbols caused mysterious crashes Section~\ref{sec:libgotcha:functions} 3.5.1}
 
-\solb{Intercepting global variable accesses (segfault handler tricky to debug, assembler, heuristics) Section~\ref{sec:libgotcha:globals} 3.5.2}
+hacking: \solb{Intercepting global variable accesses (segfault handler tricky to debug, assembler, heuristics) Section~\ref{sec:libgotcha:globals} 3.5.2}
 
-\solb{Dealing with \texttt{\_\_rtld\_global} monkey patching and \texttt{\_dl\_open()} use of return address Section~\ref{sec:libgotcha:unintfuns} 3.6.1}
+glibc: \solb{Dealing with \texttt{\_\_rtld\_global} monkey patching and \texttt{\_dl\_open()} use of return address Section~\ref{sec:libgotcha:unintfuns} 3.6.1}
 
-\solb{Compiler optimizations and alias symbols to get interposition ``recursive'' calls to resolve correctly Section~\ref{sec:libgotcha:interpose} 3.7.1}
+hacking: \solb{Compiler optimizations and alias symbols to get interposition ``recursive'' calls to resolve correctly Section~\ref{sec:libgotcha:interpose} 3.7.1}
 
-\solb{\texttt{\_Unwind\_RaiseException()} for namespaces Section~\ref{sec:libgotcha:interpose} 3.7.1}
+glibc: \solb{\texttt{\_Unwind\_RaiseException()} for namespaces Section~\ref{sec:libgotcha:interpose} 3.7.1}
 
-\solb{Need paused preemptible functions to be able to travel between threads Section~\ref{sec:libgotcha:tls} 3.7.2}
+hacking: \solb{Need paused preemptible functions to be able to travel between threads Section~\ref{sec:libgotcha:tls} 3.7.2}
 
-\solb{Failing to raise our preemption signal in the \textit{libinger} callback Section~\ref{sec:libgotcha:tls} 3.7.2}
+glibc: \solb{Failing to raise our preemption signal in the \textit{libinger} callback Section~\ref{sec:libgotcha:tls} 3.7.2}
 
-\solb{TLS deferred reinitialization laziness scheme Section~\ref{sec:libgotcha:tls} 3.7.2}
+insight: \solb{TLS deferred reinitialization laziness scheme Section~\ref{sec:libgotcha:tls} 3.7.2}
 
-\solb{Working around glibc 2.30's ban on \texttt{dlopen()}'ing executables Section~\ref{sec:libgotcha:portability} 3.8.1}
+glibc: \solb{Working around glibc 2.30's ban on \texttt{dlopen()}'ing executables Section~\ref{sec:libgotcha:portability} 3.8.1}
 
-\solb{Growing \texttt{\_rtld\_global\_ro} region Section~\ref{sec:libgotcha:portability} 3.8.1}
+glibc: \solb{Growing \texttt{\_rtld\_global\_ro} region Section~\ref{sec:libgotcha:portability} 3.8.1}
 
-\solb{Exhausting the static TLS space Section~\ref{sec:libgotcha:scalability} 3.8.2}
+glibc: \solb{Exhausting the static TLS space Section~\ref{sec:libgotcha:scalability} 3.8.2}
 
-\solb{\texttt{COPY} relocations Section~\ref{sec:limits} 3.8.3}
+insight: \solb{\texttt{COPY} relocations Section~\ref{sec:limits} 3.8.3}
 
-\solb{Getting \textit{libas-safe} and the POSIX test preload library to initialize as late as possible before \texttt{main()} Sections~\ref{sec:safety:assafe} and \ref{sec:libinger:compatibility}}
+glibc: \solb{Getting \textit{libas-safe} and the POSIX test preload library to initialize as late as possible before \texttt{main()} Sections~\ref{sec:safety:assafe} and \ref{sec:libinger:compatibility}}
 
-\solb{Critical TCB fields including self-referential ones Section~\ref{sec:libinger:tcbs} 5.3}
+glibc: \solb{Critical TCB fields including self-referential ones Section~\ref{sec:libinger:tcbs} 5.3}
 
-\solb{Self-referential field in POSIX contexts}
+Rust: \solb{Self-referential field in POSIX contexts}
 
-\solb{Bookkeeping and double frees with POSIX contexts Section~\ref{sec:libinger:boilerplate} 5.4.1}
+Rust: \solb{Bookkeeping and double frees with POSIX contexts Section~\ref{sec:libinger:boilerplate} 5.4.1}
 
-\solb{Portable thread-directed signals using a pool and convergence Section~\ref{sec:libinger:signals} 5.6}
+insight: \solb{Portable thread-directed signals using a pool and convergence Section~\ref{sec:libinger:signals} 5.6}
 
-\solb{Restoring POSIX contexts obtained from signal handlers Section~\ref{sec:libinger:resuming} 5.7.1}
+insight: \solb{Restoring POSIX contexts obtained from signal handlers Section~\ref{sec:libinger:resuming} 5.7.1}
 
-\solb{Asynchronous exception handling Section~\ref{sec:ingerc:async} 6.4}
+insight: \solb{Asynchronous exception handling Section~\ref{sec:ingerc:async} 6.4}
 
 
 \section{Lessons for systems builders}
