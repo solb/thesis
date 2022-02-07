@@ -200,6 +200,13 @@ handler, and substitutes the saved \texttt{siginfo\_t} for the real one (in case
 \texttt{restorer()} had to signal the thread).  Finally, it calls the real
 handler and leaves the starting libset.\footnote{If curious why restoring the libset
 in this way works, see the sister footnote in Section~\ref{sec:libgotcha:callbacks}.}
+(Note that deferring a signal only works assuming the handler does not provide a
+service that is necessary to continue execution.  For instance, it is nonsensical to
+defer handlers that grow exhausted memory allocations or resolve faulting addresses,
+such as \textit{libgotcha}'s own signal handler from
+Section~\ref{sec:libgotcha:globals}.  Handlers for signals such as segmentation fault
+that cause the architecture to resume by reexecuting the faulting instruction are
+more likely to exhibit this property.)
 
 \begin{figure}
 \begin{lstlisting}[label=lst:assafe_helpers,caption=\textit{libas-safe}'s signal handler wrapper and control library callback,morekeywords=thread_local]
