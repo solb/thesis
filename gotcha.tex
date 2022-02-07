@@ -552,7 +552,8 @@ where we have to briefly defer preemption.
 The most obvious is the \texttt{malloc()} family of dynamic memory allocation
 functions.  This case is significant because the allocator manages the heap, a
 resource shared among all threads of the application.  As we saw in
-Chapter~\ref{chap:functions}, na\"ive attempts to provide asynchronous cancellation
+Section~\ref{sec:functions:motivation}, na\"ive attempts to provide asynchronous
+cancellation
 often corrupt corrupt the heap if they interrupt the allocator.  It is even unsafe to
 call into the allocator from a thread that has only been asynchronously paused while
 allocating, as it can cause a deadlock on the locks intended to protect the heap from

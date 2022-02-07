@@ -107,7 +107,7 @@ and even mutexes with \texttt{await}-style call with current continuation semant
 
 \paragraph{Asynchronous cancellation of threads}
 It has long proven difficult to cancel running threads, both at the operating system
-level (Chapter~\ref{chap:functions}) and at the language level
+level (Section~\ref{sec:functions:motivation}) and at the language level
 (Section~\ref{sec:strobelight:cancellation}).  We
 discover that we can leverage the memory isolation provided by selective relinking to
 enable asynchronous cancellation of POSIX threads, a feature that is almost unusable

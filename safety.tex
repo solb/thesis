@@ -35,7 +35,8 @@ interrupted by a signal handler that calls non-async-signal-safe functions).
 \paragraph{Async-cancel safety.}
 Async-cancel-safe functions are those that can be called by
 asynchronously-cancellable threads, which we first saw in
-Chapter~\ref{chap:functions}.  One can ostensibly cancel such threads at any point in
+Section~\ref{sec:functions:motivation}.  One can ostensibly cancel such threads at
+any point in
 their execution; however, POSIX marks almost no functions as async-cancel safe, so in
 practice the feature is only useful for threads executing a compute-bound loop with
 no I/O or other reliance on the OS.
@@ -524,7 +525,8 @@ will see an example of this in Chapter~\ref{chap:libinger}.
 
 In summary, \textit{libac-safe} makes it possible for Unix applications to use
 asynchronous thread cancelability.  Thus, developers can now leverage a feature that,
-as we saw in Chapter~\ref{chap:functions}, was practically useless out of the box.
+as we saw in Section~\ref{sec:functions:motivation}, was practically useless out of
+the box.
 The library also makes a good case study of a \textit{libgotcha} control library for
 which it is correct to adopt the default behavior of tying TCBs to kernel threads
 (Section~\ref{sec:libgotcha:tls}), since the kernel thread corresponds to the unit of
