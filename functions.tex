@@ -8,6 +8,58 @@
 \end{chapquote}
 \fi
 
+In this chapter, we introduce the design of lightweight preemptible functions, our
+abstraction for making ordinary function calls with a timeout.  We will cover the
+implementation in Chapter~\ref{chap:libinger}, after the intervening chapters have
+introduced a supporting abstraction for memory isolation and shown how to use it.
+
+One thing that distinguishes preemptible functions is that invocation is synchronous;
+that is, the program does not continue executing the code following the call until
+the callee has made some progress (though not necessarily run to completion).  This
+is in contrast to abstractions with asynchronous invocation, such as threads and
+callback-based futures.  As when calling a preemptible function, structuring code for
+these abstractions involves providing a function to call (a thread main function or a
+callback, respectively).  But it differs in that this function does not necessarily
+begin executing until later:\@ a scheduler or event loop in the runtime or operating
+system manages tasks in the system and decides when to invoke it.
+
+The other distinguishing feature of preemptible functions is that they are
+preemptive, meaning that interruption is external and can occur at (almost) any point
+in their execution.  Abstractions such as futures and user threads are generally
+cooperative.  As such, interruption is internal and control transfers to another task
+only when the executing one explicitly yields control (or calls a library function
+that does so on its behalf).  Table~\ref{tab:invokeinterrupt} classifies concurrency
+abstractions based on their type of invocation and interruption.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{r r | c c}
+&& \multicolumn{2}{c}{task interruption} \\
+&& cooperative & preemptive \\
+\hline
+& \\
+\multirow{3}{*}{\rotatebox{90}{task invocation}} & \multirow{2}{*}{asynchronous} & user threads & \multirow{2}{*}{kernel threads} \\
+&& callback-based futures \\
+& \\
+& synchronous & ``async'' futures & preemptible functions \\
+& \\
+\end{tabular}
+\end{center}
+\caption{Concurrency abstractions classified by type of invocation and interruption}
+\label{tab:invokeinterrupt}
+\end{table}
+
+From the table, it is apparent that the term \textbf{asynchronous} is overloaded.
+In the context of invocation, it is synonymous with ``background.''  Confusingly, in
+the context of futures, async functions are those that can use the \texttt{await}
+keyword to insert a yield point that takes a \textit{synchronous} function call off
+the critical path.  POSIX has a third meaning for the term:  In the context of
+signals and cancellation, it means ``preemptive.''  Examples of this usage include
+the phrases ``asynchronous cancellation'' and ``async safety.''
+
+
+\section{Motivation}
+
 \begin{figure}
 \begin{center}
 \includegraphics[width=0.65\columnwidth]{functions/figs/progsupport}
@@ -19,11 +71,6 @@ preemption is needed to preserve the semantics of \texttt{malloc()} and users of
 uncopyable resources such as file descriptors or network adapters.}
 \label{fig:progsupport}
 \end{figure}
-
-\solb{Explicitly disambiguate the term ``asynchronous,'' which means ``background''
-in the context of invocation, ``deferred'' in the context of I/O and futures, and
-``preemptive'' in the context of signals and threads.  A chart showing where we fall
-on the invocation and interruption axes will help with this.}
 
 \begin{swallowsections}
 \begin{swallowfigures}
