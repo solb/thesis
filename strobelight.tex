@@ -172,10 +172,13 @@ that it keeps all past requests around forever.  To avoid a ballooning resource
 footprint, a real server would need to use an LRU cache or similar approach.  For
 partially-computed functions, this would either require the programmer to write a
 specific cleanup handler to accompany each server-side function or the integration of
-our automatic cancellation ideas into the preemptible functions stack.  The current
+our automatic cancellation ideas into the preemptible functions stack.  There is
+currently high request latency because the server spawns a kernel thread to handle
+each request and uses blocking I/O, but it could use a userland thread pool and
+futures.  The current
 implementation does not provide type safe bindings for the client, but systems such
 as gRPC already solve this using Protocol Buffers.  Finally, \textit{strobelight}
-does not currently allow install additional functions into a running server, but this
+does not presently allow install additional functions into a running server, but this
 would be easy to support thanks to \textit{libgotcha}'s compatibility with the
 dynamic linker's \texttt{dlopen()} interface for runtime loading
 (Section~\ref{sec:libgotcha:interpose}).
