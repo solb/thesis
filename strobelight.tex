@@ -10,16 +10,171 @@ London will never stop moving.  Movement is life.'
 \end{chapquote}
 \fi
 
-\solb{Last summer, we had a first-year undergraduate student use \textit{libinger} to
-build a preemptive RPC server where requests are transparently served using
-preemptible functions so the developer does not have to manually check for timeouts.
-What's more, the system caches paused preemptible functions and uses them to
-partially ``memoize'' repeated requests for unfinished work (hence the name).  I plan
-to write a few pages briefly summarizing what the undergraduate built.}
+Whereas local function calls with timeouts have yet to become a mainstream idea, it
+has long been standard to use timeouts when making RPCs (remote procedure calls)
+where a program on one machine invokes a function that executes on another.  Because
+the connection to the remote machine could fail, it is common for the caller to
+specify a timeout after which the call should return an error code, allowing the
+client program to continue running.  What these systems usually do not do is use this
+timeout to reduce wasted work on the server side.  In their most classic formulation,
+RPCs do not even inform the server of the timeout; if the client times out, the
+server continues to work on the request, only to find once it has finished the work
+that the client is no longer listening for an answer.  This is particularly wasteful
+if an ill-behaved client repeats a failing request with the same timeout, in which
+case the server duplicates the same work with the same likely fate.  Newer systems
+might share the timeout with the server, but generally use it only for cooperative
+scheduling.  Therefore, it is up to the developer of each server-side function to
+implement cancellation to prevent it from wasting resources serving doomed requests.
 
-\solb{Survey the existing landscape and highlight that existing impure systems are
-cooperative and make the developer of each function responsible for (constantly)
-ensuring that it does not exceed its timeout.}
+We had a first-year undergraduate student prototype a novel caching RPC server that
+addresses this limitation transparently to the server-side programmer.  Over the
+course of two months, he built the \textit{strobelight} RPC server, so called because
+it processes each request only while the client is listening for a response and
+pauses in the intervening intervals to avoid wasting server compute time.  The system
+serves as an example of the new capabilities possible by using preemptible functions,
+and also a demonstration that preemptible functions are not only usable by expert
+programmers.
 
-\solb{Note that this is because, like OSes, languages have failed to solve the thread
-cancellation problem.  Use deprecation examples from the Julia Evans blog post.}
+
+\section{State-of-the-art RPC systems}
+
+The motivation for this work is that contemporary RPC systems do not generally
+support preemption.  We begin with a brief survey of well-known systems and their
+approach to timeouts.
+
+\paragraph{ONC RPC}
+In the 1980s, Sun Microsystems developed a custom RPC protocol as part of the NFS
+(Network File System) project.  The protocol has come to be known as ONC (Open
+Network Computing) RPC, and was standardized in a series of RFCs, most recently
+updated in 2009.  The protocol is widely implemented, shipping with many Unix systems
+and Microsoft Windows.  It is minimal and leaves features such as timeouts to the
+transport protocol.  The RFC notes that clients and servers must carefully handle the
+case of retrying timed out or otherwise failed requests to avoid executing the task
+multiple times~\cite{www-onc-rpc-rfc}.
+
+\paragraph{ZooKeeper}
+The Apache Software Foundation maintains a more modern distributed RPC system called
+ZooKeeper, which grew out of the Hadoop project.  ZooKeeper runs RPCs on a cluster of
+servers known as an ensemble.  Although the authors make use of the term timeout,
+they mean something different by it than Sun:\@ in ZooKeeper, a timeout is a
+heartbeat used to diagnose connection or server problems, and is associated with the
+client session rather than any specific request.  Unrequited heartbeats cause the
+session to expire, at which point requests that had not yet started computing return
+an error code~\cite{Hunt:zookeeper:2010}.
+
+\paragraph{eRPC}
+The eRPC project achieves lower RPC latencies by providing low-level primitives
+tailored to userland networking drivers.  Like ZooKeeper, it uses heartbeats to
+detect broken connections.  In such a case, it immediately notifies the client of the
+failure, but the server continues waiting for associated request(s) to finish
+executing~\cite{Kalia:nsdi2019}.
+
+\paragraph{gRPC}
+In 2015, Google open sourced a new RPC system designed for use in modern datacenters.
+The gRPC documentation encourages clients to include a timeout, which it refers to as
+a deadline, with their requests.  This timeout is transmitted to the server along
+with the request, where it can be used to cancel the associated request.
+Unfortunately, each server-side function is responsible for detecting such
+cancellations by periodically checking a flag and responding
+accordingly~\cite{www-grpc}.
+
+\paragraph{ZIO gRPC}
+ZIO gRPC is an experimental RPC system based on gRPC.  It adds asynchronous
+cancellation, which it accomplishes by requiring that server-side functions are
+written in purely functional Scala.  Upon a timeout, the system transparently cancels
+any partial work the server has done and cleans up its associated
+resources~\cite{www-zio-grpc}.
+
+
+\section{Language support for asynchronous cancellation}
+
+Today's RPC systems force the server-side programmer to handle timeouts and
+cancellation manually.  The only exception is ZIO gRPC, which only supports purely
+functional services.
+
+This state of affairs becomes less surprising---albeit no less disappointing---if we
+recall that operating systems have long failed to support asynchronous cancellation
+(Chapter~\ref{chap:functions}).  Unsurprisingly, most programming languages that
+support shared state have struggled with the same problem.
+
+C\# used to provide the \texttt{Thread.Abort()} method for asynchronously cancelling
+a thread.  It has since marked it obsolete because it suffers from the same safety
+problems as POSIX and Windows threads.  As the documentation remarks:
+\begin{quote}
+The \texttt{Thread.Abort()} method should be used with caution.  Particularly when
+you call it to abort a thread other than the current thread, you don't know what code
+has executed or failed to execute when the \texttt{ThreadAbortException} is thrown.
+You also cannot be certain of the state of your application or any application and
+user state that it's responsible for preserving.  For example, calling
+\texttt{Thread.Abort()} may prevent the execution of static constructors or the
+release of unmanaged resources~\cite{www-csharp-abort}.
+\end{quote}
+
+The Java standard library initially offered a \texttt{Thread.stop()} method for
+asynchronous cancellation, but the language was soon forced to deprecate the feature.
+Notably, it purports to avoid the resource leak and deadlock problems of competing
+systems, but can still corrupt program and library state:
+\begin{quote}
+Stopping a thread causes it to unlock all the monitors that it has locked.  (The
+monitors are unlocked as the \texttt{ThreadDeath} exception propagates up the stack.)
+If any of the objects previously protected by these monitors were in an inconsistent
+state, other threads may now view these objects in an inconsistent state.  Such
+objects are said to be damaged. When threads operate on damaged objects, arbitrary
+behavior can result.  This behavior may be subtle and difficult to detect, or it may
+be pronounced.  Unlike other unchecked exceptions, \texttt{ThreadDeath} kills threads
+silently; thus, the user has no warning that his program may be corrupted.  The
+corruption can manifest itself at any time after the actual damage occurs, even hours
+or days in the future~\cite{www-java-stop}.
+\end{quote}
+
+Even scarier is Ruby, which still offers the \texttt{Thread.raise} interface and
+higher-level ``features'' such as \texttt{Timeout}.  These are still marketed as
+useful and bear no disclaimers, despite making no effort to address any of the perils
+of asynchronous preemption~\cite{www-ruby-danger-terrifying}.
+
+
+\section{Easier RPCs with \textit{strobelight}}
+
+Our work on preemptible functions paves the way for systems that safely support both
+preemption and asynchronous cancellation.  The new concurrency abstraction provides
+what the Java commentary identifies as missing:\@ a way to determine that structures
+may be in a damaged state.  Furthermore, it contains such damage to those objects
+directly used by the cancelled preemptible function itself by isolating library
+states via selective relinking.  (As we have noted, resource leaks remain a problem
+that the programmer must solve manually, but we sketched an approach to automatic
+cleanup in Chapter~\ref{chap:ingerc}.)
+
+The \textit{strobelight} system leverages preemptible functions to improve the
+usability of RPCs in two significant ways:\@ preventing wasted work and preserving
+salvageable progress.  It does this by extending \textit{libturquoise}'s approach of
+wrapping each task in a preemptible function (Chapter~\ref{chap:libturquoise}).  A
+\textit{strobelight} client sends a request consisting of a function identifier, set
+of arguments, and its timeout.  As each request arrives, the \textit{strobelight}
+server invokes a preemptible function to process it.  If the client times out and
+stops listening for a response, the server's preemptible function does so at a
+similar time, automatically pausing execution.  The server keeps paused preemptible
+functions around and ``memoizes'' repeated requests by resuming them when an incoming
+function identifier and argument set match those of one that has timed out.  The
+server also memoizes computed results, so that repeating a completed request does not
+result in duplicate work.
+
+The \textit{strobelight} server is a proof-of-concept system implemented in 128 lines
+of Rust.  As such, it has several shortcomings that a production system would need to
+address.  For one thing, it currently memoizes all partial and completed requests,
+assuming that all server-side functions neither affect one another's results nor
+depend on anything other than their arguments.  Lifting these impractical
+restrictions would require a configuration or annotation mechanism to indicate which
+functions have these properties; ideally, the system would also provide a system for
+managing transactions that was aware of dependencies and able to determine when a
+restart or recalculation was required.  Another shortcoming of the current system is
+that it keeps all past requests around forever.  To avoid a ballooning resource
+footprint, a real server would need to use an LRU cache or similar approach.  For
+partially-computed functions, this would either require the programmer to write a
+specific cleanup handler to accompany each server-side function or the integration of
+our automatic cancellation ideas into the preemptible functions stack.  The current
+implementation does not provide type safe bindings for the client, but systems such
+as gRPC already solve this using Protocol Buffers.  Finally, \textit{strobelight}
+does not currently allow install additional functions into a running server, but this
+would be easy to support thanks to \textit{libgotcha}'s compatibility with the
+dynamic linker's \texttt{dlopen()} interface for runtime loading
+(Section~\ref{sec:libgotcha:interpose}).
