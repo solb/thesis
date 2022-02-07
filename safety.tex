@@ -9,6 +9,16 @@ that I wasn't previously aware of.'
 \end{chapquote}
 \fi
 
+In this chapter, we explore how the isolation provided by selective relinking can be
+applied to make otherwise unsound Unix programs safe.  Along the way, we present
+broken sample
+programs that can be automatically fixed through the use of \textit{libgotcha} and
+discuss practical applications to real-world systems.  Through its presentation
+of two simple control libraries, this chapter also serves as a straightforward
+example of how to use \textit{libgotcha}.  The insight from this chapter, both on our
+runtime and on POSIX safety itself, will be useful when we later explain the workings
+of \textit{libinger}, a more complicated control library.
+
 The reader will probably not be surprised to learn that the POSIX specification
 guarantees that most C library functions are thread safe; that is, assuming they are
 not explicitly instructed to use the same resources, it is safe to call them from
@@ -62,16 +72,6 @@ allocations out of a fixed heap.  Although they take a lock on a portion of the 
 while reserving each allocation, cancelling them during this critical section will
 result in the lock never being released and the affected portion of the heap becoming
 unusable.)
-
-In this chapter, we explore how \textit{libgotcha} fills a usability gap in Unix's
-userland and allows one to establish either kind of async safety in places where it
-would not otherwise exist.  In doing so, we present ordinarily unsound sample
-programs that can be automatically fixed through the use of \textit{libgotcha} and
-discuss practical applications to real-world systems.  And through its presentation
-of two simple control libraries, this chapter also serves as a straightforward
-example of how to use \textit{libgotcha}.  The insight from this chapter, both on our
-runtime and on POSIX safety itself, will be useful when we later explain the workings
-of \textit{libinger}, a more complicated control library.
 
 
 \section{Establishing async-signal safety:\@ \textit{libas-safe}}
