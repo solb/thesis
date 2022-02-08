@@ -23,7 +23,7 @@ isolation from the rest of the system.
 As seen in Section~\ref{sec:intro}, nonreentrant interfaces are
 incompatible with externally-imposed time limits.  Because such interfaces are
 prolific in popular dependencies, no prior work allows timed code to transparently
-call into third-party libraries.  Scheme engines and
+call into \thirdparty libraries.  Scheme engines and
 Lilt avoid this issue by only supporting functional code, which cannot have shared
 state.  Go is able to preempt goroutines written in the language itself, but a
 goroutine that makes any foreign calls to other languages is treated as
