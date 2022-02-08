@@ -89,7 +89,7 @@ child process, not only must data allocated by the parent be accessible to the c
 but the opposite must be true as well.  The fact that the child may terminate before
 the parent raises allocation lifetime questions.  And all this is
 without addressing the difficulty of even calling \texttt{fork()} in a multithreaded
-program:\@ because doing so effectively cancels all threads in the child process
+\program:\@ because doing so effectively cancels all threads in the child process
 except the calling one, the child process can experience the same problems that
 plague thread cancellation~\cite{baumann:hotos2019}.
 
