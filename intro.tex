@@ -9,7 +9,8 @@ in the \textbf{caller} just after the call site.  It is also a \textbf{synchrono
 primitive; that is, all these steps happen sequentially and in order.  Because
 processors conceptually implement synchronous computation, scheduling a function is
 as trivial as instructing the processor to jump from the call site to its starting
-address, then jump back to the (saved) address subsequent to the call site.  Thus,
+address, then later jump back to the (saved) address of whatever follows the call
+site.  Thus,
 the program continues executing throughout, with no inherent need for intervention by
 an external scheduler or other utility software.
 
@@ -19,7 +20,7 @@ programmer has.  Precisely because functions represent an abstraction, the progr
 who calls one is not necessarily familiar with its specific implementation.  This can
 make it hard to predict the function's duration, yet calling it requires the
 programmer to trust it to eventually finish and relinquish control.  The programmer
-may have made a promise (e.g., a service-level agreement) that their whole program
+may have made a promise (a ``service-level agreement'') that their whole program
 will complete within a specified timeframe; unfortunately, they cannot certify their
 compliance without breaking the abstraction and examining the internals of each
 function they call.  Even then, untrusted or unpredictable input may make the
@@ -27,7 +28,7 @@ function's performance characteristics unclear:  Perhaps it solves a problem tha
 known to be intractable for certain cases, but such inputs are difficult to identify
 \textit{a priori}.  Perhaps it performs format decoding or translation that is
 susceptible to attacks such as decompression bombs.  Or perhaps it simply contains
-bug that open it to inefficient corner cases or even an infinite loop.
+bugs that open it to inefficient corner cases or even an infinite loop.
 
 Faced with such problems, the programmer is often tempted to resort to an
 \textbf{asynchronous} invocation strategy, whereby the function runs in the
@@ -39,23 +40,28 @@ an external scheduler to allocate work.
 
 Here again, the programmer is sacrificing control.  Upon handing execution control to
 a scheduler, dependencies are no longer clear from the program's structure and must
-be passed to the scheduler by encoding them in synchronization constructs; however,
+be passed to the scheduler by encoding them in synchronization constructs.  (For
+instance, ``Do not execute past this line until no one else is accessing so-and-so
+resource.'')  Sadly,
 it is difficult to fully communicate the relevant bits of the application logic
 across this abstraction boundary, which can result in unintended resource-sharing
-effects such as priority inversion.  Furthermore, each software scheduler is itself a
+effects such as priority inversion, where the scheduler chooses to run a different
+task than the system designer anticipated.  Furthermore, each software scheduler is
+itself a
 piece of code, and because its job does not represent useful application work, any
 time it spends executing is pure overhead.  Therefore, introducing unnecessary
 scheduling necessarily reduces per-processor performance.
 
 In many cases, the \textit{only} tool necessary to ensure timely completion of a
-program is preemption.  Instead of confronting this directly, current programming
+program is preemption, the ability to externally interrupt execution.  Instead of
+confronting this directly, current programming
 environments incentivize the programmer to rely on a scheduler to fix the problem,
 limiting them to whatever coarse timescales (often milliseconds) the OS scheduler
 operates at, or (in the case of userland schedulers) to cooperative scheduling
 that doesn't even address the problem of infinite loops.  The goal of this work is to
 design and prototype an interface that extends the programming model with simple
 preemption, thereby allowing the use of functions without having to break the
-abstraction and examine their implementations.  If the function times out, it is
+abstraction and examine their implementations.  If a function times out, it is
 paused so that the programmer can later resume and/or cancel it at the appropriate
 time.  Note that such an interface is still inherently concurrent; indeed, it is the
 programmer who expresses the schedule describing when to devote time to the timed
@@ -79,8 +85,8 @@ for making timed function calls, Scheme engines.  The interface is elegant, but 
 capable of handling purely functional code.  Drawing inspiration from it, we
 devise a novel interface for calling impure \textit{preemptible functions}.
 We set the goal of language agnosticism, aiming to demonstrate support
-for unmanaged systems programming languages because they provide few abstractions
-that might be unavailable unavailable in other settings.
+for unmanaged systems programming languages (because they provide few abstractions
+that might be unavailable in other settings).
 
 \paragraph{Nonreentrancy and selective relinking (Chapter~\ref{chap:libgotcha})}
 We confront nonreentrancy, a program property that permeates the contemporary systems
@@ -131,8 +137,8 @@ of an existing futures executor.
 
 \paragraph{Preemptive remote procedure calls (Chapter~\ref{chap:strobelight})}
 We observe a pain point common to RPC systems that support impure code:\@ it is
-universally incumbent on the developer of a server-side function to periodically
-and manually check whether it has exceeded its service-level agreement.  We describe
+universally incumbent on the developer of each server-side function to manually, and
+periodically, check whether it has exceeded its service-level agreement.  We describe
 how a first-year undergraduate student built a \textit{preemptive RPC system} without
 this limitation in two months.  Its server uses a single-process architecture but
 isolates each request within a preemptible function.  It is also capable of memoizing
@@ -149,7 +155,7 @@ process.  Preemptible functions would provide compute time isolation, whereas me
 isolation would be achieved by requiring tenants to submit only code that could be
 proven safe and restricting them to a vetted set of dependencies.
 
-\paragraph{Continuations (Chapter~\ref{chap:thatsawrap})}
+\paragraph{Conclusions and continuations (Chapter~\ref{chap:thatsawrap})}
 We summarize our work, including noteworthy technical challenges we faced and
 selected lessons for future systems builders.  We propose possible future research
 directions.
