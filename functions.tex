@@ -21,7 +21,7 @@ callback-based futures.  As when calling a preemptible function, structuring cod
 these abstractions involves providing a function to call (a thread main function or a
 callback, respectively).  But it differs in that this function does not necessarily
 begin executing until later:\@ a scheduler or event loop in the runtime or operating
-system manages tasks in the system and decides when to invoke it.
+system manages all of the program's tasks and decides when to invoke each one.
 
 The other distinguishing feature of preemptible functions is that they are
 preemptive, meaning that interruption is external and can occur at (almost) any point
@@ -131,9 +131,9 @@ this effort:
 \item \textbf{We assume that simply calling a preemptible function is the common use
 	case.}  As such, the \texttt{launch()} wrapper both constructs and invokes
 	the preemptible function rather than asking the user to first employ a
-	separate constructor.  Of course, some users may want to separate these two
-	operations.  This is as easy as passing the sentinel \texttt{0} as the
-	timeout, then using \texttt{resume()} to start executing it.
+	separate constructor.  Users wishing to separate the construction and
+	invocation operations can pass the sentinel \texttt{0} as the
+	timeout, then later use \texttt{resume()} to start execution.
 \item \textbf{We favor a simple, language-agnostic interface.}  The fact that our
 	interface centers on a higher-order function in the style of the
 	\texttt{pthread\_create()} and \texttt{spawn()} wrapper functions means that
@@ -159,7 +159,7 @@ this effort:
 	later want to resume it from where it left off.  As such, both
 	\texttt{launch()} and \texttt{resume()} pause in this situation; this incurs
 	some memory and time overhead to provide a separate execution stack and
-	package the continuation object, but exhibits much lower latency than
+	package the continuation object, but exhibits lower latency than
 	asynchronous cancellation.  If the program does require cancellation, we
 	provide ways to explicitly request it (Chapter~\ref{chap:libinger}).
 \item \textbf{In addition to preemption, we offer the option to yield.} This feature
