@@ -1,0 +1,9 @@
+
+Some recent languages offer explicit userland threading, which could be used to
+support timed
+code.  One example is the Go language's~\cite{www-golang} \textit{goroutines}.
+Its runtime includes a cooperative scheduler that conditionally yields
+at function call sites.  This causes problems with tight loops, which require the
+programmer to manually add calls to the \texttt{runtime.Gosched()}
+yield function~\cite{www-golang-tightloop}.
+
