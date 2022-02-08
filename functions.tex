@@ -82,13 +82,14 @@ uncopyable resources such as file descriptors or network adapters.}
 
 \input[functions]{related}
 
-Some recent languages offer explicit userland threading, which could be used to
-support timed
-code.  One example is the Go language's~\cite{www-golang} \textit{goroutines}.
-Its runtime includes a cooperative scheduler that conditionally yields
-at function call sites.  This causes problems with tight loops, which require the
-programmer to manually add calls to the \texttt{runtime.Gosched()}
-yield function~\cite{www-golang-tightloop}.
+Some recent languages offer explicit userland threading, which can be used to
+support timed code.  One example is the Go language's~\cite{www-golang}
+\textit{goroutines}, which originally relied on a cooperative scheduler that
+conditionally yielded at function call sites.  This caused real-world problems for
+tight loops, requiring affected programmers to manually add calls to the
+\texttt{runtime.Gosched()} yield function~\cite{www-golang-tightloop}.  To address
+this, the language eventually migrated to a preemptive goroutine
+scheduler~\cite{www-golang-rel14notes}.
 
 \input[functions]{related_gofigure}
 
