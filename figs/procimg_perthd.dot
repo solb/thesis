@@ -6,8 +6,8 @@ strict digraph {
 
 	tlsn [label=<<b>TLS N</b> (thread-local storage area, library N)>, fontcolor=red];
 	tls [label="...", fontcolor=red, height=0.25];
-	tls2 [label=<<b>TLS 1</b> (thread-local storage area, library 2)>, fontcolor=red];
-	tls1 [label=<<b>TLS 0</b> (thread-local storage area, library 1)>, fontcolor=red];
+	tls2 [label=<<b>TLS 1</b> (thread-local storage area, library 1)>, fontcolor=red];
+	tls1 [label=<<b>TLS 0</b> (thread-local storage area, library 0)>, fontcolor=red];
 	zero [shape=none, height=0, label=""];
 	tcb [label=<<i>TCB</i> (thread-control block)>];
 
