@@ -5,10 +5,10 @@ strict digraph {
 	next [shape=none];
 	install [shape=none];
 
-	set [label="libset_thread_set_next()"];
-	segment [label="arch_prctl()"];
+	set [label="libset_thread_set_next()", fontname=monospace];
+	segment [label="arch_prctl()", fontname=monospace];
 	restore2 [label="TLS data restorer"];
-	mcpy3 [label="memcpy()"];
+	mcpy3 [label="memcpy()", fontname=monospace];
 	version [label="TLS libset version"];
 
 	next -> set [label="control library call"];

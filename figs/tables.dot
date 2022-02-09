@@ -22,12 +22,12 @@ strict digraph {
 	plo -> sgots [label=<<i>module handle</i>>];
 
 	sgot0 [shape=record, label="SGOT 0||"];
-	fun0 [shape=box, label="fun(), libset 0 copy"];
+	fun0 [shape=box, label=<<font face="monospace">fun()</font>, libset 0 copy>];
 	sgots:0 -> sgot0;
 	sgot0 -> fun0 [label="GOOT"];
 
 	sgotN [shape=record, label="SGOT N||"];
-	funN [shape=box, label="fun(), libset N copy"];
+	funN [shape=box, label=<<font face="monospace">fun()</font>, libset N copy>];
 	sgots:N -> sgotN [label="libset_thread_get_next()\n\n", fontname="monospace"];
 	sgotN -> funN [label="GOOT"];
 }
