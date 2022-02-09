@@ -34,8 +34,8 @@ contain program data; \textit{italicized} ones contain metadata for the runtime.
 \hspace{-2em}
 Our discussion in this chapter uses \textit{libinger} as a motivating example of a
 \textit{libgotcha} user, as this configuration was the inspiration for the runtime's
-creation.  However, we have found that the described techniques to be general and
-equally relevant to applications besides timed functions.  As such,
+creation.  However, we have found the described techniques to be general and
+equally relevant to applications beyond timed functions.  As such,
 \textit{libgotcha} exposes a general API that allows any \textbf{control library} to
 configure its behavior for the process.  We give more details later in the chapter,
 and study other examples of control libraries in Chapter~\ref{chap:safety}.
@@ -192,7 +192,7 @@ structure called the PLT (Procedure Linkage Table), which contains code instead 
 pointers.  For each call to a non-\texttt{static} function, the compiler generates a
 position-independent call to a PLT entry corresponding to the function being called.
 It generates a PLT entry, which is a short sequence of instructions that loads the
-pointer to the real definition from the GOT, then executes and indirect jump to that
+pointer to the real definition from the GOT, then executes an indirect jump to that
 location.  Figure~\ref{fig:dytabs:plt} shows an example function call.  As with GOT
 entries, there are PLT entries for functions defined both within and outside the
 referencing module.
@@ -377,8 +377,8 @@ call sequence under selective relinking.
 \end{figure}
 
 A subtle but important point about dynamic linking is that pointers to the same
-definition must compare equal, regardless of where they are obtained.  For instance,
-the reader might notice that invocation is not the only thing a program can do with a
+definition must compare equal, regardless of where they are obtained.
+The reader might notice that invocation is not the only thing a program can do with a
 function:\@ it might also pass around the function's address.  In fact, after taking
 the address, it could pass it to code within a different module, which might need to
 know whether a third module passed a pointer to the same function.  To support such
@@ -545,7 +545,7 @@ instead of constant average-case ones).
 \label{sec:libgotcha:unint}
 
 Unlike prior work, we support safe asynchronous pausing and cancellation on almost
-almost any instruction boundary, including within most third-party libraries without
+any instruction boundary, including within most third-party libraries without
 the need for configuration or code annotation.  However, there are still some cases
 where we have to briefly defer preemption.
 
@@ -554,7 +554,7 @@ functions.  This case is significant because the allocator manages the heap, a
 resource shared among all threads of the application.  As we saw in
 Section~\ref{sec:functions:motivation}, na\"ive attempts to provide asynchronous
 cancellation
-often corrupt corrupt the heap if they interrupt the allocator.  It is even unsafe to
+often corrupt the heap if they interrupt the allocator.  It is even unsafe to
 call into the allocator from a thread that has only been asynchronously paused while
 allocating, as it can cause a deadlock on the locks intended to protect the heap from
 concurrent access by different threads.  This is the reason why signal handlers are
@@ -577,9 +577,10 @@ Although the next libset does not determine which copy of an uninterruptible fun
 gets invoked, it is relevant during the call.  To avoid creating a dependency between
 the starting libset and the current one, it is important that the next libset be set
 to the starting libset while any uninterruptible code is running.  To preserve
-this invariant, whenever \texttt{procedure\_linkage\_override()} detects any libset
-other than the starting one calling an uninterruptible function, it resets the next
-libset to the starting libset, storing a backup of its previous value.  Then, just
+this invariant, whenever \texttt{procedure\_linkage\_override()} detects that any
+libset other than the starting one is calling an uninterruptible function, it resets
+the next
+libset to the starting libset, storing a backup of the previous value.  Then, just
 before invoking the function, it pushes the address of a trampoline function onto the
 stack.  When the function eventually returns, this trampoline runs; before
 transferring control back to the call site, it restores the next libset.
@@ -632,7 +633,7 @@ depend on it, including on internal interfaces that should not be exposed to the
 of the program.  To keep these interfaces private, the dynamic linker does not export
 them as dynamic symbols, and instead exposes them via an opaque data region whose
 layout is partially known to the other glibc modules.  Fortunately, the region is
-split into separate regions under the \texttt{\_rtld\_global\_ro} and
+split into separate subregions under the \texttt{\_rtld\_global\_ro} and
 \texttt{\_rtld\_global} dynamic symbols based on whether the area is writeable, which
 helps us determine whether a particular use has the potential to corrupt the dynamic
 linker state.  In particular, we have allowlisted all the functions that access the
@@ -960,7 +961,7 @@ avoid creating a backdoor around selective relinking and to preserve pointer
 comparison.  As part of these changes, we also had to add a
 \texttt{dlerror()} replacement to report errors encountered during symbol lookups.
 
-Finally, we discovered one apparent incompatibility between exception handling and
+Finally, we encountered one apparent incompatibility between exception handling and
 dynamic linker namespaces.  After noticing that Rust panics would crash the program
 when the current libset was not the starting one, we discovered that libgcc and
 libunwind's implementations of the \texttt{\_Unwind\_RaiseException()} function from
@@ -1071,7 +1072,7 @@ it begins with the control library passing the libset identifier to
 \texttt{libset\_thread\_set\_next()}, and we respond by checking the current TCB's
 current version for that library against the watermark.  If the TCB is out of date,
 we iterate over the TLS's regions and restore the contents corresponding to modules
-from that libset using the each module's initialization image in its \texttt{.tdata}
+from that libset using each module's initialization image in its \texttt{.tdata}
 and \texttt{.tbss} sections.  Then we update the TCB's current version for that
 libset to match the watermark.  Of course, the control library might have multiple
 TCBs that it uses with the same libset, but we detect this by following the same
@@ -1119,7 +1120,7 @@ the aforementioned upon return from the uninterruptible call.}
 
 \section{Limitations}
 
-Selective relinking successfully mitigates the shared state problem to allows safe
+Selective relinking successfully mitigates the shared state problem to allow safe
 forms of asynchronous pausing and cancellation on top of the existing systems stack.
 That said, we should emphasize a few shortcomings of our approach:
 
@@ -1198,7 +1199,8 @@ To raise this limit, we rebuild the glibc sources with an increased value of
 the \texttt{DL\_NNS} macro, which controls the number of supported namespaces.  There
 is no need to install the resulting runtime on the host system; instead, we supply a
 custom interpreter path when linking any application that needs more libsets.  We
-have tested this configuration up to 512 namespaces, but this remains a fixed (glibc)
+have tested this configuration up to 512 namespaces, but the setting remains a fixed
+(glibc)
 compile-time limit.  Removing the per-process libset limit altogether would require
 porting \textit{libgotcha} to work with an alternate dynamic linker that allocates
 namespaces at runtime, such as drow~\cite{www-drow-loader}.
@@ -1217,10 +1219,11 @@ certain dynamic libraries include eager relocations that require their thread-lo
 variables to be assigned TLS offsets at load time.  To support this, the GNU dynamic
 linker reserves a certain amount of static TLS space that must be sufficient for all
 libraries with this requirement across all namespaces.  Populating the libsets
-multiplies modules' space requirements, and can quickly exhaust the static area.
+multiplies modules' space requirements, and can quickly exhaust this static area.
 Part of the problem is that \textit{libgotcha} itself includes such relocations to
 make its assembly portions easier to write, and since it currently loads copies of
-itself into each libset, it contributes to the problem.  When launching a program
+itself into each libset, it too contributes to the increased footprint.  When
+launching a program
 that must support more than a few libsets, one must export an environment variable
 to tune glibc's static TLS size.
 
