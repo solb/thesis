@@ -31,6 +31,13 @@
 
 \renewcommand{\contentsname}{Table of Contents}
 \renewcommand{\lstlistlistingname}{List of Listings}
+\makeatletter
+\let\chapter@\chapter
+\renewcommand{\chapter}{
+	\addtocontents{lol}{\protect\addvspace{10\p@}}
+	\chapter@
+}
+\makeatother
 
 \lstset{captionpos=b,
 	basicstyle=\ttfamily,
