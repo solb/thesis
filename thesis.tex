@@ -167,14 +167,24 @@
 \end{titlepage}
 
 \cleardoublepage
+\phantomsection
 \addcontentsline{toc}{chapter}{\contentsname}
 \tableofcontents
-\listoffigures
+
+\cleardoublepage
+\phantomsection
 \addcontentsline{toc}{chapter}{\listfigurename}
-\listoftables
+\listoffigures
+
+\cleardoublepage
+\phantomsection
 \addcontentsline{toc}{chapter}{\listtablename}
-\lstlistoflistings
+\listoftables
+
+\cleardoublepage
+\phantomsection
 \addcontentsline{toc}{chapter}{\lstlistlistingname}
+\lstlistoflistings
 
 
 \ifdefined\foreword
@@ -215,6 +225,7 @@
 \backmatter
 
 \cleardoublepage
+\phantomsection
 \addcontentsline{toc}{chapter}{Bibliography}
 \bibliography{ref}
 
