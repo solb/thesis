@@ -35,5 +35,5 @@ strict digraph {
 	reinit -> restore [style=dashed, label=<<b>for each</b> libset and library>];
 	restore -> back2 [style=dashed, label=<1. <b>for each</b> writeable address range>];
 	restore -> water [label="2. increment latest version[libset]"];
-	back2 -> mcpy2 [label="restore statics from snapshot"];
+	back2 -> mcpy2 [label="restore globals from snapshot"];
 }
