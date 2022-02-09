@@ -797,9 +797,10 @@ callback orders of magnitude slower.  Fortunately, we anticipate rarer need for 
 \label{sec:libgotcha:control}
 
 All of \textit{libgotcha}'s setup work is wasted if the application never leaves the
-starting libset.  But libsets are a low-level abstraction that are not useful on
-their own:\@ their only value is in legalizing types of concurrency that would
-otherwise exhibit undefined behavior.  As such, \textit{libgotcha} takes no stance on
+starting libset.  But selective relinking is a low-level abstraction useful in
+special situations that require fine-grained memory isolation (e.g., legalizing types
+of concurrency that would otherwise exhibit undefined behavior).
+As such, \textit{libgotcha} takes no stance on
 how libsets should be applied, instead leaving it up to other code to use them (by
 changing the next libset).  We refer to this other code as a control library because
 it controls \textit{libgotcha} using the API shown in Listings~\ref{lst:gotchaapi}
