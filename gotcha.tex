@@ -1287,22 +1287,28 @@ is a pervasive concern in system design.
 Recall that linking an application against \textit{libgotcha} imposes additional
 overhead on most dynamic symbol accesses; we report these overheads in
 Table~\ref{tab:libgotcha:symb}.  Eager function calls account for almost all of a
-modern program's dynamic symbol accesses:\@ lazy resolution only occurs the first
+program's dynamic symbol accesses:\@ lazy resolution only occurs the first
 time a module calls a particular function (Section~\ref{sec:relinking}) and globals
 are becoming rare (Section~\ref{sec:limits}).
 
 Table~\ref{tab:libgotcha:baseline} shows that the \textit{libgotcha} eager function
 call overhead of 14 ns is on par with the cost of a trivial C library function
-(\texttt{gettimeofday()}) and one-third
-that of a simple system call (\texttt{getpid()}).  This overhead affects the entire
-program, regardless of the
+(\texttt{gettimeofday()}) and an order of magnitude lower than
+that of a simple system call (\texttt{getpid()}).\footnote{The cost of a system call
+slipped by an order of magnitude in our benchmarks as a result of the Meltdown and
+Spectre mitigations, which require the kernel to swap page tables before context
+switching to user code to guard against timing attacks.  Previously, a system call
+was approximately three times as expensive as the \textit{libgotcha} eager function
+call overhead.}  This overhead affects the entire program, regardless of the
 current libset at the time of the call.  Additionally, calls to
-uncopyable functions from within a preemptible function incur several extra
-nanoseconds of latency to switch back to the main namespace as described in
-\Chap~\ref{sec:libgotcha}; Table~\ref{tab:libgotcha:allowlist} breaks this overhead
-down to
+uninterruptible functions from within a preemptible function incur roughly twice this
+latency to switch back to the main libset as described in
+Section~\ref{sec:libgotcha:unint}; Table~\ref{tab:libgotcha:allowlist} breaks this
+overhead down to
 show the cost of notification callbacks at the conclusion of such a call (always
-required by \textit{libinger}).
+required by \textit{libinger}).  Notification at the start of a call is more
+expensive merely because of the implementation shortcut described in
+Section~\ref{sec:libgotcha:callbacks}.
 
 \begin{table*}
 	\begin{minipage}{\textwidth}
@@ -1311,42 +1317,43 @@ required by \textit{libinger}).
 	Symbol resolution scheme & Time without \textit{libgotcha} ($ns$) & Time with \textit{libgotcha} ($ns$) \\
 	\hline
 	eager (load time) & $2 \pm 0$ & $14 \pm 0$ \\
-	lazy (runtime) & $100 \pm 1$ & $125 \pm 0$ \\
-	global variable & $0 \pm 0$ & $3438 \pm 13$
+	lazy (runtime) & $102 \pm 0$ & $120 \pm 0$ \\
+	global variable & $0 \pm 0$ & $5005 \pm 15$
 	\end{tabular}
 	\subcaption{Generic symbols, without and with \textit{libgotcha}}
 	\label{tab:libgotcha:symb}
 	\end{minipage}
 
 	\begin{minipage}{\columnwidth}
+	\vspace{12pt}
 	\centering
 	\begin{tabular}{c | c}
 	Baseline & Time without \textit{libgotcha} ($ns$) \\
 	\hline
 	\texttt{gettimeofday()} & $19 \pm 0$ \\
-	\texttt{getpid()} & $44 \pm 0$
+	\texttt{getpid()} & $234 \pm 0$
 	\end{tabular}
 	\subcaption{Library functions and syscalls without \textit{libgotcha}}
 	\label{tab:libgotcha:baseline}
 	\end{minipage}
-%
+
 	\begin{minipage}{\columnwidth}
+	\vspace{12pt}
 	\centering
 	\begin{tabular}{c | c}
 	Trigger & Time with \textit{libgotcha} ($ns$) \\
 	\hline
-	Uncopyable call & $21 \pm 0$ \\
-	Uncopyable call + callback & $25 \pm 0$
+	Uninterruptible call & $27 \pm 1$ \\
+	Uninterruptible call + call callback & $1549 \pm 2$ \\
+	Uninterruptible call + return callback & $28 \pm 1$
 	\end{tabular}
-	\subcaption{Uncopyable calls triggering a libset switch}
+	\subcaption{Uninterruptible calls triggering a libset switch}
 	\label{tab:libgotcha:allowlist}
 	\end{minipage}
 \caption{Runtime overheads of accessing dynamic symbols}
 \end{table*}
 
 \input[functions]{eval_testbed}
-
-\solb{Rerun with newer versions and fix the ``chapter'' reference}
 
 
 \subsection{Thread spawn performance}
