@@ -1,7 +1,7 @@
 \chapter{Conclusions and continuations}
 \label{chap:thatsawrap}
 
-At the start of this thesis, we presented our contributions in this thesis statement:
+At the start of this thesis, we set out to substantiate this thesis statement:
 \begin{quote}
 \input{statement}
 \end{quote}
@@ -17,9 +17,24 @@ and distill a few lessons for future systems builders
 \section{Contributions}
 \label{sec:thatsawrap:contributions}
 
-The thesis statement makes specific references to key contributions throughout this
-thesis.  We collect these references here, along with pointers back to the relevant
-chapters and sections.
+To summarize this thesis...
+
+We introduced novel programming abstractions for isolation of both time and memory.
+They operate at finer granularity than traditional primitives, supporting preemption
+at sub-millisecond timescales and tasks defined at the level of a function call.
+This resolution enables new functionality for application programmers, including
+users of unmanaged systems programming languages, all without requiring changes to
+the existing systems stack.  Despite being concurrency abstractions, they employ
+synchronous invocation to allow application programmers to make their own scheduling
+decisions.  However, we found that they compose naturally with existing concurrency
+abstractions centered around asynchronous background work, such as threads and
+futures.  We demonstrated how such composition can enable asynchronous cancellation
+of
+threads and the implementation of preemptive thread libraries in userland, both
+regarded for decades as challenging problems.
+
+This summary makes specific references to key contributions; we now explain each and
+give pointers back to the relevant chapters and sections.
 
 \paragraph{Novel programming abstractions for isolation of both time and memory}
 These abstractions are lightweight preemptible functions and selective relinking.
