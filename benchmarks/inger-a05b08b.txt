@@ -1,0 +1,88 @@
+$ PATH="$HOME/rust-1.56/bin:$PATH" GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 LIBGOTCHA_NOGLOBALS= cargo --offline bench --bench inger -- launch
+   Compiling libc v0.2.117
+   Compiling gotcha v0.0.0 (/home/doge/preemptible_functions/inger/external/libgotcha)
+   Compiling signal v0.0.0 (/home/doge/preemptible_functions/inger/internal/libsignal)
+   Compiling timetravel v0.0.0 (/home/doge/preemptible_functions/inger/external/libtimetravel)
+   Compiling inger v0.0.0 (/home/doge/preemptible_functions/inger)
+    Finished bench [optimized] target(s) in 6.93s
+     Running unittests (target/release/deps/inger-ad70dd597c824283)
+libgotcha notice: Shadowing of global variables has been disabled
+
+running 1 test
+test launch ... bench:      15,119 ns/iter (+/- 155)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ PATH="$HOME/rust-1.56/bin:$PATH" GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 LIBGOTCHA_NOGLOBALS= cargo --offline bench --bench inger -- resume
+    Finished bench [optimized] target(s) in 0.01s
+     Running unittests (target/release/deps/inger-ad70dd597c824283)
+libgotcha notice: Shadowing of global variables has been disabled
+
+running 1 test
+test resume ... bench:      13,903 ns/iter (+/- 66)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ PATH="$HOME/rust-1.56/bin:$PATH" GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 LIBGOTCHA_NOGLOBALS= cargo --offline bench --bench inger -- renew
+    Finished bench [optimized] target(s) in 0.01s
+     Running unittests (target/release/deps/inger-ad70dd597c824283)
+libgotcha notice: Shadowing of global variables has been disabled
+
+running 1 test
+test renew  ... bench:      31,692 ns/iter (+/- 476)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ PATH="$HOME/rust-1.56/bin:$PATH" GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 LIBGOTCHA_NOGLOBALS= cargo --offline bench --bench inger --features notls -- launch
+   Compiling libc v0.2.117
+   Compiling gotcha v0.0.0 (/home/doge/preemptible_functions/inger/external/libgotcha)
+   Compiling bencher v0.1.5
+   Compiling timetravel v0.0.0 (/home/doge/preemptible_functions/inger/external/libtimetravel)
+   Compiling signal v0.0.0 (/home/doge/preemptible_functions/inger/internal/libsignal)
+   Compiling inger v0.0.0 (/home/doge/preemptible_functions/inger)
+    Finished bench [optimized] target(s) in 6.84s
+     Running unittests (target/release/deps/inger-b361dfe516a89e23)
+libgotcha notice: Shadowing of global variables has been disabled
+
+running 1 test
+test launch ... bench:      12,364 ns/iter (+/- 151)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ PATH="$HOME/rust-1.56/bin:$PATH" GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 LIBGOTCHA_NOGLOBALS= cargo --offline bench --bench inger --features notls -- resume
+    Finished bench [optimized] target(s) in 0.01s
+     Running unittests (target/release/deps/inger-b361dfe516a89e23)
+libgotcha notice: Shadowing of global variables has been disabled
+
+running 1 test
+test resume ... bench:      10,307 ns/iter (+/- 43)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ PATH="$HOME/rust-1.56/bin:$PATH" GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 LIBGOTCHA_NOGLOBALS= cargo --offline bench --bench inger --features notls -- renew
+    Finished bench [optimized] target(s) in 0.01s
+     Running unittests (target/release/deps/inger-b361dfe516a89e23)
+libgotcha notice: Shadowing of global variables has been disabled
+
+running 1 test
+test renew  ... bench:      27,710 ns/iter (+/- 446)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ PATH="$HOME/rust-1.56/bin:$PATH" GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 cargo --offline bench --bench baseline
+   Compiling libc v0.2.117
+   Compiling gotcha v0.0.0 (/home/doge/preemptible_functions/inger/external/libgotcha)
+   Compiling bencher v0.1.5
+   Compiling timetravel v0.0.0 (/home/doge/preemptible_functions/inger/external/libtimetravel)
+   Compiling signal v0.0.0 (/home/doge/preemptible_functions/inger/internal/libsignal)
+   Compiling inger v0.0.0 (/home/doge/preemptible_functions/inger)
+    Finished bench [optimized] target(s) in 6.78s
+     Running unittests (target/release/deps/baseline-8dc1f6ab3ef023a0)
+
+running 4 tests
+test fork           ... bench:     491,997 ns/iter (+/- 7,316)
+test pthread_create ... bench:      24,691 ns/iter (+/- 7,450)
+test pthread_join   ... bench:           3 ns/iter (+/- 0)
+test vfork          ... bench:   2,064,835 ns/iter (+/- 31,539)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 4 measured
