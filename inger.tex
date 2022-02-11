@@ -918,18 +918,29 @@ critical path unless the application is cancelling tasks frequently enough to ex
 its supply of libsets.
 
 \begin{table}
-\begin{center}
-\begin{tabular}{c | c}
-Operation & Duration ($\mu{s}$) \\
-\hline
-\texttt{launch()} & $4.6 \pm 0.05$ \\
-\texttt{resume()} & $4.4 \pm 0.02$ \\
-\texttt{cancel()} & $4767.7 \pm 1168.7$ \\
-\hline
-\texttt{fork()} & $207.5 \pm 79.3$ \\
-\texttt{pthread\_create()} & $32.5 \pm 8.0$
-\end{tabular}
-\end{center}
+	\begin{minipage}{\textwidth}
+	\centering
+	\begin{tabular}{c | c}
+	Operation & Duration ($\mu{s}$) \\
+	\hline
+	\texttt{launch()} & $4.6 \pm 0.05$ \\
+	\texttt{resume()} & $4.4 \pm 0.02$ \\
+	\texttt{cancel()} & $4767.7 \pm 1168.7$ \\
+	\end{tabular}
+	\subcaption{Preemptible function operations}
+	\end{minipage}
+
+	\begin{minipage}{\textwidth}
+	\vspace{12pt}
+	\centering
+	\begin{tabular}{c | c}
+	Operation & Duration ($\mu{s}$) \\
+	\hline
+	\texttt{fork()} & $207.5 \pm 79.3$ \\
+	\texttt{pthread\_create()} & $32.5 \pm 8.0$
+	\end{tabular}
+	\subcaption{Process and thread spawns without \textit{libinger}}
+	\end{minipage}
 \caption{Latency of preemptible function interface}
 \solb{Rerun with the latest version of libinger?}
 \label{tab:libinger}
