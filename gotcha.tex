@@ -1314,12 +1314,12 @@ Section~\ref{sec:libgotcha:callbacks}.
 \begin{table*}
 	\begin{minipage}{\textwidth}
 	\centering
-	\begin{tabular}{c | c c}
-	Symbol resolution scheme & Time without \textit{libgotcha} ($ns$) & Time with \textit{libgotcha} ($ns$) \\
+	\begin{tabular}{c | r l r l}
+	Symbol resolution scheme & \multicolumn{2}{c}{Time without \textit{libgotcha} ($ns$)} & \multicolumn{2}{c}{Time with \textit{libgotcha} ($ns$)} \\
 	\hline
-	eager (load time) & $2 \pm 0$ & $14 \pm 0$ \\
-	lazy (runtime) & $102 \pm 0$ & $120 \pm 0$ \\
-	global variable & $0 \pm 0$ & $5005 \pm 15$
+	eager (load time) & \qquad $2$ & $\pm \quad 0$ & \qquad $14$ & $\pm \quad 0$ \\
+	lazy (runtime) & $102$ & $\pm \quad 0$ & $120$ & $\pm \quad 0$ \\
+	global variable & $0$ & $\pm \quad 0$ & $5005$ & $\pm \quad 15$
 	\end{tabular}
 	\subcaption{Generic symbols, without and with \textit{libgotcha}}
 	\label{tab:libgotcha:symb}
@@ -1328,11 +1328,11 @@ Section~\ref{sec:libgotcha:callbacks}.
 	\begin{minipage}{\columnwidth}
 	\vspace{12pt}
 	\centering
-	\begin{tabular}{c | c}
-	Baseline & Time without \textit{libgotcha} ($ns$) \\
+	\begin{tabular}{c | r l}
+	Baseline & \multicolumn{2}{c}{Time without \textit{libgotcha} ($ns$)} \\
 	\hline
-	\texttt{gettimeofday()} & $19 \pm 0$ \\
-	\texttt{getpid()} & $234 \pm 0$
+	\texttt{gettimeofday()} & \qquad $19$ & $\pm \quad 0$ \\
+	\texttt{getpid()} & $234$ & $\pm \quad 0$
 	\end{tabular}
 	\subcaption{Library functions and syscalls without \textit{libgotcha}}
 	\label{tab:libgotcha:baseline}
@@ -1341,12 +1341,12 @@ Section~\ref{sec:libgotcha:callbacks}.
 	\begin{minipage}{\columnwidth}
 	\vspace{12pt}
 	\centering
-	\begin{tabular}{c | c}
-	Trigger & Time with \textit{libgotcha} ($ns$) \\
+	\begin{tabular}{c | r l}
+	Trigger & \multicolumn{2}{c}{Time with \textit{libgotcha} ($ns$)} \\
 	\hline
-	Uninterruptible call & $27 \pm 1$ \\
-	Uninterruptible call + call callback & $1549 \pm 2$ \\
-	Uninterruptible call + return callback & $28 \pm 1$
+	Uninterruptible call & \qquad $27$ & $\pm \quad 1$ \\
+	Uninterruptible call + call callback & $1549$ & $\pm \quad 2$ \\
+	Uninterruptible call + return callback & $28$ & $\pm \quad 1$
 	\end{tabular}
 	\subcaption{Uninterruptible calls triggering a libset switch}
 	\label{tab:libgotcha:allowlist}
