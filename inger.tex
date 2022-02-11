@@ -901,7 +901,39 @@ We detail this approach in Chapter~\ref{chap:ingerc}.
 \subsection{Microbenchmarks}
 \label{sec:libinger:ueval}
 
-\input[functions]{eval_uinger}
+Table~\ref{tab:libinger} shows the overhead of \textit{libinger}'s core functions.
+Each test uses hundreds of preemptible functions, each with its own stack and
+continuation, but sharing an implementation; the goal is to measure invocation time,
+so the function body immediately calls \texttt{pause()}.
+For comparison, we also measured the cost of calling \texttt{fork()} then
+\texttt{exit()}, and of calling \texttt{pthread\_create()} with an empty function,
+while the parent
+thread waits using \texttt{waitpid()} or \texttt{pthread\_join()}, respectively.
+
+The results show that, as long as preemptible functions are eventually allowed to run
+to completion, they are an order of magnitude faster than spawning a thread and two
+orders of magnitude faster than forking a process.  Although cancellation takes
+milliseconds in the benchmark application, this operation need not lie on the
+critical path unless the application is cancelling tasks frequently enough to exhaust
+its supply of libsets.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{c | c}
+Operation & Duration ($\mu{s}$) \\
+\hline
+\texttt{launch()} & $4.6 \pm 0.05$ \\
+\texttt{resume()} & $4.4 \pm 0.02$ \\
+\texttt{cancel()} & $4767.7 \pm 1168.7$ \\
+\hline
+\texttt{fork()} & $207.5 \pm 79.3$ \\
+\texttt{pthread\_create()} & $32.5 \pm 8.0$
+\end{tabular}
+\end{center}
+\caption{Latency of preemptible function interface}
+\solb{Rerun with the latest version of libinger?}
+\label{tab:libinger}
+\end{table}
 
 
 \subsection{Image decompression}
