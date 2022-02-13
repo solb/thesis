@@ -21,9 +21,8 @@ strict digraph {
 	eh_frame_hdr [label=<<i>.eh_frame_hdr</i> (exception-handling header)>, fontcolor=darkgreen];
 	eh_frame [label=<<i>.eh_frame</i> (exception-handling stack-unwind metadata)>, fontcolor=darkgreen];
 	greenred [shape=none, height=0, label=""];
-	tdata [label=<<b>.tdata</b> (TLS initialization image, initialized portion)>, fontcolor=red];
-	tbss [label=<<b>.tbss</b> (TLS initialization image, zero-filled portion)>, fontcolor=red];
-	redyellow [shape=none, height=0, label=""];
+	tdata [label=<<b>.tdata</b> (TLS initialization image, initialized portion)>, fontcolor=goldenrod];
+	tbss [label=<<b>.tbss</b> (TLS initialization image, zero-filled portion)>, fontcolor=goldenrod];
 	init_array [label=<<i>.init_array</i> (constructor pointer table)>, fontcolor=goldenrod];
 	fini_array [label=<<i>.fini_array</i> (destructor pointer table)>, fontcolor=goldenrod];
 	datarelro [label=<<b>.data.rel.ro</b> (static storage, relocated constant portion)>, fontcolor=goldenrod];
@@ -49,12 +48,11 @@ strict digraph {
 	greenblue -> 1;
 	bluegreen -> 2;
 	greenred -> 3;
-	redyellow -> 4;
-	yellowred -> 5;
+	yellowred -> 4;
 
 	edge [style=invis];
 	pltgot -> blue;
 	eh_frame_hdr -> green;
-	datarelro -> yellow;
+	fini_array -> yellow;
 	data -> red;
 }
