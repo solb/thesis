@@ -15,9 +15,9 @@ broken sample programs that can be automatically fixed with little or no program
 intervention, and
 discuss practical applications to real-world systems.  Through its presentation
 of two simple control libraries, this chapter also serves as a straightforward
-example of how to use \textit{libgotcha}.  The insight from this chapter, both on our
-runtime and on POSIX safety itself, will be useful when we later explain the workings
-of \textit{libinger}, a more complicated control library.
+example of how to use \textit{libgotcha}.  The insights from this chapter, both about
+selective relinking and about POSIX safety itself, will be useful when we later
+explain the workings of \textit{libinger}, a more complicated control library.
 
 The reader will probably not be surprised to learn that the POSIX specification
 guarantees that most C library functions are thread safe; that is, assuming they are
@@ -27,13 +27,14 @@ less familiar types of safety that become relevant when an individual thread doe
 something other than execute a single task to synchronous completion or failure:
 
 \paragraph{Async-signal safety.}
-Async-signal-safe functions are those that can be safely called from a signal handler
-that has interrupted a non-async-signal-safe function (or conversely, can be safely
-interrupted by a signal handler that calls non-async-signal-safe functions).
+Async-signal-safe functions are those library functions that can be safely called
+from a signal handler
+that has interrupted a non--async-signal-safe function (or conversely, can be safely
+interrupted by a signal handler that calls non--async-signal-safe functions).
 
 \begin{sloppypar}
 \paragraph{Async-cancel safety.}
-Async-cancel-safe functions are those that can be called by
+Async-cancel-safe functions are those library functions that can be called by
 asynchronously-cancellable threads, which we first saw in
 Section~\ref{sec:functions:motivation}.  One can ostensibly cancel such threads at
 any point in
@@ -44,8 +45,8 @@ no I/O or other reliance on the OS.
 \end{sloppypar}
 
 Along with thread safety, these two classes of safety exist because of nonreentrant
-interfaces; that is, functions whose signatures do not expose all the shared state
-they use.  To understand the need for these two classes of safety, it is helpful to
+interfaces (functions whose signatures do not expose all of the shared state
+they use).  To understand the need for these two classes of safety, it is helpful to
 consider how one might implement a thread-safe function.  For the sake of this
 discussion, consider the nonreentrant pseudorandom-number generator \texttt{rand()},
 which takes no arguments but returns a random number.  Clearly, the function needs
@@ -61,8 +62,8 @@ aforementioned approach is subject to data races when used by multiple threads:\
 the function must update the entropy pool on each invocation, and concurrent accesses
 may interleave.  Establishing thread safety is as easy as using a thread-local
 variable to maintain a separate entropy pool for each thread of execution, thereby
-eliminating the shared state.  Unfortunately, this mitigation is neither applicable
-to async-signal safety nor to async-cancellation safety:  In the former case, there
+eliminating the shared state.  Unfortunately, this mitigation is applicable neither
+to async-signal safety nor to async-cancel safety:  In the former case, there
 is no analogue of thread-local variables capable of retargeting data accesses
 depending on whether a signal handler is running.  In the latter case, a function
 that mutates state that must be shared \textit{between} threads is likely to corrupt
@@ -82,13 +83,13 @@ Our approach to automatically establishing async-signal safety is to repurpose
 selective relinking to isolate signal handlers from the rest of the program.  We do
 so by running the entire program, with the exception of uninterruptible library
 functions (Section~\ref{sec:libgotcha:unint}) and custom signal handlers, in a
-newly-allocated libset.  Whenever a signal with a handler arrives, we switch to the
-starting libset before executing it, then switch back before returning to the rest of
+newly-allocated libset.  When handling a signal, we switch to the starting libset
+before executing its handler, then switch back before returning to the rest of
 the program.
 
 As a demonstration of our technique, we have implemented \textit{libas-safe}, a tiny
 runtime comprising 127 lines of C code that automatically fixes programs whose signal
-handlers call functions that are not async-signal safe.  To use it you, either
+handlers call functions that are not async-signal safe.  To use it, you either
 preload it at load time or link your buggy application directly against it at build
 time.  Note that it only fixes bugs truly arising from async-signal safety:\@ it will
 neutralize most resulting undefined behavior, but it will not address logic errors in
@@ -107,7 +108,7 @@ late as possible by replacing libc's \texttt{\_\_libc\_start\_main()} function,
 responsible for calling the program's \texttt{main()} function.  Because
 \textit{libas-safe} is an internal control library
 (Section~\ref{sec:libgotcha:control}), doing so is as simple as defining a
-non-static function with that name and \textit{libgotcha} automatically considers it
+non-static function with that name, which automatically becomes
 a forced interposition (Section~\ref{sec:libgotcha:interpose}).  Our replacement
 wraps the libc implementation, but allocates and switches to a new libset just before
 jumping to \texttt{main()}.  It also registers an uninterruptible return callback
@@ -332,7 +333,7 @@ multiple times by the same thread without blocking.  Although this hides the iss
 at least glibc 2.33, it does not fix the program, which remains vulnerable to future
 platform changes.
 
-Running the program with the environment variable \texttt{LD\_PRELOAD} defined to
+Running the program with the environment variable \texttt{LD\_PRELOAD} set to
 \texttt{./libas-safe.so} fixes the deadlock automatically.  It does so by resolving
 the standard library calls and \texttt{stdout} reference to a different copy
 depending on whether they occur inside or outside the signal handler.  In this way,
@@ -341,7 +342,7 @@ alter the stream's interleaving behavior; however, as the upstream glibc change
 demonstrates, these semantics were undefined to begin with.
 
 The program also serves as a demonstration of a second way to fix the problem:\@
-instead of weakening the protection against writing interleaving to the terminal, we
+instead of weakening the protection against interleaving writes to the terminal, we
 can prevent the interleaving function calls from happening in the first place.  The
 \textit{libgotcha} implementation recognizes a configuration environment variable
 that can be used to treat the entirety of \texttt{libc.so} (as opposed to only
@@ -354,7 +355,7 @@ global variables are private to each interruptible region
 \textit{libas-safe}'s verbose mode shows that deferring signal arrival also fixes the
 program's deadlock.  Here is an example invocation:
 \begin{lstlisting}
-  $ LD_PRELOAD=./libas-safe.so LIBGOTCHA_SHAREDLIBC= LIBASSAFE_VERBOSE= ./signal
+  $ LD_PRELOAD=./libas-safe.so LIBGOTCHA_SHAREDLIBC= LIBAS_VERBOSE= ./signal
   libgotcha notice: Treating entirety of libc as shared code
   LIBAS-SAFE: as_safe() initializating...
   LIBAS-SAFE: sigaction() installing signal 14 handler
@@ -501,21 +502,26 @@ If instead the thread gets prematurely cancelled, \texttt{release()} will be cal
 and find that the thread is not tagged as \texttt{finished}, at which point it will
 leave the thread's private libset then forcefully reinitialize it.  Thereafter, it
 proceeds as before.  Recall that cancellation will have happened cooperatively if the
-thread was executing uninterruptible code and preemptively otherwise.  This respects
+thread was executing uninterruptible code and preemptively otherwise.\footnote{The
+current implementation unnecessarily reinitializes the libset following cooperative
+cancellation.  One could avoid this by setting the finished flag in the
+\texttt{cooperative()} callback, then unsetting it again in \texttt{preemptive()}.}
+This respects
 the selective relinking safety model; that is, assuming the allowlist is configured
-correctly and glibc's implementation of cooperative cancelation, is sound,
+correctly and glibc's implementation of cooperative cancelation is sound,
 cancelation will neither corrupt the starting libset nor create dependencies between
 it and any thread's private libset (Section~\ref{sec:libgotcha:unint}).
 
-Notice that, regardless of what caused the thread to terminate, it attempted to pass
+Notice that, regardless of what is causing the thread to terminate, it attempts to
+pass
 its now-unused libset's identifier back to its parent for reuse on the next spawn.
 The decision to reuse happens in \texttt{pthread\_create()}'s call to the
 \texttt{alloc\_libset()} helper function, also shown in
-Listing~\ref{lst:acsafe_helpers}.  This implementation takes two related
+Listing~\ref{lst:acsafe_helpers}.  This version takes two related
 implementation shortcuts, neither of which is central to our approach's design:
 (1)~Terminating child threads assume their parent still exists and directly read and
 write its thread-local \texttt{reuse} record.  (2)~Each parent thread only remembers
-up to one reusable libsets,\footnote{Because child threads do not atomically update
+up to one reusable libset,\footnote{Because child threads do not atomically update
 the parent's variable, the implementation does not guarantee \textit{which} libset
 will be reused in case of a tie.  This is still safe because all contending libsets
 are valid for reuse.} so if two or more of its child threads exit in between
@@ -524,7 +530,7 @@ never reuse.  The correct solution is to use a pool allocator for libsets, and w
 will see an example of this in Chapter~\ref{chap:libinger}.
 
 In summary, \textit{libac-safe} makes it possible for Unix applications to use
-asynchronous thread cancelability.  Thus, developers can now leverage a feature that,
+asynchronous thread cancellation.  Thus, developers can now leverage a feature that,
 as we saw in Section~\ref{sec:functions:motivation}, was practically useless out of
 the box.
 The library also makes a good case study of a \textit{libgotcha} control library for
@@ -585,9 +591,9 @@ socket address structure).  It then enters an infinite loop, each iteration of w
 updates a circular spinner to indicate that the program is making
 progress,\footnote{We implement this as in Section~\ref{sec:safety:handler}.} spawns
 a thread to resolve the hostname back to an address, cancels the thread, and joins on
-it before spawning the next.  Each time a thread terminates prematurely, the loop it
+it before spawning the next.  Each time a thread terminates prematurely, the loop
 increments a success counter; each time one runs to completion, it prints out the
-current counter and the hostname the thread was passed.  Upon creation, each threads
+current counter and the hostname the thread was passed.  Upon creation, each thread
 immediately sets itself as asynchronously cancelable, performs a forward DNS lookup,
 and exits.
 
@@ -653,7 +659,7 @@ run, which lasted under three seconds before hanging:
   -
 \end{lstlisting}
 
-Running the program with the environment variable \texttt{LD\_PRELOAD} defined to
+Running the program with the environment variable \texttt{LD\_PRELOAD} set to
 \texttt{./libac-safe.so} almost fixes the problem with no programmer intervention.
 All of the threads are canceled before they can complete, and the only problem is
 that each of the calls to \texttt{getnameinfo()} allocates a new file descriptor that
