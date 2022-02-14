@@ -407,10 +407,10 @@ be either preloaded or linked against like any other library.  And as before, it
 fixes problems arising in library functions due to async-cancel safety, not program
 logic errors.  In addition to observing traditional concurrency control practices,
 the developer of an application using asynchronously cancelable threads must exercise
-extreme caution when interacting with threads that might be canceled in this way or
-accessing any data structures that such threads modify.  Our prototype is
+extreme caution when interacting with threads that might be \cancel{ed} in this way
+or accessing any data structures that such threads modify.  Our prototype is
 experimental and omits important features such as automatic cleanup of resources
-allocated by canceled threads (a topic we will revisit in
+allocated by \cancel{ed} threads (a topic we will revisit in
 Chapters~\ref{chap:libinger} and \ref{chap:ingerc}).
 
 As an internal control library, \textit{libac-safe} works by defining a forced
@@ -476,7 +476,8 @@ static void preemptive(void) {
 Listing~\ref{lst:acsafe_helpers} shows the additional initialization and teardown we
 perform on each thread.  Once libpthread has created the new kernel thread, it runs
 our \texttt{wrapper()} on it, which configures libpthread to run the
-\texttt{release()} handler if the thread ever gets canceled.  It then sets the next
+\texttt{release()} handler if the thread ever gets \cancel{ed}.  It then sets the
+next
 libset to the one allocated for this thread and initializes the locale selections of
 its copy of libc.\footnote{Without this thread-specific initialization, calls to
 \texttt{ctype.h} functions would invoke \texttt{NULL} pointers inside glibc.  The
@@ -490,7 +491,7 @@ means that its calls only ever resolve back into the starting libset
 (Section~\ref{sec:libgotcha:control}).  Instead of using a simple function call, it
 uses an additional \textit{libgotcha} API to look up the specific function pointer
 for the allocated libset in the shadow GOTs, then makes an indirect call.}  Then it
-calls into the thread's main function.  Assuming the thread does not get canceled,
+calls into the thread's main function.  Assuming the thread does not get \cancel{ed},
 this will eventually return back, at which point \texttt{wrapper()} will return to
 the starting libset, set a flag to indicate that the thread ran to completion, and
 call the \texttt{release()} handler.  This will skip the first conditional in the
@@ -508,9 +509,9 @@ cancellation.  One could avoid this by setting the finished flag in the
 \texttt{cooperative()} callback, then unsetting it again in \texttt{preemptive()}.}
 This respects
 the selective relinking safety model; that is, assuming the allowlist is configured
-correctly and glibc's implementation of cooperative cancelation is sound,
-cancelation will neither corrupt the starting libset nor create dependencies between
-it and any thread's private libset (Section~\ref{sec:libgotcha:unint}).
+correctly and glibc's implementation of cooperative \cancel{ation} is sound,
+\cancel{ation} will neither corrupt the starting libset nor create dependencies
+between it and any thread's private libset (Section~\ref{sec:libgotcha:unint}).
 
 Notice that, regardless of what is causing the thread to terminate, it attempts to
 pass
@@ -584,7 +585,7 @@ static libset_t alloc_libset(void) {
 \label{sec:safety:thread}
 
 Listing~\ref{lst:acsafe_example} shows an only slightly contrived example program
-that tries to use asynchronous thread cancelation.  It attempts to simulate
+that tries to use asynchronous thread \cancel{ation}.  It attempts to simulate
 performing a large number of cancelable DNS lookups:  The main thread starts by
 performing a reverse lookup on a link-local IPv4 address (in order to populate a
 socket address structure).  It then enters an infinite loop, each iteration of which
@@ -628,7 +629,7 @@ int main(void) {
 		.addr = (struct sockaddr *) &sa,
 	};
 	char spinner = '|';
-	unsigned canceled = 0;
+	unsigned cancelled = 0;
 	while(true) {
 		print_and_advance_spinner(&spinner);
 
@@ -638,16 +639,16 @@ int main(void) {
 		pthread_cancel(tid);
 		pthread_join(tid, &res);
 		if(res != PTHREAD_CANCELED)
-			printf("%d %s\n", canceled, args.name);
+			printf("%d %s\n", cancelled, args.name);
 		else
-			++canceled;
+			++cancelled;
 	}
 	return 0;
 }
 \end{lstlisting}
 \end{figure}
 
-The program does not work.  Asynchronous cancelation both fails to interrupt some
+The program does not work.  Asynchronous \cancel{ation} both fails to interrupt some
 of the threads (likely due to the proximity between the call and a library
 function that performs system calls) and eventually deadlocks the program, as
 indicated by the spinner becoming frozen.  Here is the output of a representative
@@ -661,7 +662,7 @@ run, which lasted under three seconds before hanging:
 
 Running the program with the environment variable \texttt{LD\_PRELOAD} set to
 \texttt{./libac-safe.so} almost fixes the problem with no programmer intervention.
-All of the threads are canceled before they can complete, and the only problem is
+All of the threads are \cancel{ed} before they can complete, and the only problem is
 that each of the calls to \texttt{getnameinfo()} allocates a new file descriptor that
 is leaked upon the thread's death.  Eventually, this results in the program crashing
 because it has too many open file descriptors.

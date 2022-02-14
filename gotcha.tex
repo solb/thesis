@@ -270,8 +270,8 @@ determine whether it is a cross-module call.
 \input[functions]{gotcha_init}
 \end{promotesubsections}
 
-If a preemptible function is canceled rather than being allowed to return, execution
-might be interrupted within a call to a library function.  For this reason,
+If a preemptible function is \cancel{ed} rather than being allowed to return,
+execution might be interrupted within a call to a library function.  For this reason,
 \textit{libgotcha} must treat the libset's shared state as corrupted; it provides the
 \texttt{libset\_reinit()} function shown in Listing~\ref{lst:gotchaapi} to allow
 control libraries to inform it of such a situation so it can \textbf{reinitialize}
@@ -1067,7 +1067,8 @@ We allocate a thread-local variable (per TCB, of course) to track each TLS's cur
 \texttt{libset\_reinit()} to signal a cancellation, we merely increment a separate
 program-wide version watermark for that libset, as show at the bottom of
 Figure~\ref{fig:reinit}.  We know that a libset whose execution has just been
-canceled cannot currently be in use by any thread, so we do not need to do anything
+\cancel{ed} cannot currently be in use by any thread, so we do not need to do
+anything
 further unless and until the libset is reused.  We can recognize such reuse because
 it begins with the control library passing the libset identifier to
 \texttt{libset\_thread\_set\_next()}, and we respond by checking the current TCB's
