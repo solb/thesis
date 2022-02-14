@@ -100,10 +100,10 @@ the level of function calls, as is needed to support preemptible functions.
 We examine the POSIX safety concepts, the rules that govern what certain parts of a
 Unix program may---or may not---do.  In particular, signal handlers are ordinarily
 only allowed to call a restricted subset of the available standard functions, and
-cancellable threads are conventionally barred from using operating system facilities
+cancelable threads are conventionally barred from using operating system facilities
 altogether.  We show how selective relinking can be applied to lift either of these
 restrictions and enable \textit{safe signal handlers} or \textit{asynchronously
-cancellable threads}.  While our implementations are only intended as a
+cancelable threads}.  While our implementations are only intended as a
 demonstration, we find that selective relinking makes both of these seemingly
 Herculean tasks simple enough to make for short instructive examples.
 

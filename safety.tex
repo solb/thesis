@@ -35,7 +35,7 @@ interrupted by a signal handler that calls non--async-signal-safe functions).
 \begin{sloppypar}
 \paragraph{Async-cancel safety.}
 Async-cancel-safe functions are those library functions that can be called by
-asynchronously-cancellable threads, which we first saw in
+asynchronously-cancelable threads, which we first saw in
 Section~\ref{sec:functions:motivation}.  One can ostensibly cancel such threads at
 any point in
 their execution; however, POSIX marks almost no functions as async-cancel safe, so in
