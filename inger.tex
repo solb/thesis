@@ -168,11 +168,13 @@ be the one to do so.  This is because there is often a legitimate need to explic
 exchange information between a preemptible function and the surrounding program, in
 which case the possibility of interleaving must be directly confronted.  As a simple
 example, consider a preemptible function that is populating some data structure for
-later use by the rest of the program.  If we imagine that the function exhausts its
+later use by the rest of the program.  Imagine that the function exhausts its
 time budget and the application is running behind schedule and opts to cancel it.
 Should the application need to retrieve the work done so far, it must use its
 knowledge of how the preemptible function mutates the data structure to individually
-validate each portion thereof before trusting it to be in a consistent state.
+validate each portion thereof before trusting it to be in a consistent state.  (The
+preemptible function can make this easier by exposing a record of its progress that
+indicates what parts of its data structures are consistent.)
 
 Even without using cancellation, the traditional hazards of concurrency arise, just
 as they do with state-of-the-art abstractions.  This problem space has long posed a
@@ -257,8 +259,8 @@ To allocate a thread control block, \textit{libinger} calls the dynamic linker's
 but only initializes the latter.  Unfortunately, there are a few TCB fields that must
 be initialized for the thread to operate properly, so \textit{libinger} manually sets
 those.\footnote{Two of these are self-referential pointers back to the beginning of
-the TCB:  One of these is for locating the TLS area, which is located just before the
-TCB.  The other is the thread identifier returned by \texttt{pthread\_self()}.  There
+the TCB: one is for finding the TLS area (which is located just before the
+TCB), and one is the thread identifier returned by \texttt{pthread\_self()}.  There
 is also a pointer guard field that glibc uses to decode some of its internal pointers
 that are mangled as an exploit mitigation, and a field containing the kernel's thread
 identifier.}  It then calls \texttt{\_\_ctype\_init()} to select the correct
@@ -269,7 +271,7 @@ Section~\ref{sec:libgotcha:libtlsblock}; however, it is possible to instead redu
 this cost using a technique like the one we prototyped in that section.
 
 To install the TCB, we need to load it into the thread segment register using
-\texttt{\_\_arch\_prctl()}.  This is one of the functions that \textit{libgotcha}
+\texttt{arch\_prctl()}.  This is one of the functions that \textit{libgotcha}
 wraps (Section~\ref{sec:libgotcha:interpose}); since \textit{libinger} is an internal
 control library, it calls \texttt{libgotcha\_arch\_prctl()} instead to also notify
 \textit{libgotcha} of the change.
@@ -280,7 +282,8 @@ control library, it calls \texttt{libgotcha\_arch\_prctl()} instead to also noti
 
 The \texttt{Continuation} type inside a paused preemptible function must contain
 enough information to resume the function's execution from where it left off, which
-could be any program point because we interrupt synchronously.  To capture a snapshot
+could be any program point because we interrupt asynchronously.  To capture a
+snapshot
 of the machine registers, we use POSIX contexts, a mechanism for non-local jumps.
 Unlike the better known \texttt{setjmp()}/\texttt{longjmp()} interface from the C
 standard, POSIX contexts permit capturing an execution snapshot on one thread and
@@ -296,8 +299,8 @@ into \texttt{launch()} (or \texttt{resume()}), which will populate the
 \subsection{Using POSIX contexts safely}
 \label{sec:libinger:boilerplate}
 
-Any nontrivial use of the POSIX contexts interface requires some boilerplate code
-that is unfortunately subtle in a few ways.  Like the \texttt{setjmp()} function, the
+Any nontrivial use of the POSIX contexts interface requires some surprisingly-subtle
+boilerplate code.  Like the \texttt{setjmp()} function, the
 \texttt{getcontext()} function can return multiple times:\@ it always returns once
 when the snapshot is initially captured, but each subsequent restoration of the
 context causes it to return again.  Unfortunately, it provides no indication of
@@ -415,7 +418,7 @@ we have developed into a \texttt{getcontext()} wrapper function that restricts t
 scope of the snapshot to that of a callback function (called in the same place as
 \texttt{closure} from the example):
 \begin{lstlisting}[morekeywords={fn,impl,FnOnce}]
-  fn getcontext(impl FnOnce(&ucontext_t) -> ())
+  fn getcontext(callback: impl FnOnce(&ucontext_t) -> ())
 \end{lstlisting}
 
 
@@ -434,7 +437,7 @@ Figure~\ref{fig:twostacks} shows the frames of both stacks just after we have
 transferred control to the user-supplied preemptible function \texttt{\textit{F}()}.
 Note that the preemptible function can call functions normally, but that if it
 finishes and returns, it will reach the bottom of its stack.  We need a return to
-transfer control back to \texttt{launch()} (or \texttt{resume()}, so we must plant a
+transfer control back to \texttt{launch()} (or \texttt{resume()}), so we must plant a
 ``return'' address within one of those functions' code at the bottom of the
 preemptible function's stack.  To do this, we use the \texttt{makecontext()}
 convenience function, which patches a POSIX context with a dedicated stack so that it
@@ -455,8 +458,8 @@ preemptible function.  It is infeasible to relocate a stack in virtual memory wh
 preemptible function is paused, so \textit{libinger} currently preallocates large
 2-MB stacks to avoid having to resize them (as this should be large enough for any
 function that does not stack allocate large locals).  As an implementation shortcut,
-it currently allocates the stacks with \texttt{malloc()} but reuses the pool
-allocator code to preallocate and reuse stacks (regardless of whether the preemptible
+it currently allocates the stacks with \texttt{malloc()} and uses a pool
+allocator to preallocate and reuse stacks (regardless of whether the preemptible
 function ended in cancellation).
 
 Neither of these limitations is fundamental.  If one wanted to avoid preallocating
@@ -528,11 +531,11 @@ for further discussion.
 \label{sec:libinger:quantum}
 
 We have described our preemption mechanism, but the question remains of how
-frequently the signal handler should check whether the preemption function has timed
+frequently the signal handler should check whether the preemptible function has timed
 out.  For simplicity, \textit{libinger} currently uses a single fixed scheduling
 quantum (timer signal interval) across all preemptible functions.
 
-Before choosing the quantum to use, we were curious how small was possible under
+Before choosing the quantum to use, we were curious how small was achievable with
 Linux signals on modern high-precision CPU timers.  We ran an experiment to determine
 the effect of a POSIX timer's period on its accuracy.  To measure accuracy, we wrote
 a small test program that installs a signal handler and configures a POSIX timer to
@@ -540,15 +543,16 @@ trigger it every $T$~\textmu{}s.  Ideally, this handler would always be called
 exactly $T$~\textmu{}s after its last invocation; we measured this duration and
 recorded the observed deviations from $T$ over 65,535 iterations.  Repeating this
 for various values of $T$ showed that the variance is smaller than 0.5~\textmu{}s for
-$T \ge$ 3~\textmu{}s, although it exhibits a warmup effect after (re)configuring the
-timer.
+$T \ge$ 3~\textmu{}s, although it exhibits a warmup effect after configuring (or
+reconfiguring) the timer.
 
-Of course, at a quantum of 3~\textmu{}s, the CPU will be wasting much of its time in
-the handler.  To assess the overhead of various quanta, we wrote another test program
-that repeatedly computed SHA-512 over 64 B of data at a time.  We subjected this
+Of course, at a quantum of 3~\textmu{}s, the CPU will be wasting much of its time on
+signal handling.  To assess the overhead of various quanta, we wrote another test
+program
+that repeatedly computed SHA-512 sums over 64 B of data at a time.  We subjected this
 program to \texttt{SIGALRM}s generated by a POSIX timer, varying the quantum and
 observing the resulting hashing throughput.  Figure~\ref{fig:shatput} shows that by a
-quantum of about 20~\textmu{}s, throughput has reached 90\% of baseline.
+quantum of about 20~\textmu{}s, throughput had reached 90\% of baseline.
 
 \begin{figure}
 \includegraphics[width=\textwidth]{microservices/figs/2018-02-02-evaluation_quantum-hasher_throughput-throughput}
@@ -566,7 +570,8 @@ problems, \textit{libinger} currently adopts a ``compromise'' quantum of
 100~\textmu{}s.
 
 The quantum determines how small a timeout \textit{libinger} can enforce for a
-preemptible function.  Note that the quantum represents the duration by a preemptible
+preemptible function.  Note that the quantum represents the duration by which a
+preemptible
 function might exceed its prescribed timeout:\@ in the worst case, it will exhaust
 its time budget infinitesimally long after the handler has interrupted it, and
 therefore not be paused until one full quantum later (assuming the timeout is not so
@@ -586,8 +591,8 @@ increase the worst-case timeout overrun by the latency of propagating the signal
 between cores.  Recent measurements place this latency at just under 5,000 cycles on
 Linux, which on a 2-GHz processor already represent almost 10\% of the quanta
 achievable with marginal throughput cost.  Worse, the sender thread incurs almost
-half of this latency, meaning the effect could compound on the watchdog thread and
-add to the overrun of other preemptible functions as well~\cite{Kaffes:nsdi2019}.
+half of this latency~\cite{Kaffes:nsdi2019}, meaning the effect could compound on the
+watchdog thread and add to the overrun of other preemptible functions as well.
 That said, if an application could not cope with the throughput cost posed by our
 approach, would benefit from dropping the preemption quantum by one additional order
 of magnitude, or found our signal pool to constrain its scaling, it could revisit
@@ -620,16 +625,16 @@ earlier, as described in Section~\ref{sec:libinger:contexts}.
 While it is possible to call \texttt{setcontext()} from a signal
 handler~\cite{getcontext-manpage}, there is an easier way to restore the snapshot.
 When installing our signal handler, we set the \texttt{SA\_SIGINFO} flag to request
-that each invocation receive additional context.  This passes additional arguments to
+that each invocation receive more context.  This passes additional arguments to
 the handler function, one of which is a POSIX context recording the execution state
 just before the signal arrived.  This is also the state that will be restored when
 the handler returns, so we implement the jump simply by overwriting it with our saved
-snapshot.  Because the context includes the registers including the stack pointer,
+snapshot.  Because the context checkpoints the registers including the stack pointer,
 returning also switches back to the execution stack of the preemptible function's
 caller.
 
 We are only pausing the preemptible function, so the program might later want to
-resume from where it left off.  The preemptible function is already running on its
+resume it from where it left off.  The preemptible function is already running on its
 own stack, and the context passed to the signal handler contains its remaining state.
 Before overwriting it, we copy its contents for \texttt{launch()} or
 \texttt{resume()} to package into the returned \texttt{Continuation}.
@@ -649,22 +654,23 @@ handler chooses to pause it.
 \subsection{Resuming a paused preemptible function}
 \label{sec:libinger:resuming}
 
+\begin{sloppypar}
 Should the application resume a paused preemptible function, \texttt{resume()}
 repeats many of the transition actions performed by \texttt{launch()}.\footnote{In
 fact, there is so much overlap that we implement \texttt{launch()} simply by creating
-a \texttt{Continuation} and then calling \texttt{resume()} if the timeout argument is
+a \texttt{Continuation}, and then calling \texttt{resume()} if the timeout argument is
 nonzero.}  It reuses most resources wholesale from the \texttt{Continuation} object,
 but it may need to allocate a new preemption signal (if the application has
 transferred the paused preemptible function between kernel threads).  To resume
 execution, it must restore the context saved by the signal handler.
+\end{sloppypar}
 
 Unfortunately, a restriction in the POSIX specification complicates this unstructured
 jump.  The behavior of calling \texttt{setcontext()} on a POSIX context obtained from
 a signal handler is unspecified~\cite{getcontext-manpage}, and it is our experience
 that glibc's Linux implementation is unreliable in this case.  As a workaround, we
 manually raise a signal on the thread and restore the context the same way we
-restored the snapshot when pausing, by overwriting the signal handler's context with
-it.
+restored the snapshot when pausing, by overwriting the signal handler's context.
 
 
 \section{Memory isolation and deferred preemption}
@@ -672,16 +678,16 @@ it.
 
 There is one final resource that \textit{libinger} allocates for each preemptible
 function:\@ a libset (Section~\ref{sec:libsets}).  Here again, it uses a pool
-allocator so that each one is reused automatically once no longer claimed by any
+allocator so that each is reused automatically once no longer claimed by any
 preemptible function's \texttt{Continuation}.  Recall that a libset represents a copy
-of the program's other dynamically-loaded modules, and is used to isolate these
+of the program's other dynamically-linked modules, and is used to isolate these
 modules' nonreentrant state by selectively relinking module entry points against this
 copy if they occur within the preemptible function
 (Section~\ref{sec:libgotcha:relink}).  Where this approach applies, it happens
 transparently to \textit{libinger}.
 
-Recall that some functions cannot be duplicated in this manner, and instead require
-preemption to be deferred until the conclusion of their invocation.  The
+Recall also that some functions cannot be duplicated in this manner, and instead
+require preemption to be deferred until the conclusion of their invocation.  The
 \textit{libinger} implementation observes the selective linking rule that the
 starting libset is uninterruptible (Section~\ref{sec:libgotcha:unint}).  Before
 pausing a preemptible function, the handler checks whether the next libset is equal
@@ -689,8 +695,8 @@ to the starting libset.  If so, it blocks the preemption signal and returns with
 affecting execution, thereby deferring preemption.  When the running uninterruptible
 function returns, \textit{libinger} receives a notification via a control library
 callback (Section~\ref{sec:libgotcha:callbacks}) and unblocks the signal again.  To
-guard against preemptible functions overrunning their timeout by calling
-uninterruptible functions in a loop, the callback also immediately invokes the
+guard against preemptible functions overrunning their deadlines by calling
+uninterruptible functions in a loop, this callback also immediately invokes the
 preemption handler, which pauses the function if it has timed out during the
 uninterruptible region.
 
@@ -835,7 +841,7 @@ to reconfigure it.  The most frequently recurring functions that did not respect
 remaining duration they would have continued to sleep for.  We added replacement
 wrapper functions to call them repeatedly using this information.  One function that
 returns the \texttt{EINTR} interrupted error code even under \texttt{SA\_RESTART} is
-\texttt{select()}, so we added a replacement wrapper that ran it in a loop as long as
+\texttt{select()}, so we added a replacement wrapper that runs it in a loop as long as
 this happened.  There are other functions with atypical interruption behavior, and
 our system would benefit from systematically adding additional wrappers to hide this
 behavior~\cite{signal-manpage}.
@@ -862,7 +868,8 @@ which in turn calls into the starting libset's \texttt{libc.so} that is still
 configured to crash on failure.  We work around the problem by defining a replacement
 \texttt{\_dl\_signal\_exception()} wrapper that checks the old value of next libset
 and reroutes the call to that libset's libc.  The problem and this solution apply to
-several other glibc features besides \texttt{iconv()}.
+several other glibc features besides \texttt{iconv()}
+(Section~\ref{sec:libgotcha:unintfuns}).
 
 We are confident that with additional engineering effort, it would be possible to
 pass the full test suite with the possible exception of the few tests that rely on
@@ -875,8 +882,9 @@ descriptor I/O operations will not return short counts.
 
 Should a caller decide not to finish running a timed-out preemptible function, it
 must deallocate it.  In Rust, deallocation happens implicitly via the
-\texttt{linger\_t} type's destructor, whereas users of the C interface are responsible
-for explicitly calling the \textit{libinger} \texttt{cancel()} function.
+\texttt{Linger} type's destructor, whereas users of the C interface are responsible
+for explicitly calling the \texttt{cancel()} function on the \texttt{linger\_t}
+instance.
 
 As discussed in Chapter~\ref{chap:libgotcha}, \textit{libgotcha} returns a
 preemptible function's libset to the pool for reuse when that function returns
@@ -888,9 +896,9 @@ function's libset before returning it to the pool.
 
 Cancellation cleans up \textit{libinger} resources allocated by \texttt{launch()};
 however, the current implementation does not automatically release resources already
-claimed by the preemptible function itself.  However, we have prototyped a solution
-that demonstrates the feasibility of such cleanup in RAII languages such as Rust.
-We detail this approach in Chapter~\ref{chap:ingerc}.
+claimed by the preemptible function itself.  We have prototyped a solution
+that demonstrates the feasibility of such cleanup in RAII languages such as Rust,
+which we detail in Chapter~\ref{chap:ingerc}.
 
 
 \section{Evaluation}
