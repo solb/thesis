@@ -14,14 +14,14 @@ strict digraph {
 	}
 
 	ctor [label=<<i>libgotcha</i> constructor>];
-	copy [label="library initializer"];
+	copy [label="module initializer"];
 	rtld [label="dynamic linker/loader"];
 	back [label="backup store"];
 	mcpy [label="memcpy()", fontname=monospace];
 
 	start -> ctor [label="at program start"];
-	ctor -> copy [style=dashed, label=<<b>for each</b> libset and library>];
-	copy -> rtld [label="1. load a copy of the library"];
+	ctor -> copy [style=dashed, label=<<b>for each</b> libset and module>];
+	copy -> rtld [label="1. load a copy of the module"];
 	copy -> back [style=dashed, label=<2. <b>for each</b> writeable address range>];
 	back -> mcpy [label="capture in-memory snapshot"];
 
@@ -32,7 +32,7 @@ strict digraph {
 	mcpy2 [label="memcpy()", fontname=monospace];
 
 	renew -> reinit [label="control library call"];
-	reinit -> restore [style=dashed, label=<<b>for each</b> library>];
+	reinit -> restore [style=dashed, label=<<b>for each</b> module>];
 	restore -> back2 [style=dashed, label=<1. <b>for each</b> writeable address range>];
 	restore -> water [label="2. increment latest version[libset]"];
 	back2 -> mcpy2 [label="restore globals from snapshot"];
