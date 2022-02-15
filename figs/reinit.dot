@@ -15,7 +15,7 @@ strict digraph {
 
 	ctor [label=<<i>libgotcha</i> constructor>];
 	copy [label="module initializer"];
-	rtld [label="dynamic linker/loader"];
+	rtld [label="dynamic linker"];
 	back [label="backup store"];
 	mcpy [label="memcpy()", fontname=monospace];
 
