@@ -792,7 +792,9 @@ libset modules that declare a dependency on \texttt{libinger.so}.  The performan
 implications of this insight are significant.  By exempting most of the starting
 libset from the runtime overheads of selective relinking, it eliminates all of the
 global variable interceptions that would otherwise occur on the critical path of
-\texttt{launch()} and \texttt{resume()}.  And as we saw in
+\texttt{launch()} and \texttt{resume()}.  Furthermore, it eliminates most or all
+global variable interceptions that would occur during other uninterruptible function
+calls, reducing the risk of significantly exceeding a timeout.  And as we saw in
 Section~\ref{sec:gotcha:eval}, each global variable interception incurs several
 microseconds of latency.  The same optimization should be equally applicable to other
 novel task abstractions; a general rule of thumb is that it applies to any control
