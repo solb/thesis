@@ -30,6 +30,7 @@ datacenter
 datacenters
 .data.rel.ro
 debuggability
+Deno
 destructure
 DF_
 DF\_1\_NODELETE
@@ -44,6 +45,8 @@ DL\_NNS
 dlopen
 dlsym()
 drow
+Dyno
+Dyno's
 E5-2683
 ERIM
 errno
@@ -253,10 +256,12 @@ TypeScript
 u64
 ud2
 uncopyable
+unmap
 Unrelatedly
 uselocale()
 userland
 v4
+V8
 Valgrind
 Valgrind's
 VDSO
