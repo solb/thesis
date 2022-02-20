@@ -982,17 +982,22 @@ Section~\ref{sec:gotcha:eval}.
 \end{table}
 
 
-\subsection{Image decompression}
+\subsection{Cancellation response time}
 \label{sec:libinger:bombs}
 
 Unlike state of the art approaches, lightweight preemptible functions support
 cancellation.
+
 \begin{sloppypar}
 \input[functions]{eval_cancel}
 \end{sloppypar}
 
-\solb{Drop the reaper thread and rerun}
-
-\solb{These old results are from Linux 4.12.6, rustc 1.36.0, and glibc 2.29}
-
-\solb{Center the graph while at it}
+We ran this experiment on an Intel Xeon E5-2683~v4 (Broadwell) server clocked at
+2.1~GHz and running Linux~4.12.6, rustc~1.36.0, and glibc~2.29.  As this kernel did
+not provide mitigations for the Meltdown or Spectre side-channel attacks, this
+configuration is especially favorable for \texttt{fork()} and
+\texttt{pthread\_create()} latencies.  We used an older version of \textit{libinger}
+predating support for preemptible function--specific TLS and with
+\textit{libgotcha}'s global variable interception disabled.  This build relied on our
+early, higher-latency approach to libset reinitialization
+(Section~\ref{sec:gotchainit}), hence our use of a dedicated reaper thread.
