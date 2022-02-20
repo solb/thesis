@@ -137,7 +137,8 @@ expects three arguments rather than System V's traditional one, so it sets the
 configuration of a custom handler, it looks up the handler the program had requested
 and furnishes that instead of a pointer to \texttt{stub()}.
 
-\begin{figure}
+\begin{figure}[p]
+\begin{leftfullpage}
 \begin{lstlisting}[label=lst:assafe_sigaction,caption=\textit{libas-safe}'s \texttt{sigaction()} replacement]
 typedef void (*handler_t)(int, siginfo_t *, void *);
 
@@ -170,47 +171,11 @@ int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 	return status;
 }
 \end{lstlisting}
+\end{leftfullpage}
 \end{figure}
 
-The \texttt{stub()} function serves as a wrapper for each installed signal handler,
-and is shown in Listing~\ref{lst:assafe_helpers}.  If the program is interruptible
-(that is, the next libset is not equal to the starting one), neither of the
-conditionals is taken.  In this case, the wrapper simply switches to the starting
-libset, calls the real handler for the arriving signal, then resets the libset.
-
-Things are more complicated if the signal arrives while uninterruptible code is
-running, in which case \textit{libas-safe} defers invoking its handler until the end
-of the uninterruptible section.  In this case, \texttt{stub()} takes its
-\texttt{else if} branch and stores the \texttt{siginfo\_t} structure describing the
-cause of the signal into the thread-local \texttt{pending} variable.\footnote{Our
-prototype does not support deferring more than one distinct signal at a time, and
-always forwards the \texttt{siginfo\_t} corresponding to the first instance thereof
-to arrive.  It follows the semantics of non-realtime Unix signals and only delivers
-a deferred signal once, regardless of how many times it occurred while blocked.}  It
-then changes the signal mask of the \textit{calling} code to block the signal from
-arriving and returns without invoking the handler.  Whenever the program becomes
-interruptible again, \textit{libgotcha} will invoke the \texttt{restorer()} callback,
-also shown in Listing~\ref{lst:assafe_helpers}.
-
-If it finds a deferred signal to deliver, the callback sends the current thread that
-signal if it is not already pending (i.e., if it has not arrived again since the
-instance that prompted us to defer it).  It then uses \texttt{sigsuspend()} to
-temporarily unblock the signal and atomically wait for its handler to run.  This
-jumps back to \texttt{stub()}, which now enters its \texttt{if} branch, sets the
-signal as no longer deferred, configures it to be unblocked upon return from the
-handler, and substitutes the saved \texttt{siginfo\_t} for the real one (in case
-\texttt{restorer()} had to signal the thread).  Finally, it calls the real
-handler and leaves the starting libset.\footnote{If curious why restoring the libset
-in this way works, see the sister footnote in Section~\ref{sec:libgotcha:callbacks}.}
-(Note that deferring a signal only works assuming the handler does not provide a
-service that is necessary to continue execution.  For instance, it is nonsensical to
-defer handlers that grow exhausted memory allocations or resolve faulting addresses,
-such as \textit{libgotcha}'s own signal handler from
-Section~\ref{sec:libgotcha:globals}.  Handlers for signals such as segmentation fault
-that cause the architecture to resume by reexecuting the faulting instruction are
-more likely to exhibit this property.)
-
-\begin{figure}
+\begin{figure}[p]
+\begin{fullpage}
 \begin{lstlisting}[label=lst:assafe_helpers,caption=\textit{libas-safe}'s signal handler wrapper and control library callback,morekeywords=thread_local]
 static thread_local siginfo_t pending;
 
@@ -256,7 +221,46 @@ static void restorer(void) {
 	}
 }
 \end{lstlisting}
+\end{fullpage}
 \end{figure}
+
+The \texttt{stub()} function serves as a wrapper for each installed signal handler,
+and is shown in Listing~\ref{lst:assafe_helpers}.  If the program is interruptible
+(that is, the next libset is not equal to the starting one), neither of the
+conditionals is taken.  In this case, the wrapper simply switches to the starting
+libset, calls the real handler for the arriving signal, then resets the libset.
+
+Things are more complicated if the signal arrives while uninterruptible code is
+running, in which case \textit{libas-safe} defers invoking its handler until the end
+of the uninterruptible section.  In this case, \texttt{stub()} takes its
+\texttt{else if} branch and stores the \texttt{siginfo\_t} structure describing the
+cause of the signal into the thread-local \texttt{pending} variable.\footnote{Our
+prototype does not support deferring more than one distinct signal at a time, and
+always forwards the \texttt{siginfo\_t} corresponding to the first instance thereof
+to arrive.  It follows the semantics of non-realtime Unix signals and only delivers
+a deferred signal once, regardless of how many times it occurred while blocked.}  It
+then changes the signal mask of the \textit{calling} code to block the signal from
+arriving and returns without invoking the handler.  Whenever the program becomes
+interruptible again, \textit{libgotcha} will invoke the \texttt{restorer()} callback,
+also shown in Listing~\ref{lst:assafe_helpers}.
+
+If it finds a deferred signal to deliver, the callback sends the current thread that
+signal if it is not already pending (i.e., if it has not arrived again since the
+instance that prompted us to defer it).  It then uses \texttt{sigsuspend()} to
+temporarily unblock the signal and atomically wait for its handler to run.  This
+jumps back to \texttt{stub()}, which now enters its \texttt{if} branch, sets the
+signal as no longer deferred, configures it to be unblocked upon return from the
+handler, and substitutes the saved \texttt{siginfo\_t} for the real one (in case
+\texttt{restorer()} had to signal the thread).  Finally, it calls the real
+handler and leaves the starting libset.\footnote{If curious why restoring the libset
+in this way works, see the sister footnote in Section~\ref{sec:libgotcha:callbacks}.}
+(Note that deferring a signal only works assuming the handler does not provide a
+service that is necessary to continue execution.  For instance, it is nonsensical to
+defer handlers that grow exhausted memory allocations or resolve faulting addresses,
+such as \textit{libgotcha}'s own signal handler from
+Section~\ref{sec:libgotcha:globals}.  Handlers for signals such as segmentation fault
+that cause the architecture to resume by reexecuting the faulting instruction are
+more likely to exhibit this property.)
 
 While the technique employed by \textit{libas-safe} makes it easier to write signal
 handlers in C, this is not its most exciting application.  Async-signal safety is a
@@ -431,7 +435,8 @@ newly-assigned libset.  It then calls into the real \texttt{pthread\_create()},
 substituting the \textit{libac-safe} main function \texttt{wrapper()} and arranging
 for it to be passed all of these items.
 
-\begin{figure}
+\begin{figure}[p]
+\begin{leftfullpage}
 \begin{lstlisting}[label=lst:acsafe_gotchas,caption=\textit{libac-safe}'s \texttt{pthread\_create()} replacement and control library callbacks,morekeywords=thread_local]
 static thread_local libset_t reuse;
 
@@ -471,6 +476,48 @@ static void preemptive(void) {
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 }
 \end{lstlisting}
+\end{leftfullpage}
+\end{figure}
+
+\begin{figure}[p]
+\begin{fullpage}
+\begin{lstlisting}[label=lst:acsafe_helpers,caption=\textit{libac-safe}'s thread initializer and cleanup handler]
+static void *wrapper(wrapper *wrapper) {
+	pthread_cleanup_push(release, wrapper);
+
+	libset_thread_set_next(wrapper->libset);
+	__ctype_init();
+
+	void *res = wrapper->fun(wrapper->arg);
+
+	libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
+
+	wrapper->finished = true;
+	pthread_cleanup_pop(true);
+	return res;
+}
+
+static void release(void *wrapper) {
+	if(!wrapper->finished) {
+		libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
+		libset_reinit(wrapper->libset);
+	}
+	if(*wrapper->parent != LIBGOTCHA_LIBSET_STARTING)
+		// Our parent thread does not already have a libset to reuse.
+		*wrapper->parent = wrapper->libset;
+	free(wrapper);
+}
+
+static libset_t alloc_libset(void) {
+	if(reuse != LIBGOTCHA_LIBSET_STARTING)
+		// This thread has a leftover libset to reuse.
+		return reuse;
+	else
+		// We have to use a fresh one.
+		return libset_new();
+}
+\end{lstlisting}
+\end{fullpage}
 \end{figure}
 
 Listing~\ref{lst:acsafe_helpers} shows the additional initialization and teardown we
@@ -540,45 +587,6 @@ which it is correct to adopt the default behavior of tying TCBs to kernel thread
 cancellation, and therefore memory isolation as well.  Because of this,
 \textit{libgotcha} does not need to reinitialize TLS areas, as they are specific to
 each thread and not reused with the libset.
-
-\begin{figure}
-\begin{lstlisting}[label=lst:acsafe_helpers,caption=\textit{libac-safe}'s thread initializer and cleanup handler]
-static void *wrapper(wrapper *wrapper) {
-	pthread_cleanup_push(release, wrapper);
-
-	libset_thread_set_next(wrapper->libset);
-	__ctype_init();
-
-	void *res = wrapper->fun(wrapper->arg);
-
-	libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
-
-	wrapper->finished = true;
-	pthread_cleanup_pop(true);
-	return res;
-}
-
-static void release(void *wrapper) {
-	if(!wrapper->finished) {
-		libset_thread_set_next(LIBGOTCHA_LIBSET_STARTING);
-		libset_reinit(wrapper->libset);
-	}
-	if(*wrapper->parent != LIBGOTCHA_LIBSET_STARTING)
-		// Our parent thread does not already have a libset to reuse.
-		*wrapper->parent = wrapper->libset;
-	free(wrapper);
-}
-
-static libset_t alloc_libset(void) {
-	if(reuse != LIBGOTCHA_LIBSET_STARTING)
-		// This thread has a leftover libset to reuse.
-		return reuse;
-	else
-		// We have to use a fresh one.
-		return libset_new();
-}
-\end{lstlisting}
-\end{figure}
 
 
 \subsection{Program repaired with the help of our system}
