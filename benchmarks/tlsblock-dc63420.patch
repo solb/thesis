@@ -1,0 +1,19 @@
+diff --git a/external/libgotcha b/external/libgotcha
+--- a/external/libgotcha
++++ b/external/libgotcha
+@@ -1 +1 @@
+-Subproject commit 32f363d66c7bacedc5f411c4a2242d5ae0a8a14e
++Subproject commit 32f363d66c7bacedc5f411c4a2242d5ae0a8a14e-dirty
+diff --git a/src/lib.rs b/src/lib.rs
+index bf42276..3827b21 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -34,7 +34,7 @@ pub const STACK_N_PREALLOC: usize = Group::LIMIT;
+ const STACK_SIZE_BYTES: usize = 2 * 1_024 * 1_024;
+ 
+ #[no_mangle]
+-static libgotcha_exitanalysis: bool = true;
++static libgotcha_exitanalysis: bool = false;
+ 
+ pub fn concurrency_limit() -> usize {
+ 	Group::limit()

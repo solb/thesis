@@ -1,0 +1,11 @@
+$ sed s/15/511/ libinger/external/libgotcha/namespace.h
+
+$ git -C libinger apply tlsblock-*.patch
+
+$ RUSTC_BOOTSTRAP=1 rustc --test -Clink-arg=-Wl,-Ilibinger/ld.so -O rperfb.rs
+
+$ GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 ./perfblock tlsblock-rperfb.csv 1 51 511 ./rperfb --bench
+
+$ RUSTC_BOOTSTRAP=1 rustc --test -Clink-arg=-Wl,-Ilibinger/ld.so -O spawn.rs
+
+$ GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 ./perfblock tlsblock-rperfb.csv 1 51 511 ./spawn --bench spawn
