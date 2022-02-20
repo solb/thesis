@@ -59,14 +59,14 @@ designing around data structures with
 amortized time complexities, as this would introduce undesirable unpredictable pauses
 in preemptible function execution reminiscent of garbage collection.\footnote{The
 \textit{libgotcha} runtime itself does not suffer from this problem because its
-function lookup tables are immutable once process initialization is complete.}  For
+symbol lookup tables are immutable once process initialization is complete.}  For
 instance, storing allocation records in a hash table would require periodic
 rebalancing.
 
 Because of the above limitations, we have not pursued automatic resource cleanup for
-preemptible functions written in C.  We advise developers of long-running C
-applications to enjoy the other benefits of lightweight preemptible functions, but to
-always eventually allow their functions to run to completion.
+preemptible functions written in C.  Developers of long-running C applications should
+always write a cleanup handler for each preemptible function they might need to
+cancel (Section~\ref{sec:libinger:cancellation}).
 
 
 \section{Languages following the RAII principle}
@@ -89,11 +89,11 @@ to solve the problem automatically, and built the \textit{libgotcha} runtime to 
 just that.  Here again, we are fortunate to find an existing runtime facility that
 can be repurposed to call destructors at an arbitrary position in the program:\@
 the Rust language already supports exceptions (which it calls ``panics'').  One
-significant advantage to building on top of constructors rather than implementing
+significant advantage to building on top of exceptions rather than implementing
 separate resource tracking is that exception handling is already designed to add no
 overhead to the non-exceptional execution path.  With the exception of adding one
-cheap function call to each function that owns objects with destructors, we are able
-to provide automatic cleanup with no runtime overhead.
+function call to each function that owns objects with destructors, we believe it is
+possible to provide automatic cleanup with no runtime overhead.
 
 
 \section{A brief tour of exception handling}
@@ -147,7 +147,7 @@ But since \textit{libinger} interrupts functions preemptively, we need to trigge
 unwinding and cleanup at whatever arbitrary point the function was paused at before
 being cancelled.
 
-Triggering unwinding is a simple matter of the runtime tweaking the stack pointer and
+Triggering unwinding is a simple matter of tweaking the stack pointer and
 instruction pointer of the preemptible function to be cancelled in order to forge a
 call to a function that raises an exception using Rust's \texttt{panic!()} macro.
 But providing instruction-accurate cleanup information requires us to address the
@@ -172,7 +172,7 @@ the caller's stack frame immediately afterward.  See
 Section~\ref{sec:ingerc:optimization}.
 
 \item \textbf{Many LSDA entries associate the landing pad with too few instructions
-following a function call site or instructions preceding the call site.}  Injecting
+following or preceding a function call site.}  Injecting
 an exception in such execution regions results in leaks or deallocating before
 allocation, respectively.  Our investigation revealed that these discrepancies result
 from changing instruction boundaries during lowering from LLVM IR to the platform's
@@ -187,12 +187,12 @@ in the caller.  The two scenarios are indistinguishable under the assumption tha
 exception can occur at these points in the function.  However, the fact that we can
 inject one there creates an important distinction for our purposes:\@ until the
 function returns, it still has ownership of its live variables and its landing pads
-are responsible for cleaning them up, whereas after it has returns, it is impossible
+are responsible for cleaning them up, whereas after it has returned, it is impossible
 for those landing pads to be invoked and cleanup must necessarily be up to the
 caller.  See Section~\ref{sec:ingerc:return}.
 
-\item \textbf{Unwinding on the first instruction of a function fails because it looks
-at the LSDA table for the function whose definition precedes the actual one in
+\item \textbf{Unwinding on the first instruction of a function fails because the
+runtime consults the LSDA table for the function whose definition precedes it in
 memory.}  This issue turns out to have the same cause as the previous one, but the
 two situations demand different solutions.  See Section~\ref{sec:ingerc:start}.
 
@@ -217,7 +217,7 @@ Section~\ref{sec:ingerc:boundary}.
 function epilogue.}  This happens because the epilogue adjusts the stack pointer,
 in many cases causing any synthetic function call (e.g., to inject an exception) to
 clobber the very stack values the landing pad is trying to clean up.  Incidentally,
-a Google search for ``LLVM unwind function epilogue'' reveals that the unwind info is
+a Web search for ``LLVM unwind function epilogue'' reveals that the unwind info is
 not trustworthy during the epilogue in the general case.  Indeed, there have been
 several patchsets attempting to fix this, some of which were merged, but each of
 which was subsequently reverted for breaking some other architecture.  So it would
@@ -232,8 +232,7 @@ Rather than integrate a fully general resource cleanup solution into
 these to build a proof of concept implementation of the compiler transformations
 necessary to support asynchronous exception handling.  This prototype represents
 preliminary evidence that our approach is feasible, although it would take additional
-engineering effort to get the implementation to a point where it worked on nontrivial
-applications.
+engineering effort to achieve compatibility with nontrivial applications.
 
 The below numbered sections describe our approach to solving each of the
 challenges listed above.  The product of the work described in this section is a
@@ -267,14 +266,14 @@ exception-handling personality and a \texttt{landingpad} instruction will cause 
 LLVM backend to emit an LSDA table and landing pad for the function.
 
 To reduce implementation complexity, we do not attempt to detect which functions own
-objects with destructors and instead introduce exception handling into any functions
-that do not already have them.  This saves us from having to query complex properties
+objects with destructors, and instead introduce exception handling into any functions
+that do not already have it.  This saves us from having to query complex properties
 of the IR and reduces our task to one of simple text transformations.  We implement
 these in a TypeScript script performing regular expression replacements.
 
 The landing pads we insert at this stage are empty skeletons that do not actually
-invoke any destructors.  We describe how we identify which destructor(s) to invoke,
-if any, and add the calls at the end of Section~\ref{sec:ingerc:codegen}.
+invoke any destructors.  We describe how we identify which destructor(s) to invoke
+(if any) and add the calls at the end of Section~\ref{sec:ingerc:codegen}.
 
 
 \subsection{Adjusting LSDA entries}
@@ -286,11 +285,12 @@ instructions such as \texttt{call} often expand to multiple machine instructions
 most commonly to perform argument passing before the function dispatch.  However, the
 backend generates the address ranges for LSDA entries using labels in the IR.  This
 means that ordinary optimization and transform passes cannot associate landing pads
-with some but not all of a function call sequence.
+with some but not all of the instructions comprising a function call sequence.
 
 To get around this problem, we had to implement a plugin that loads a code generation
 pass into \texttt{llc}, the LLVM static compiler.  The pass works at the x86-64
-machine instruction level to reposition LSDA-related labels to resize the code region
+machine instruction level to reposition LSDA-related labels and resize the code
+region
 on the normal execution path with which a cleanup landing pad is associated.  To
 prevent leaks, if the ending label falls before a destructor call, we move it downward
 to just before the machine \texttt{call} instruction; otherwise, we move it downward
@@ -325,9 +325,9 @@ Since we inject the exception by forging a function call, libunwind always assum
 the frame where we did this is a return address and performs the decrement.  The
 obvious workaround would be to remove this code from libunwind, at the cost of
 potentially breaking unwinding through C++ code that might be present in the program.
-Indeed, a glance through the disassembly of the Rust standard library shows that the
-rustc emits \texttt{ud2} (invalid) instructions following the call sites in this
-scenario, so Rust code is unaffected by the problem described in the comment.
+Indeed, a glance through the disassembly of the Rust standard library shows that
+rustc emits \texttt{ud2} (invalid) instructions following the call sites in the
+scenario described in the comment, so Rust code is unaffected by the problem.
 
 However, it turns out that the above code has another important effect beyond that
 documented in the comment:\@ it avoids running the cleanup landing pad associated
@@ -343,8 +343,8 @@ where we injected the exception, and only if that instruction happens to be the
 instruction following a call (so that libunwind would confuse the situation with one
 where the called function was still executing).  We can accomplish that by applying
 a heuristic-based tweak just before the \textit{libinger} cancellation code injects
-the exception call:\@ if the instruction pointer is equal to the 8-byte value at
-offset -1 from the stack pointer, the function return just completed and we should
+the exception call:\@ if the instruction pointer is equal to the 8-byte value offset
+--8 bytes from the stack pointer, the function return just completed and we should
 add one to the instruction pointer to counteract the described libunwind behavior for
 this stack frame only.
 
@@ -368,8 +368,8 @@ adjustment.
 \subsection{Calling functions when the stack is misaligned}
 \label{sec:ingerc:realign}
 
-The \textit{libinger} cancellation code's standard approach of injecting a single
-function call causes crashes when the stack is misaligned, as during a function
+Our standard cancellation response of forging a call to a function that panics
+causes crashes when the stack is misaligned, as during a function
 prologue.  Fortunately, we can easily solve this by instead selectively calling a
 function that does not allocate any space in its own stack frame.  This has the
 effect of restoring the stack alignment (because of the return address pushed by the
@@ -403,11 +403,11 @@ pointer.  Changing the \texttt{<} to a \texttt{<=} fixes the problem.
 Section 6.4.3 of the DWARF specification~\cite{www-dwarf-spec} seems to agree with
 this sign change.  We hypothesize that libunwind inherited this off-by-one error from
 libgcc in its effort to replicate the older library's behavior.  The libunwind test
-suite continues to pass after making the change, suggesting that inadequate test
-allowed this mistake to avoid detection.  Furthermore, Clang's lack of support for
+suite continues to pass after making the change, suggesting that a noncomprehensive
+test suite has
+allowed the mistake to avoid detection.  Furthermore, Clang's lack of support for
 asynchronous unwind tables has probably prevented the community from encountering the
-unwind failures we have.  Now that we are finished prototyping our changes and
-continue to believe that this one fixes a bug, we plan to submit a patch upstream.
+unwind failures we have.
 
 
 \subsection{Unwinding in the epilogue of a function}
@@ -443,18 +443,18 @@ location of another function, \texttt{ingerc\_epilogue\_end()}, that performs th
 notification before returning to the real return address.
 
 \begin{sloppypar}
-There are a few other values we need to save before starting the epilogue:  (1) When
+There are a few other values we need to save before starting the epilogue:  (1)~When
 \texttt{ingerc\_epilogue\_end()} runs, it will need to know the function's original
-return address.  (2) If either of the functions we introduce at the beginning and end
+return address.  (2)~If either of the functions we introduce at the beginning and end
 of the epilogue is running when the function is cancelled, the stack pointer will be
 different than at the point we intend to travel to, so we always store the original
-stack pointer as well.  (3) To change the return address, we need the frame pointer,
-which we also save because the runtime will need to restore the return address as
-part of its time travel.  The frame address is not normally accessible at runtime, so
+stack pointer as well.  (3)~To restore the return address in
+\texttt{ingerc\_epilogue\_end()} or when time traveling, we need the frame pointer.
+The frame address is not normally accessible at runtime, so
 we have our LLVM plugin insert code to pass it to \texttt{ingerc\_epilogue\_begin()}.
 \end{sloppypar}
 
-The functions we introduce run just before the function returns, so they cannot
+The functions we introduce run just before the function returns, so they must not
 overwrite any return registers.  Because of this, we have hand coded them in
 assembly.  We give their implementations in Listing~\ref{lst:epilogue}.  The
 \texttt{ingerc\_epilogue\_begin()} function saves all values into globals so they are
@@ -464,7 +464,7 @@ executing, so we are careful to set that last and reset it to null in
 \texttt{ingerc\_epilogue\_end()}.
 
 \begin{figure}
-\begin{lstlisting}[label=lst:epilogue,language={[x86masm]Assembler},caption=Code to support time travel out of the epilogue. The \texttt{@gotpcrel} replocations are position-independent GOT lookups of the globals' accesses.]
+\begin{lstlisting}[label=lst:epilogue,language={[x86masm]Assembler},caption=Code to support time travel out of the epilogue. The \texttt{@gotpcrel} relocations are position-independent GOT lookups of the globals' addresses.]
 	.globl	ingerc_epilogue_start
 ingerc_epilogue_start:
 	# Save our return address as the destination instruction pointer.
@@ -514,7 +514,8 @@ ordinary unwinding, but its invocation can be troublesome because it is
 intentionally the last instruction before the epilogue.  This would mean that cleanup
 in the caller frame would invoke the epilogue's landing pad, but it never has one.
 To prevent a leak in this situation, our LLVM plugin inserts a \texttt{nop}
-instruction after the call to associate the function with the landing pad for the
+instruction after the call and before the epilogue label, in order to associate the
+function's return address with the landing pad for the
 preceding basic block.
 \end{sloppypar}
 
@@ -531,6 +532,7 @@ the existing \textit{libinger} codebase.  We conclude by reasoning about its
 correctness based on where the preemptible function is in its execution at the time
 it is cancelled and discussing performance considerations.
 
+\begin{sloppypar}
 Section~\ref{sec:ingerc:async} introduced our fundamental approach to asynchronous
 cleanup:\@ the runtime should inject a synthetic exception at an arbitrary point in
 the preemptible function.  It also presented a compiler wrapper script,
@@ -542,6 +544,7 @@ requirement is reasonable because the Cargo build system already expects to have
 source of all dependencies available.  Indeed, new languages such as Rust and Go
 follow a growing trend of having unstable ABIs that preclude linking against
 precompiled build artifacts generated by a different compiler version.
+\end{sloppypar}
 
 Whereas the \textit{libinger} C bindings implement the \texttt{cancel()} operation as
 a standalone function, the Rust interface performs cancellation in the destructor.
@@ -549,11 +552,13 @@ Whenever a paused preemptible function goes out of scope, the destructor notices
 it has not run to completion and reinitializes its libset to prepare it for reuse.
 Listing~\ref{lst:cleanup} gives pseudocode for a function that the destructor would
 call right before this reinitialization to clean up the preemptible function's own
-resources.  This works because for safety, \texttt{resume()} catches all panics
-before they can cross the FFI (Foreign Function Interface) boundary.  To prevent the
+resources.  This works because, for safety, \texttt{resume()} catches all panics
+before they can cross the FFI (Foreign Function Interface) boundary
+(Section~\ref{sec:libinger:jumps}).  To prevent the
 Rust runtime from outputting a diagnostic message when the panic occurs, it is
 advisable to first disable the Rust standard library's panic handler in the
-preemptible function's libset.
+preemptible function's libset.  The standard library exposes the
+\texttt{panic::set\_hook()} function for doing this.
 
 \begin{figure}
 \begin{lstlisting}[label=lst:cleanup,escapeinside={(*}{*)},caption=Resource cleanup for cancelled preemptible functions (pseudocode)]
@@ -619,9 +624,9 @@ exception is epilogue handling.  To support that case, we add one function call 
 six global variable accesses.  We saw in Chapter~\ref{chap:libgotcha} that in a
 normal application, each of these operations has a negligible cost of just a few
 cycles.  However, we also found that \textit{libgotcha} slows down accesses to
-dynamically-linked functions and global variables by one and two orders of magnitude,
-respectively.  Fortunately, the names of the symbols we introduce are well known, so
-when integrating the new runtime components, we could introduce exceptions to prevent
+dynamically-linked global variables significantly.
+Fortunately, the names of the symbols we introduce are well known, so
+when integrating the new runtime components, we could introduce quirks to prevent
 \textit{libgotcha} from intercepting their uses.  This would make the symbols
 local to each libset and thereby obviate the need to pay the expensive reference
 costs.
