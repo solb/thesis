@@ -1361,6 +1361,64 @@ Section~\ref{sec:libgotcha:callbacks}, but is unnecessary for preemptible functi
 \end{table*}
 
 
+\subsection{Libset initialization and reinitialization}
+
+Because \textit{libgotcha} front loads the work of populating libsets
+(Section~\ref{sec:gotchainit}) and updating GOTs
+(Section~\ref{sec:libgotcha:relink}), it also inflates application startup time.  To
+measure the extent of this effect, we preloaded \textit{libgotcha} into version
+1.17.0 of the Deno JavaScript runtime, which ships as a single 81-MB executable that
+includes the V8 engine and all its other dependencies except for glibc and libgcc.
+We measured the execution time of an empty JavaScript program, a good proxy for
+startup time because the script starts running mere milliseconds before the process
+terminates.  We found that with only one libset enabled, selective relinking raises
+the execution time from 35 to 122~ms.  Figure~\ref{fig:libgotcha:deno} shows how the
+runtime, memory footprint, and page faults scale with the number of available
+libsets.
+
+The default Deno configuration provides a realistic benchmark of \textit{libgotcha}'s
+impact on a large application, but we also wanted to approximate a worst-case
+scenario.  To do so, we rebuilt Deno with V8 and each of its Rust dependencies
+compiled as a separate shared library, a configuration we will refer to as ``Dyno.''
+While Dyno's executable is only 14~MB, compared to Deno it depends on 240 additional
+shared object files whose size totals 268~MB.  Dyno takes 4.4x as long to start
+without \textit{libgotcha}, and selective relinking with a single libset slows it
+down 4.4x over that.  We present its resource scaling behavior in
+Figure~\ref{fig:libgotcha:dyno}.
+
+We also measured the time to reinitialize a libset, as required after the
+cancellation of an isolated task.  In Deno, this takes 167~\textmu{}s, whereas in
+Dyno it takes 8039.  Note that neither of the two applications is ideal for actually
+making use of libsets:  Deno statically links third-party libraries in the
+executable, meaning that their internal state will not be isolated.  Dyno splits the
+build into much more granular linkage units than necessary, to a manifest performance
+detriment even without selective relinking.  The most useful arrangement for
+selective relinking would be a balanced configuration, building only the executable's
+top-level dependencies---and any dependencies shared between those---as shared
+libraries.  Such a system would experience \textit{libgotcha} overheads somewhere
+between those for Deno and Dyno, but we expect they would be much closer to the
+former.
+
+\begin{figure*}
+	\begin{minipage}{0.5\textwidth}
+	\includegraphics[width=\textwidth]{figs/dyno-baseline-times}
+	\includegraphics[width=\textwidth]{figs/dyno-baseline-memory}
+	\includegraphics[width=\textwidth]{figs/dyno-baseline-faults}
+	\subcaption{Deno JavaScript runtime}
+	\label{fig:libgotcha:deno}
+	\end{minipage}
+%
+	\begin{minipage}{0.5\textwidth}
+	\includegraphics[width=\textwidth]{figs/dyno-times}
+	\includegraphics[width=\textwidth]{figs/dyno-memory}
+	\includegraphics[width=\textwidth]{figs/dyno-faults}
+	\subcaption{``Dyno'' Javascript runtime}
+	\label{fig:libgotcha:dyno}
+	\end{minipage}
+\caption{Effect of \textit{libgotcha} on process startup}
+\end{figure*}
+
+
 \subsection{Thread spawn performance}
 \label{sec:libgotcha:libtlsblock}
 

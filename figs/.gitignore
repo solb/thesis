@@ -1,3 +1,9 @@
+!/dyno-baseline-faults.pdf
+!/dyno-baseline-memory.pdf
+!/dyno-baseline-times.pdf
+!/dyno-faults.pdf
+!/dyno-memory.pdf
+!/dyno-times.pdf
 !/tlsblock-rperfb.pdf
 !/tlsblock-spawn.pdf
 !/twostacks.pdf
