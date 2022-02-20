@@ -19,6 +19,7 @@ conditional \texttt{kill()}, then a \texttt{waitpid()} to reap the child.  We ra
 but the former always deadlocked.  The timeout was 10 ms in all cases.
 
 \begin{figure}
+\begin{center}
 	\begin{minipage}{0.235\textwidth}
 	\includegraphics[width=\textwidth]{figs/cerberus2_nns16_surplus256k_mirjam}
 	\subcaption{Benign image}
@@ -30,6 +31,7 @@ but the former always deadlocked.  The timeout was 10 ms in all cases.
 	\subcaption{Malicious image}
 	\label{fig:libpng:bomb}
 	\end{minipage}
+\end{center}
 \caption{\textit{libpng} in-memory image decode times}
 \end{figure}
 
