@@ -1,0 +1,29 @@
+$ make bench LDFLAGS=-Wl,-I../../../glibc-2.33-slotinfo/lib/ld-linux-x86-64.so.2
+
+$ ./bench --bench
+
+running 8 tests
+test eager        ... bench:           1 ns/iter (+/- 0)
+test getpid       ... bench:         361 ns/iter (+/- 16)
+test gettimeofday ... bench:          17 ns/iter (+/- 0)
+test global       ... bench:           0 ns/iter (+/- 0)
+test hook         ... bench:           1 ns/iter (+/- 0)
+test lazy         ... bench:          95 ns/iter (+/- 2)
+test prehook      ... bench:           1 ns/iter (+/- 0)
+test whitelist    ... bench:           1 ns/iter (+/- 0)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 8 measured; 0 filtered out; finished in 5.49s
+
+$ LD_PRELOAD=./libgotcha.so LD_LIBRARY_PATH=. LIBGOTCHA_NUMGROUPS=1 ./bench --bench
+
+running 8 tests
+test eager        ... bench:          15 ns/iter (+/- 0)
+test getpid       ... bench:         386 ns/iter (+/- 26)
+test gettimeofday ... bench:          26 ns/iter (+/- 1)
+test global       ... bench:       4,917 ns/iter (+/- 46)
+test hook         ... bench:          26 ns/iter (+/- 1)
+test lazy         ... bench:         110 ns/iter (+/- 3)
+test prehook      ... bench:       1,813 ns/iter (+/- 94)
+test whitelist    ... bench:          25 ns/iter (+/- 0)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 8 measured; 0 filtered out; finished in 14.23s

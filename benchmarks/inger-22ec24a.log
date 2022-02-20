@@ -1,0 +1,87 @@
+$ sed s/15/511/ external/libgotcha/namespace.h
+
+$ cargo --offline rustc --bench baseline --release -- -Clink-arg=-Wl,-I./ld.so
+   Compiling libc v0.2.119
+   Compiling gotcha v0.0.0 (/home/solb/libinger/external/libgotcha)
+   Compiling bencher v0.1.5
+   Compiling signal v0.0.0 (/home/solb/libinger/internal/libsignal)
+   Compiling timetravel v0.0.0 (/home/solb/libinger/external/libtimetravel)
+   Compiling inger v0.0.0 (/home/solb/libinger)
+    Finished release [optimized] target(s) in 5.68s
+
+$ target/release/deps/baseline-fc91222568fd8de7 pthread_create
+
+running 1 test
+test pthread_create ... bench:      68,314 ns/iter (+/- 18,090)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ target/release/deps/baseline-fc91222568fd8de7 fork
+
+running 2 tests
+test fork           ... bench:     686,028 ns/iter (+/- 20,645)
+test vfork          ... bench:      74,787 ns/iter (+/- 9,395)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 2 measured
+
+$ cargo --offline build --bench inger --release
+   Compiling inger v0.0.0 (/home/solb/libinger)
+    Finished release [optimized] target(s) in 0.51s
+
+$ GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 cargo --offline bench --bench inger -- launch
+    Finished bench [optimized] target(s) in 0.02s
+     Running unittests (target/release/deps/inger-da3fc55130c99c4a)
+
+running 1 test
+test launch ... bench:      14,447 ns/iter (+/- 620)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 cargo --offline bench --bench inger -- resume
+    Finished bench [optimized] target(s) in 0.02s
+     Running unittests (target/release/deps/inger-da3fc55130c99c4a)
+
+running 1 test
+test resume ... bench:      14,002 ns/iter (+/- 742)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 cargo --offline bench --bench inger -- renew
+    Finished bench [optimized] target(s) in 0.02s
+     Running unittests (target/release/deps/inger-da3fc55130c99c4a)
+
+running 1 test
+test renew  ... bench:      47,492 ns/iter (+/- 5,740)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ cargo --offline build --bench inger --release --features notls
+   Compiling inger v0.0.0 (/home/solb/libinger)
+    Finished release [optimized] target(s) in 1.21s
+
+$ GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 cargo --offline bench --bench inger --features notls -- launch
+    Finished bench [optimized] target(s) in 0.02s
+     Running unittests (target/release/deps/inger-e6271b1dabd932cc)
+
+running 1 test
+test launch ... bench:      11,827 ns/iter (+/- 726)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 cargo --offline bench --bench inger --features notls -- resume
+    Finished bench [optimized] target(s) in 0.02s
+     Running unittests (target/release/deps/inger-e6271b1dabd932cc)
+
+running 1 test
+test resume ... bench:      10,640 ns/iter (+/- 379)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
+
+$ GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x200000 cargo --offline bench --bench inger --features notls -- renew
+    Finished bench [optimized] target(s) in 0.02s
+     Running unittests (target/release/deps/inger-e6271b1dabd932cc)
+
+running 1 test
+test renew  ... bench:      46,933 ns/iter (+/- 2,361)
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured
