@@ -1287,8 +1287,7 @@ is a pervasive concern in system design.
 \section{Evaluation}
 
 We benchmarked \textit{libgotcha} on an Intel Xeon Gold 6130 (Skylake) server clocked
-at 2.1~GHz and running Linux~5.4, rustc~1.56.0, gcc~9.3.0, and glibc~2.33.  Results
-in this section were collected in this configuration unless otherwise noted.
+at 2.1~GHz and running Linux~5.4, rustc~1.56.0, gcc~9.3.0, and glibc~2.33.
 
 
 \subsection{Microbenchmarks}
@@ -1367,12 +1366,12 @@ Section~\ref{sec:libgotcha:callbacks}, but is unnecessary for preemptible functi
 
 \begin{figure*}
 	\begin{minipage}{0.5\textwidth}
-	\includegraphics[width=\textwidth]{figs/cerberus_gotchyas_tls_99453c6_inger_7b146a6}
+	\includegraphics[width=\textwidth]{figs/tlsblock-rperfb}
 	\subcaption{\texttt{\_dl\_allocate\_tls()} in isolation}
 	\end{minipage}
 %
 	\begin{minipage}{0.5\textwidth}
-	\includegraphics[width=\textwidth]{figs/cerberus_gotchyas_tls_99453c6_inger_7b146a6_create}
+	\includegraphics[width=\textwidth]{figs/tlsblock-spawn}
 	\subcaption{\texttt{pthread\_create()} and \texttt{pthread\_join()}}
 	\end{minipage}
 \caption{Effect of \textit{libgotcha} on thread spawn latency, with and without \textit{libtlsblock}}
@@ -1383,25 +1382,24 @@ While evaluating the latency of operations under \textit{libgotcha}, we encounte
 surprising degradation in thread spawn performance.  Further investigation revealed
 that the duration of each \texttt{pthread\_create()} was proportional to the number
 of libsets we had initialized.  The culprit turned out to be our large static TLS
-requirement (Section~\ref{sec:libgotcha:scalability}).  When allocating a TLS, glibc
+footprint (Section~\ref{sec:libgotcha:scalability}).  When allocating a TLS, glibc
 iterates over each module that uses static TLS space, \texttt{memcpy()}s its
 initialization image from the \texttt{.tdata} section of its module, and
-\texttt{memset()}s to 0s an area the size of its \texttt{.tbss} section.  When
+\texttt{memset()}s an area the size of its \texttt{.tbss} section.  When
 spawning a thread, the new TCB and TLS are merged into the \texttt{mmap()} stack
-allocation to avoid having to commit much physical memory.  However, glibc then uses
-this same initialization process for the static portion of the TLS; in the case of
-\textit{libgotcha}, this immediately faults a huge number of pages and wastes a lot
-of time copying redundant data and zeroing memory that the kernel has already zeroed.
+allocation to avoid having to commit heap space.  However, glibc then uses the
+aforementioned initialization process on the static portion of the TLS, which
+immediately faults all its pages and zeroes memory that the kernel had already
+cleared.  In the case of \textit{libgotcha}, the performance impact is particularly
+severe.
 
 We hypothesized that this problem could be solved by initializing the entire TLS at
 once with a single copy-on-write mapping.  To confirm this, we built a small
 proof-of-concept library called \textit{libtlsblock} that interposes the
-\texttt{\_dl\_allocate\_tls()} and \texttt{pthread\_create()} functions with a
-wrappers implementations that do exactly that.  Our finding, shown in
-Figure~\ref{fig:libgotcha:spawntls}, was that this approach imposes a thread spawn
-latency penalty of under 2x over the glibc implementation at small numbers of
-libsets, but that the cost remains essentially flat as the number of libsets
-increases, with a break-even point between 100 and 200 libsets.  It would be easy to
-tweak \textit{libtlsblock} to take effect only when there were this many libsets.
-
-\solb{Rerun with newer versions}
+\texttt{\_dl\_allocate\_tls()} and \texttt{pthread\_create()} functions with
+wrapper implementations that do exactly that.  Our finding, shown in
+Figure~\ref{fig:libgotcha:spawntls}, was that this approach incurs a latency overhead
+of just under 100\% for thread spawns at small numbers of
+libsets, but that the cost remains flat as the number of libsets
+increases, with a break-even point at about 250 libsets.  It would be easy to
+tweak \textit{libtlsblock} to only activate at this number of libsets.
