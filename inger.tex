@@ -902,12 +902,6 @@ which we detail in Chapter~\ref{chap:ingerc}.
 
 
 \section{Evaluation}
-
-All benchmarks were run on an Intel Xeon E5-2683 v4 (Broadwell) server running
-Linux~4.19.37, rustc~1.56.0, gcc~9.2.1, and glibc~2.33.
-
-
-\subsection{Microbenchmarks}
 \label{sec:libinger:ueval}
 
 Table~\ref{tab:libinger} shows the overhead of \textit{libinger}'s core functions.
@@ -915,26 +909,27 @@ Each test uses hundreds of preemptible functions, each with its own stack and
 continuation, but sharing an implementation; the goal is to measure invocation time,
 so the function body immediately calls \texttt{pause()}.  We show the latencies with
 and without the use of dedicated TCBs and TLS areas for each preemptible function
-(Section~\ref{sec:libinger:tcbs}).  In both cases, \textit{libgotcha}'s global
-variable interception was turned off.
+(Section~\ref{sec:libinger:tcbs}).
 For comparison, we also measured the cost of calling \texttt{fork()} then
 \texttt{exit()}, and of calling \texttt{pthread\_create()} with an empty function,
 while the parent
 thread waits using \texttt{waitpid()} or \texttt{pthread\_join()}, respectively.
 
-The results show that, as long as preemptible functions are eventually allowed to run
-to completion, they exhibit under two-thirds the latency of spawning a thread and are
-an order of magnitude faster than forking a process.
+The results show that, as long as preemptible functions are allowed to run
+to completion, invoking them incurs a fraction of the latency of spawning a kernel
+thread, and an order of magnitude reduction over forking a process.  We collected
+these measurements on the same machine using the same software versions as in
+Section~\ref{sec:gotcha:eval}.
 
 \begin{table}
 	\begin{minipage}{\textwidth}
 	\centering
 	\begin{tabular}{c | c c}
-	Operation & Time with TLSes ($\mu{s}$) & Time without TLSes ($\mu{s}$) \\
+	Operation & Time with TLSes ($\mu{s}$) & Time without TLSes (\textmu{}s) \\
 	\hline
-	\texttt{launch()} & $15.1 \pm 0.16$ & $12.4 \pm 0.15$ \\
-	\texttt{resume()} & $13.9 \pm 0.07$ & $10.3 \pm 0.04$ \\
-	\texttt{cancel()} & $31.7 \pm 0.48$ & $27.7 \pm 0.45$ \\
+	\texttt{launch()} & $14.4 \pm 0.62$ & $11.8 \pm 0.73$ \\
+	\texttt{resume()} & $14.0 \pm 0.74$ & $10.6 \pm 0.38$ \\
+	\texttt{cancel()} & $47.5 \pm 5.7$ & $46.9 \pm 2.4$ \\
 	\end{tabular}
 	\subcaption{Preemptible function operations, with and without per-function TLS areas}
 	\end{minipage}
@@ -943,14 +938,14 @@ an order of magnitude faster than forking a process.
 	\vspace{12pt}
 	\centering
 	\begin{tabular}{c | c}
-	Operation & Time ($\mu{s}$) \\
+	Operation & Time (\textmu{}s) \\
 	\hline
-	\texttt{fork()} & $492.0 \pm 7.32$ \\
-	\texttt{pthread\_create()} & \;\;$24.7 \pm 7.45$
+	\texttt{fork()} & $686 \pm 21$ \\
+	\texttt{pthread\_create()} & \;\;$68 \pm 18$
 	\end{tabular}
 	\subcaption{Process and thread spawns without \textit{libinger}}
 	\end{minipage}
-\caption{Latency of preemptible function interface}
+\caption{Latency of preemptible function interfaces}
 \label{tab:libinger}
 \end{table}
 
