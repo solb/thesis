@@ -928,8 +928,11 @@ function's libset before returning it to the pool.
 
 Cancellation cleans up \textit{libinger} resources allocated by \texttt{launch()};
 however, the current implementation does not automatically release resources already
-claimed by the preemptible function itself.  We have prototyped a solution
-that demonstrates the feasibility of such cleanup in RAII languages such as Rust,
+claimed by the preemptible function itself.  Instead, the preemptible function author
+must write a cleanup handler (Section~\ref{sec:safety:acsafe}) and invoke it
+immediately before any call to \texttt{cancel()}.  We have, however, created a
+prototype
+demonstrating the feasibility of automatic cleanup in RAII languages such as Rust,
 which we detail in Chapter~\ref{chap:ingerc}.
 
 
