@@ -1286,6 +1286,13 @@ is a pervasive concern in system design.
 
 \section{Evaluation}
 
+We benchmarked \textit{libgotcha} on an Intel Xeon Gold 6130 (Skylake) server clocked
+at 2.1~GHz and running Linux~5.4, rustc~1.56.0, gcc~9.3.0, and glibc~2.33.  Results
+in this section were collected in this configuration unless otherwise noted.
+
+
+\subsection{Microbenchmarks}
+
 Recall that linking an application against \textit{libgotcha} imposes additional
 overhead on most dynamic symbol accesses; we report these overheads in
 Table~\ref{tab:libgotcha:symb}.  Eager function calls account for almost all of a
@@ -1294,33 +1301,32 @@ time a module calls a particular function (Section~\ref{sec:relinking}) and glob
 are becoming rare (Section~\ref{sec:limits}).
 
 Table~\ref{tab:libgotcha:baseline} shows that the \textit{libgotcha} eager function
-call overhead of 14 ns is on par with the cost of a trivial C library function
-(\texttt{gettimeofday()}) and an order of magnitude lower than
-that of a simple system call (\texttt{getpid()}).\footnote{The cost of a system call
+call overhead of 15~ns roughly doubles the latency of a trivial C library function
+(\texttt{gettimeofday()}) and imposes a less than 5\% latency overhead
+on a simple system call (\texttt{getpid()}).\footnote{The cost of a system call
 slipped by an order of magnitude in our benchmarks as a result of the Meltdown and
-Spectre mitigations, which require the kernel to swap page tables before context
+Spectre mitigations, which require the kernel to unmap its page tables before context
 switching to user code to guard against timing attacks.  Previously, a system call
 was approximately three times as expensive as the \textit{libgotcha} eager function
 call overhead.}  This overhead affects the entire program, regardless of the
 current libset at the time of the call.  Additionally, calls to
-uninterruptible functions from within a preemptible function incur roughly twice this
-latency to switch back to the main libset as described in
-Section~\ref{sec:libgotcha:unint}; Table~\ref{tab:libgotcha:allowlist} breaks this
-overhead down to
-show the cost of notification callbacks at the conclusion of such a call (always
-required by \textit{libinger}).  Notification at the start of a call is more
-expensive merely because of the implementation shortcut described in
-Section~\ref{sec:libgotcha:callbacks}.
+uninterruptible functions from outside the starting libset incur just under twice
+this latency to switch back to the main libset
+(Section~\ref{sec:libgotcha:unint}); Table~\ref{tab:libgotcha:allowlist} shows this
+figure alongside the cost of notification callbacks
+(Section~\ref{sec:libgotcha:callbacks}).  Notification at the start of a call is
+markedly more expensive because of the implementation shortcut described in
+Section~\ref{sec:libgotcha:callbacks}, but is unnecessary for preemptible functions.
 
 \begin{table*}
 	\begin{minipage}{\textwidth}
 	\centering
 	\begin{tabular}{c | r l r l}
-	Symbol resolution scheme & \multicolumn{2}{c}{Time without \textit{libgotcha} ($ns$)} & \multicolumn{2}{c}{Time with \textit{libgotcha} ($ns$)} \\
+	Symbol resolution scheme & \multicolumn{2}{c}{Time without \textit{libgotcha} ($ns$)} & \multicolumn{2}{c}{Time with \textit{libgotcha} (ns)} \\
 	\hline
-	eager (load time) & \qquad $2$ & $\pm \quad 0$ & \qquad $14$ & $\pm \quad 0$ \\
-	lazy (runtime) & $102$ & $\pm \quad 0$ & $120$ & $\pm \quad 0$ \\
-	global variable & $0$ & $\pm \quad 0$ & $5005$ & $\pm \quad 15$
+	eager (load time) & \qquad $1$ & $\pm \quad 0$ & \qquad $15$ & $\pm \quad 0$ \\
+	lazy (runtime) & $95$ & $\pm \quad 2$ & $110$ & $\pm \quad 3$ \\
+	global variable & $0$ & $\pm \quad 0$ & $4917$ & $\pm \quad 46$
 	\end{tabular}
 	\subcaption{Generic symbols, without and with \textit{libgotcha}}
 	\label{tab:libgotcha:symb}
@@ -1330,10 +1336,10 @@ Section~\ref{sec:libgotcha:callbacks}.
 	\vspace{12pt}
 	\centering
 	\begin{tabular}{c | r l}
-	Baseline & \multicolumn{2}{c}{Time without \textit{libgotcha} ($ns$)} \\
+	Baseline & \multicolumn{2}{c}{Time without \textit{libgotcha} (ns)} \\
 	\hline
-	\texttt{gettimeofday()} & \qquad $19$ & $\pm \quad 0$ \\
-	\texttt{getpid()} & $234$ & $\pm \quad 0$
+	\texttt{gettimeofday()} & \qquad $17$ & $\pm \quad 0$ \\
+	\texttt{getpid()} & $361$ & $\pm \quad 16$
 	\end{tabular}
 	\subcaption{Library functions and syscalls without \textit{libgotcha}}
 	\label{tab:libgotcha:baseline}
@@ -1343,20 +1349,17 @@ Section~\ref{sec:libgotcha:callbacks}.
 	\vspace{12pt}
 	\centering
 	\begin{tabular}{c | r l}
-	Trigger & \multicolumn{2}{c}{Time with \textit{libgotcha} ($ns$)} \\
+	Trigger & \multicolumn{2}{c}{Time with \textit{libgotcha} (ns)} \\
 	\hline
-	Uninterruptible call & \qquad $27$ & $\pm \quad 1$ \\
-	Uninterruptible call + call callback & $1549$ & $\pm \quad 2$ \\
-	Uninterruptible call + return callback & $28$ & $\pm \quad 1$
+	Uninterruptible call & \qquad $25$ & $\pm \quad 0$ \\
+	Uninterruptible call + call callback & $1813$ & $\pm \quad 94$ \\
+	Uninterruptible call + return callback & $26$ & $\pm \quad 1$
 	\end{tabular}
 	\subcaption{Uninterruptible calls triggering a libset switch}
 	\label{tab:libgotcha:allowlist}
 	\end{minipage}
 \caption{Runtime overheads of accessing dynamic symbols}
 \end{table*}
-
-We ran these benchmarks on an Intel Xeon E5-2683 v4 (Broadwell) server running
-Linux~4.19.37, rustc~1.56.0, gcc~9.2.1, and glibc~2.33.
 
 
 \subsection{Thread spawn performance}
