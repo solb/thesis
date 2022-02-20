@@ -10,14 +10,14 @@ sleep-sweaty hair standing out from his skull in every direction. \\
 \end{chapquote}
 \fi
 
-\solb{Dave wants a two-sentence summary/forward reference to the evaluation}
-
 In Section~\ref{sec:libinger:reentrancy}, we saw that it is not safe in general for a
 preemptible function to call into stateful code that was written without the
 preemptible function abstraction in mind.  However, such code is prolific in the
 modern systems stack, and in order to support interoperability with it, we need to
-automatically transform the program to fix the safety hole.  This chapter covers a
-novel software system designed to do just that, dubbed \textit{libgotcha}.
+automatically transform the program to fix the safety hole.  This chapter introduces
+a novel abstraction for memory isolation and constructs a software system that
+implements it, dubbed \textit{libgotcha}; then, we conclude the chapter by presenting
+performance metrics.
 
 \begin{figure}
 \begin{center}
@@ -31,7 +31,7 @@ contain program data; \textit{italicized} ones contain metadata for the runtime.
 \begin{swallowsections}
 \input[functions]{gotcha_gotcha}
 \end{swallowsections}
-\hspace{-2em}
+\hspace{-1.5em}
 Our discussion in this chapter uses \textit{libinger} as a motivating example of a
 \textit{libgotcha} user, as this configuration was the inspiration for the runtime's
 creation.  However, we have found the described techniques to be general and
