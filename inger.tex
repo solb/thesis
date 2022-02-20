@@ -772,14 +772,17 @@ to the starting libset, disabling preemption.
 \label{fig:ingerhook}
 \end{figure}
 
+
+\subsection{Starting libset exit analysis}
+
 In contrast to the control libraries featured in Chapter~\ref{chap:safety},
 \textit{libinger} implements a new abstraction rather than reusing a well-known API
 surface.  This allows it to leverage a special \textit{libgotcha} optimization that
 was unavailable to the other libraries.  Recall from Section~\ref{sec:libsets} that a
 preemptible function, like any isolated task, always runs with its own private next
 libset.  Furthermore, the fact that the only way to create a new preemptible function
-is by calling the \texttt{launch()} wrapper function means that there is only one way
-for a preemptible function to run with its current libset set to the starting
+is by calling the \texttt{launch()} wrapper function means that there is also only
+one way for a preemptible function to run with its current libset set to the starting
 libset:\@ if it is invoked from the same module that defines it (since otherwise the
 caller of the wrapper function would see the function's symbol resolve to a PLOT stub
 that would update its current libset from its next one upon invocation).  Isolated
@@ -796,7 +799,8 @@ global variable interceptions that would otherwise occur on the critical path of
 global variable interceptions that would occur during other uninterruptible function
 calls, reducing the risk of significantly exceeding a timeout.  And as we saw in
 Section~\ref{sec:gotcha:eval}, each global variable interception incurs several
-microseconds of latency.  The same optimization should be equally applicable to other
+microseconds of latency.  We call this optimization starting libset exit analysis,
+and it should be equally applicable to other
 novel task abstractions; a general rule of thumb is that it applies to any control
 library whose benefits would not be reaped merely by preloading it.
 
