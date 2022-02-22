@@ -784,7 +784,7 @@ next libset = starting libset).}
 In contrast to the control libraries featured in Chapter~\ref{chap:safety},
 \textit{libinger} implements a new abstraction rather than reusing a well-known API
 surface.  This allows it to leverage a special \textit{libgotcha} optimization that
-was unavailable to the other libraries.  Recall from Section~\ref{sec:libsets} that a
+is unavailable to the other libraries.  Recall from Section~\ref{sec:libsets} that a
 preemptible function, like any isolated task, always runs with its own private next
 libset.  Furthermore, the fact that the only way to create a new preemptible function
 is by calling the \texttt{launch()} wrapper function means that there is also only
