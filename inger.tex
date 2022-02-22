@@ -47,6 +47,7 @@ void pause(void);
 
 \begin{figure}
 \begin{lstlisting}[label=lst:ingerrustapi,caption=Preemptible functions Rust interface,morekeywords={fn,impl,mut,pub,self,u64,Drop,FnOnce,Result,Send}]
+// Tagged union
 pub enum Linger<T> {
 	Completion(T),
 	Continuation(Continuation),
@@ -63,6 +64,7 @@ impl<T> Linger<T> {
 	pub fn yielded(&self) -> bool;
 }
 
+// Destructor
 impl Drop for Continuation { ... }
 \end{lstlisting}
 \end{figure}
