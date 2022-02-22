@@ -38,9 +38,7 @@ struct linger_t {
 
 typedef void (*Function)(void *);
 
-linger_t launch(Function func,
-                  uint64_t time_us,
-                  void *args);
+linger_t launch(Function func, uint64_t time_us, void *args);
 void resume(linger_t *cont, uint64_t time_us);
 void cancel(linger_t *cont);
 void pause(void);

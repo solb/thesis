@@ -145,10 +145,13 @@ typedef void (*handler_t)(int, siginfo_t *, void *);
 static struct handler_t *handlers;
 static bool verbose;
 
-int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
+int sigaction(int signum,
+		const struct sigaction *act,
+		struct sigaction *oldact) {
 	handler_t oldact = handlers[signum];
 	struct sigaction sa;
-	if(act && act->sa_sigaction != SIG_DFL && act->sa_sigaction != SIG_IGN) {
+	if(act && act->sa_sigaction != SIG_DFL
+			&& act->sa_sigaction != SIG_IGN) {
 		// We have been asked to install a custom signal handler.
 		if(verbose) fprintf(
 			stderr,
@@ -212,7 +215,8 @@ static void restorer(void) {
 		sigset_t ready;
 		sigpending(&ready);
 		if(!sigismember(&ready, pending.si_signo))
-			libgotcha_pthread_kill(pthread_self(), pending.si_signo);
+			libgotcha_pthread_kill(pthread_self(),
+				pending.si_signo);
 
 		sigset_t full;
 		libgotcha_sigfillset(&full);
