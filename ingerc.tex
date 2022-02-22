@@ -619,6 +619,9 @@ After return & -- & -- & \textsection~\ref{sec:ingerc:epilogue} & Raise exceptio
 \label{tab:cleanup}
 \end{table}
 
+
+\section{Performance considerations}
+
 While our approach mostly avoids adding operations to the common execution path, the
 exception is epilogue handling.  To support that case, we add one function call and
 six global variable accesses.  We saw in Chapter~\ref{chap:libgotcha} that in a
