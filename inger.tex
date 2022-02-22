@@ -336,7 +336,7 @@ unsafe {
 	// Flag to track whether we are capturing or restoring the snapshot
 	let mut capturing = Volatile::from(true);
 
-	// Checkpoint in the program
+	// Checkpoint the program
 	let mut snapshot = MaybeUninit::uninit();
 	getcontext(snapshot.as_mut_ptr());
 
