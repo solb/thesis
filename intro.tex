@@ -84,7 +84,17 @@ preemption, without adding a dependency on nonstandard OS kernel features.
 
 \section{Structure and contributions}
 
-The remaining chapters of this thesis break down our contributions as follows:
+This thesis motivates and refines a new primitive for calling a function with a
+timeout (Chapters~\ref{chap:functions} and \ref{chap:libinger}), and also introduces
+a separate supporting abstraction for providing memory isolation within a process
+(Chapter~\ref{chap:libgotcha}).  It presents possible applications for memory
+isolation (Chapter~\ref{chap:safety}) and timed function calls
+(Chapters~\ref{chap:libturquoise}, \ref{chap:strobelight}, and
+\ref{chap:microservices}).  It also includes an analysis of the barriers to and a
+path toward achieving automatic resource cleanup upon cancellation of unfinished work
+(Chapter~\ref{chap:ingerc}).
+
+The remaining chapters of this thesis progress as follows:
 
 \paragraph{Function calls with timeouts (Chapter~\ref{chap:functions})}
 We examine prior approaches to running timed code from the literature, triaging the
