@@ -105,7 +105,11 @@ capable of handling purely functional code.  Drawing inspiration from it, we
 devise a novel interface for calling impure \textit{preemptible functions}.
 We set the goal of language agnosticism, aiming to demonstrate support
 for unmanaged systems programming languages (because they provide few abstractions
-that might be unavailable in other settings).
+that might be unavailable in other settings).  We also observe that using preemptible
+functions in an application introduces concurrency that creates unsoundness arising
+from shared state, specifically nonreentrancy.  The application developer is unable
+to address the problem, so we conclude that doing so is a prerequisite for
+implementing preemptible functions.
 
 \paragraph{Nonreentrancy and selective relinking (Chapter~\ref{chap:libgotcha})}
 We confront nonreentrancy, a program property that permeates the contemporary systems
