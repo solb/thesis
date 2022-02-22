@@ -464,7 +464,7 @@ executing, so we are careful to set that last and reset it to null in
 \texttt{ingerc\_epilogue\_end()}.
 
 \begin{figure}
-\begin{lstlisting}[label=lst:epilogue,language={[x86masm]Assembler},caption=Code to support time travel out of the epilogue. The \texttt{@gotpcrel} relocations are position-independent GOT lookups of the globals' addresses.]
+\begin{lstlisting}[label=lst:epilogue,language={[x86masm]Assembler},caption={[Code to support time travel out of the epilogue]Code to support time travel out of the epilogue. The \texttt{@gotpcrel} relocations are position-independent GOT lookups of the globals' addresses.}]
 	.globl	ingerc_epilogue_start
 ingerc_epilogue_start:
 	# Save our return address as the destination instruction pointer.

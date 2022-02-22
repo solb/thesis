@@ -23,7 +23,8 @@ performance metrics.
 \begin{center}
 \includegraphics[width=0.7\columnwidth]{figs/procimg_perobj}
 \end{center}
-\caption{Layout of a typical module within the process image.  \textbf{Bold} sections
+\caption[Layout of a typical module within the process image]{
+Layout of a typical module within the process image.  \textbf{Bold} sections
 contain program data; \textit{italicized} ones contain metadata for the runtime.}
 \label{fig:procimgobj}
 \end{figure}
@@ -173,7 +174,8 @@ Table).
 	proceed as above.}
 	\label{fig:dytabs:lazy}
 	\end{minipage}
-\caption{Table references required to reference global symbols in dynamically-linked
+\caption[Table references required to reference global symbols]{
+Table references required to reference global symbols in dynamically-linked
 programs}
 \label{fig:dytabs}
 \end{figure*}
@@ -751,7 +753,10 @@ uninterruptible calls when no callbacks are registered.
 	\includegraphics[width=\textwidth]{figs/calltree_function_hook-crop}
 	\subcaption{Uninterruptible call when callbacks are registered for both calls and returns}
 	\end{minipage}
-\caption{Interception of cross-module function calls. Solid lines represent function calls; dashed ones represent returns. Color indicates that the next libset is set to the starting libset.}
+\caption[Interception of cross-module function calls]{
+Interception of cross-module function calls. Solid lines represent function calls;
+dashed ones represent returns. Color indicates that the next libset is set to the
+starting libset.}
 \label{fig:gotchahooks}
 \end{figure*}
 

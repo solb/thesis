@@ -65,7 +65,8 @@ the phrases ``asynchronous cancellation'' and ``async safety.''
 \begin{center}
 \includegraphics[width=0.65\columnwidth]{functions/figs/progsupport}
 \end{center}
-\caption{Taxonomy of support for library code.  It is difficult to determine whether
+\caption[Taxonomy of support for library code]{
+Taxonomy of support for library code.  It is difficult to determine whether
 a library is fully reentrant, so in practice we always
 apply one of the two mitigations.  Library copying is used by default, but deferred
 preemption is needed to preserve the semantics of \texttt{malloc()} and users of
@@ -199,12 +200,13 @@ comprises another 3,000 lines of C, Rust, and x86-64 assembly.
 \begin{center}
 \includegraphics[width=\columnwidth]{functions/figs/architecture}
 \end{center}
-\caption{Preemptible functions software stack.  \textnormal{Hexagonal boxes show
+\caption[Preemptible functions software stack]{
+Preemptible functions software stack.  Hexagonal boxes show
 the required runtime environment.  Rectangular boxes represent components
 implementing the preemptible functions abstraction.  Ovals represent components built
 on top of these.  A preemptible function's body (i.e., \texttt{func}) may be defined
 directly in
-your program, or in some other loaded library.}}
+your program, or in some other loaded library.}
 \label{fig:architecture}
 \end{figure}
 
