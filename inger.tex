@@ -777,6 +777,7 @@ next libset = starting libset).}
 
 
 \subsection{Starting libset exit analysis}
+\label{sec:libinger:exitanalysis}
 
 In contrast to the control libraries featured in Chapter~\ref{chap:safety},
 \textit{libinger} implements a new abstraction rather than reusing a well-known API
@@ -957,7 +958,11 @@ The results show that, as long as preemptible functions are allowed to run
 to completion, invoking them incurs a fraction of the latency of spawning a kernel
 thread, and an order of magnitude reduction over forking a process.  We collected
 these measurements on the same machine using the same software versions as in
-Section~\ref{sec:gotcha:eval}.
+Section~\ref{sec:gotcha:eval}.  Note that the overheads from that section also apply
+to any program using preemptible functions, although the optimization from
+Section~\ref{sec:libinger:exitanalysis} mitigates the runtime latency effect on many
+of the function calls and global variable accesses that occur outside any preemptible
+function.
 
 \begin{table}
 	\begin{minipage}{\textwidth}
