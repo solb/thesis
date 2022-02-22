@@ -11,7 +11,7 @@ London will never stop moving.  Movement is life.'
 \fi
 
 Whereas local function calls with timeouts have yet to become a mainstream idea, it
-has long been standard to use timeouts when making RPCs (remote procedure calls)
+has long been standard to use timeouts when making RPCs (Remote Procedure Calls)
 where a program on one machine invokes a function that executes on another.  Because
 the connection to the remote machine could fail, it is common for the caller to
 specify a timeout after which the call should return an error code, allowing the
@@ -66,7 +66,7 @@ an error code~\cite{Hunt:zookeeper:2010}.
 The eRPC project achieves lower RPC latencies by providing low-level primitives
 tailored to userland networking drivers.  Like ZooKeeper, it uses heartbeats to
 detect broken connections.  In such a case, it immediately notifies the client of the
-failure, but the server continues waiting for associated request(s) to finish
+failure, but the server continues waiting for the associated task(s) to finish
 executing~\cite{Kalia:nsdi2019}.
 
 \paragraph{gRPC}
@@ -100,7 +100,8 @@ that support shared state have struggled with the same problem.
 
 C\# used to provide the \texttt{Thread.Abort()} method for asynchronously cancelling
 a thread.  It has since marked it obsolete because it suffers from the same safety
-problems as POSIX and Windows threads.  As the documentation remarks:
+problems as cancelling POSIX and Windows kernel threads.  As the documentation
+remarks:
 \begin{quote}
 The \texttt{Thread.Abort()} method should be used with caution.  Particularly when
 you call it to abort a thread other than the current thread, you don't know what code
@@ -140,8 +141,8 @@ Our work on preemptible functions paves the way for systems that safely support 
 preemption and asynchronous cancellation.  The new concurrency abstraction provides
 what the Java commentary identifies as missing:\@ a way to determine that structures
 may be in a damaged state.  Furthermore, it contains such damage to those objects
-directly used by the cancelled preemptible function itself by isolating library
-states via selective relinking.  (As we have noted, resource leaks remain a problem
+directly used by the cancelled preemptible function by isolating library
+state using selective relinking.  (As we have noted, resource leaks remain a problem
 that the programmer must solve manually, but we sketched an approach to automatic
 cleanup in Chapter~\ref{chap:ingerc}.)
 
@@ -165,8 +166,8 @@ address.  For one thing, it currently memoizes all partial and completed request
 assuming that all server-side functions neither affect one another's results nor
 depend on anything other than their arguments.  Lifting these impractical
 restrictions would require a configuration or annotation mechanism to indicate which
-functions have these properties; ideally, the system would also provide a system for
-managing transactions that was aware of dependencies and able to determine when a
+functions have these properties; ideally, the system would also provide transaction
+management that was aware of dependencies and able to determine when a
 restart or recalculation was required.  Another shortcoming of the current system is
 that it keeps all past requests around forever.  To avoid a ballooning resource
 footprint, a real server would need to use an LRU cache or similar approach.  For
@@ -178,7 +179,7 @@ each request and uses blocking I/O, but it could use a userland thread pool and
 futures.  The current
 implementation does not provide type safe bindings for the client, but systems such
 as gRPC already solve this using Protocol Buffers.  Finally, \textit{strobelight}
-does not presently allow install additional functions into a running server, but this
-would be easy to support thanks to \textit{libgotcha}'s compatibility with the
+does not presently allow installing additional functions into a running server, but
+this would be easy to support thanks to \textit{libgotcha}'s compatibility with the
 dynamic linker's \texttt{dlopen()} interface for runtime loading
 (Section~\ref{sec:libgotcha:interpose}).
