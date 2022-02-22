@@ -23,7 +23,6 @@ thesis.pdf: functions/figs/progsupport.pdf
 thesis.pdf: microservices/figs/fancy_system-crop.pdf
 thesis.pdf: acknowledgements.tex
 thesis.pdf: concl.tex
-thesis.pdf: foreword.tex
 thesis.pdf: functions.tex
 thesis.pdf: gotcha.tex
 thesis.pdf: inger.tex
