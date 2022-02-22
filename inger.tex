@@ -781,6 +781,11 @@ next libset = starting libset).}
 \subsection{Starting libset exit analysis}
 \label{sec:libinger:exitanalysis}
 
+\solb{Dave's introduction to precede this:  We found an optimization that does xyz.
+A library used by the starting libset that is unable to call \texttt{launch()} can
+never cause a switch out of the starting libset, and therefore we do not need to
+intercept its function calls or global variable accesses.}
+
 In contrast to the control libraries featured in Chapter~\ref{chap:safety},
 \textit{libinger} implements a new abstraction rather than reusing a well-known API
 surface.  This allows it to leverage a special \textit{libgotcha} optimization that
