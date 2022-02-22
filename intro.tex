@@ -63,9 +63,18 @@ design and prototype an interface that extends the programming model with simple
 preemption, thereby allowing the use of functions without having to break the
 abstraction and examine their implementations.  If a function times out, it is
 paused so that the programmer can later resume and/or cancel it at the appropriate
-time.  Note that such an interface is still inherently concurrent; indeed, it is the
+time.  Note that such an interface is still inherently \textbf{concurrent}; that is,
+the application has to manage multiple tasks at the same time.  Indeed, it is now the
 programmer who expresses the schedule describing when to devote time to the timed
 code, and how much.
+
+It bears mentioning that sometimes a system designer does need asynchronous
+invocation and a dedicated scheduler.  Most notably, both are necessary to support
+\textbf{parallel} applications that actually \textit{execute} multiple tasks
+simultaneously.  Preemptive function calls are equally applicable in such situations
+because they compose with existing concurrency abstractions.  In fact, we find that
+they make it surprisingly easy to extend existing cooperative schedulers with
+preemption, without adding a dependency on nonstandard OS kernel features.
 
 
 \section{Thesis statement}
