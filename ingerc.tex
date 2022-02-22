@@ -627,7 +627,7 @@ exception is epilogue handling.  To support that case, we add one function call 
 six global variable accesses.  We saw in Chapter~\ref{chap:libgotcha} that in a
 normal application, each of these operations has a negligible cost of just a few
 cycles.  However, we also found that \textit{libgotcha} slows down accesses to
-dynamically-linked global variables significantly.
+dynamically-linked global variables considerably.
 Fortunately, the names of the symbols we introduce are well known, so
 when integrating the new runtime components, we could introduce quirks to prevent
 \textit{libgotcha} from intercepting their uses.  This would make the symbols
