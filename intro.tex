@@ -22,8 +22,9 @@ programmer to trust it to eventually finish and relinquish control.  The program
 may have made a promise (a ``service-level agreement'') that their whole program
 will complete within a specified timeframe; unfortunately, they cannot certify their
 compliance without breaking the abstraction and examining the internals of each
-function they call.  Even then, untrusted or unpredictable input may make the
-function's performance characteristics unclear:  Perhaps it solves a problem that is
+function they call.  Even then, untrusted or unpredictable input may make a
+function's performance characteristics unclear:  Perhaps the function solves a
+problem that is
 known to be intractable for certain cases, but such inputs are difficult to identify
 \textit{a priori}.  Perhaps it performs format decoding or translation that is
 susceptible to attacks such as decompression bombs.  Or perhaps it simply contains

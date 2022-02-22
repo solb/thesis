@@ -13,13 +13,15 @@ abstraction for making ordinary function calls with a timeout.  We will cover th
 implementation in Chapter~\ref{chap:libinger}, after the intervening chapters have
 introduced a supporting abstraction for memory isolation and shown how to use it.
 
-One thing that distinguishes preemptible functions is that invocation is synchronous;
+One thing that distinguishes preemptible functions is that their invocation is
+synchronous;
 that is, the program does not continue executing the code following the call until
 the callee has made some progress (though not necessarily run to completion).  This
-is in contrast to abstractions with asynchronous invocation, such as threads and
-callback-based futures.  As when calling a preemptible function, structuring code for
-these abstractions involves providing a function to call (a thread main function or a
-callback, respectively).  But it differs in that this function does not necessarily
+stands in contrast to abstractions with asynchronous invocation.  The thread and
+callback-based future abstractions are like preemptible functions in that structuring
+code for them involves writing a function describing the task (a thread main function
+or a callback, respectively).  But these traditional abstractions differ in that this
+function does not necessarily
 begin executing until later:\@ a scheduler or event loop in the runtime or operating
 system manages all of the program's tasks and decides when to invoke each one.
 
@@ -175,11 +177,11 @@ this effort:
 \section{The preemptible functions ecosystem}
 \label{sec:libinger:concurrency}
 
-In divorcing preemption from asynchronous invocation, preemptible functions also
-disentangle it from the idea of parallelism.  Indeed, \textit{libinger} does not
+In divorcing preemption from asynchronous invocation, preemptible functions
+disentangle interruption from parallelism.  Indeed, \textit{libinger} does not
 provide a task scheduler because the only decision it makes is whether to pause the
-currently executing code.  Whenever it opts to do so, it returns control to the
-preemptible function's caller, so there is no scheduling decision to make.
+currently executing code.  Whenever it opts to do so, it unconditionally returns
+control to the preemptible function's caller.
 
 This design allows client code to pick and choose the level of runtime support it
 needs.  If it only invokes preemptible functions synchronously and makes all
