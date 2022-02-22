@@ -28,9 +28,7 @@ struct linger_t {
 	cont_t continuation;
 };
 
-linger_t launch(Function func,
-                  u64 time_us,
-                  void *args);
+linger_t launch(Function func, u64 time_us, void *args);
 void resume(linger_t *cont, u64 time_us);
 \end{lstlisting}
 \begin{lstlisting}[label=lst:use, caption=Preemptible function usage example]
@@ -42,6 +40,7 @@ if (!linger.is_complete) {
 
 // Handle other tasks
 ...
+
 // Resume `task` at some later point
 linger = task_queue.pop();
 resume(&linger, TIMEOUT);
