@@ -59,7 +59,7 @@ generated metadata for runtime consumption.
 
 The linking process occurs in two parts.  Static linking occurs at compile time and
 forms the last step of the traditional build process.  Dynamic linking occurs at a
-phase of runtime we will refer to as \textbf{load time}, because it starts before the
+phase of runtime known as \textbf{load time}, which starts before the
 program has been loaded from disk or the language runtime initialized.
 
 
@@ -137,7 +137,8 @@ case, as they mean that in order to duplicate modules' data, we must also duplic
 their code.
 
 Another consequence of relocations being able to alter read-only memory is that the
-dynamic linker must change the page protections of these regions after it is finished
+dynamic linker must change the page protections of these regions after it has
+finished
 processing relocations.  To support this, the compiler splits up module components
 into fine-grained sections by purpose.  Non-\texttt{const} global variables are
 placed in the \texttt{.data} and \texttt{.bss} sections, which must remain writeable
@@ -294,7 +295,7 @@ we encountered a \texttt{NODELETE} object file, we would make a special copy wit
 flag cleared, for loading into every namespace except the main one.}  Worse, it
 required the dynamic linker to reprocess all relocations throughout the libset, which
 introduced prohibitive runtime latency.  We measured reinitialization taking almost 5
-ms (over 10 million cycles on modern processors) on even small minimal example
+ms (over 10 million cycles on modern processors) on even minimal example
 programs~\cite{boucher:atc2020}.  With such delays, the only reasonable way for the
 control library to handle cancellation was to delegate the reinitialization to a
 separate thread to take it off the critical path; of course, this approach only works
@@ -308,12 +309,12 @@ change.  After populating the libset pool at application start, \textit{libgotch
 iterates through each module of each libset and makes a backup copy of all its
 writeable regions.  When a control library calls \texttt{libset\_reinit()},
 \textit{libgotcha} restores each such region from the backup before returning the
-affected libset to the pool.  We summarize this approach, which has reduced the
+affected libset to the pool.  We summarize this approach, which reduces the
 latency of reinitialization by two orders of magnitude, in
 Figure~\ref{fig:reinit}.\footnote{We will address the version watermark alluded to
-therein later in this chapter.}  To avoid having to repeat relocations and rerun any
+therein later in this chapter.}  To avoid having to repeat relocations and rerun
 module constructors, we capture the backup after dynamic relocation is complete and
-all constructors have run; the tradeoff is that we actually have to copy memory,
+all constructors have run; the tradeoff is that we must actually copy memory,
 rather than leveraging copy on write to later restore to the version on disk.
 
 \begin{figure}
@@ -414,7 +415,7 @@ selective relinking, it also preserves memoization.
 The GNU system supports a second, nonstandard type of lazy function call resolution
 known as indirect function calls.  Compared to the lazy resolution specified in the
 ELF standard, this variant allows the defining library to provide custom code to
-resolve the address of the function definition.  We have to support this mechanism
+resolve the address of the function definition.  We must support this mechanism
 because glibc relies on it to select among architecture-specific implementations for
 reasons of optimization (e.g., \texttt{strstr()}, which leverages vector extensions
 on processors that have them) or simply portability (e.g., \texttt{clock\_gettime()},
@@ -549,7 +550,7 @@ instead of constant average-case ones).
 Unlike prior work, we support safe asynchronous pausing and cancellation on almost
 any instruction boundary, including within most third-party libraries without
 the need for configuration or code annotation.  However, there are still some cases
-where we have to briefly defer preemption.
+where we must briefly defer preemption.
 
 The most obvious is the \texttt{malloc()} family of dynamic memory allocation
 functions.  This case is significant because the allocator manages the heap, a
@@ -590,9 +591,9 @@ transferring control back to the call site, it restores the next libset.
 
 In addition to controlling \textit{libgotcha}'s treatment of calls to uninterruptible
 functions, the next libset also communicates valuable information to the control
-library.  The starting libset always has to be valid, and because we maintain the
+library.  The starting libset must always be valid, and because we maintain the
 invariant that the next libset is always equal to the starting libset when the
-current libset is, it is safe to preempt execution if and only if the starting libset
+current libset is, it is safe to preempt execution if and only if the next libset
 is not equal to the starting one.  It is crucial that the control library check this
 before deciding to preempt, and as we saw in Listing~\ref{lst:gotchaapi}, it can do
 so using the \texttt{libset\_thread\_get\_next()} function.
@@ -787,7 +788,7 @@ uninterruptible region).
 The way that we currently implement callbacks places some restrictions on what they
 are allowed to do.  The \textit{libgotcha} assembly trampoline that invokes return
 callbacks backs up the integer return registers, but such callbacks cannot use
-floating points unless they manually save and restore the floating-point return
+floating point unless they manually save and restore the floating-point return
 registers.  As an implementation shortcut, \texttt{procedure\_linkage\_override()}
 invokes the call callback via a \texttt{SIGTRAP} handler by executing an
 \texttt{int3} instruction, in order to avoid having to save and restore a large set
@@ -1031,7 +1032,7 @@ current libset remains the same, which would make \texttt{thread\_local} variabl
 fail assertions analogous to (2) and (3) from Listing~\ref{lst:exmplstate}.
 
 Rather than being opinionated and choosing the wrong stance, \textit{libgotcha}
-decides to default to the system behavior, where thread-local variables are
+defaults to the system behavior, where thread-local variables are
 associated with the thread and unaffected by the next libset (though of course they
 do depend on the current libset, since the TLS contains a separate copy of each
 thread local for each copy of its defining module).  However, it anticipates that the
@@ -1066,11 +1067,11 @@ approach would be to do this for every thread's TLS, but this could be quite
 expensive, especially since it would require thread synchronization.  Instead, we
 observe that each libset is likely to only ever be used by a single thread, and that
 threads that never use a particular libset will never reference their TLS areas that
-correspond to it.  Consequently, we reinitialize TLSes lazily only as necessary:
+correspond to it.  Consequently, we reinitialize TLSes lazily:
 We allocate a thread-local variable (per TCB, of course) to track each TLS's current
 ``version'' of each libset.  Whenever a control library calls
 \texttt{libset\_reinit()} to signal a cancellation, we merely increment a separate
-program-wide version watermark for that libset, as show at the bottom of
+program-wide version watermark for that libset, as shown at the bottom of
 Figure~\ref{fig:reinit}.  We know that a libset whose execution has just been
 \cancel{ed} cannot currently be in use by any thread, so we do not need to do
 anything

@@ -6,7 +6,7 @@ produces zero or more outputs.  It is a structured control flow primitive that o
 a strict convention:\@ whenever invoked from one of its \textbf{call sites}, a
 function runs from beginning to (one possible) end, at which point execution resumes
 in the \textbf{caller} just after the call site.  It is also a \textbf{synchronous}
-primitive; that is, all these steps happen sequentially and in order.  Because
+primitive; that is, these steps happen sequentially and in order.  Because
 processors conceptually implement synchronous computation, scheduling a function is
 as trivial as instructing the processor to jump from the call site to its starting
 address, then later jump back to the (saved) address of whatever follows the call
@@ -148,13 +148,13 @@ cleanup of cancelled code's own resources with assistance from the compiler.  We
 this by repurposing exception handling, which requires us to repair
 \textit{asynchronous stack unwinding}.  Compilers have struggled to support this
 feature, but we devise runtime workarounds to handle the troublesome cases,
-introducing only very minimal additional overhead on the normal execution path.
+introducing only minimal additional overhead on the normal execution path.
 
 \paragraph{Preemptive userland threading (Chapter~\ref{chap:libturquoise})}
 We show how preemptible functions compose with other concurrency abstractions, namely
 threads and futures.  We create a \textit{thread library that implements preemptive
 scheduling in userland} and still supports unmanaged code.  To accomplish this, we
-construct an preemptible future type, which serves as a language-specific adapter of
+construct a preemptible future type, which serves as a language-specific adapter of
 the preemptible futures interface.  We use this to add preemption to the thread pool
 of an existing futures executor.
 
@@ -162,7 +162,8 @@ of an existing futures executor.
 We observe a pain point common to RPC systems that support impure code:\@ it is
 universally incumbent on the developer of each server-side function to manually, and
 periodically, check whether it has exceeded its service-level agreement.  We describe
-how a first-year undergraduate student built a \textit{preemptive RPC system} without
+how a first-year undergraduate student used our preemptible functions abstraction to
+build a \textit{preemptive RPC system} without
 this limitation in two months.  Its server uses a single-process architecture but
 isolates each request within a preemptible function.  It is also capable of memoizing
 both fully- and partially-computed requests; in the latter case, a repeat request

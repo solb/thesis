@@ -108,7 +108,7 @@ are kernel threads, which are preemptive but asynchronous.  We bridge this gap b
 introducing a novel abstraction that provides synchrony \textit{and} preemption for
 unmanaged languages.
 
-Doing so requires confronting the very nonreentrancy problems that have long doomed
+Doing so requires confronting the nonreentrancy problems that have long doomed
 attempts to support asynchronous cancellation outside of purely functional contexts.
 This turns out to be a slightly harder problem than safely supporting concurrency, so
 in addition to cancellation, we get the ability to externally pause for free.
