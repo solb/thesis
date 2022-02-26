@@ -3,6 +3,7 @@
 \usepackage{amssymb}
 \usepackage{booktabs}
 \usepackage[labelfont=bf]{caption}
+\usepackage[en-US]{datetime2}
 \usepackage{dpfloat}
 \usepackage[T1]{fontenc}
 \usepackage[margin=1in]{geometry}
@@ -41,6 +42,8 @@
 	\chapter@
 }
 \makeatother
+
+\DTMlangsetup{showdayofmonth=false}
 
 \lstset{captionpos=b,
 	basicstyle=\ttfamily,
@@ -154,26 +157,41 @@
 	\textbf{\Large Lightweight Preemptible Functions} \\
 	A thesis \\
 	\hfill \\
-	{\large Sol Boucher} \\
+	\textbf{\large Sol Boucher} \\
+	\hfill \\
+	CMU-CS-XX-XXXX \\
 	\today \\
 
-	\vspace{1in}
+	\vspace{\fill}
+
+	Computer Science Department \\
+	School of Computer Science \\
+	Carnegie Mellon University \\
+	Pittsburgh, PA 15213 \\
+
+	\vspace{\fill}
 
 	\textbf{Thesis committee:} \\
 	David G.\@ Andersen, \textit{chair} \\
 	Adam Belay \\
 	Michael Kaminsky \\
 	Brandon Lucia \\
+	\hfill \\
+	\textit{Submitted in partial fulfillment of the requirements \\
+	for the degree of Doctor of Philosophy} \\
 
 	\vspace{\fill}
 
-	\textit{Submitted in partial fulfillment of the requirements \\
-	for the degree of Doctor of Philosophy} \\
+	\textcopyright \the\year{} Sol Boucher.
+	Licensed under a Creative Commons Attribution 4.0 International License. \\
 	\hfill \\
-	Computer Science Department \\
-	School of Computer Science \\
-	Carnegie Mellon University \\
-	Pittsburgh, PA 15213 \\
+	This research was sponsored by the Pradeep Sindhu Fellowship, VMWare, Google,
+	Intel Science and Technology Center for Cloud Computing, and the National
+	Science Foundation under grant number 1700521.  The views and conclusions
+	contained in this document are those of the author and should not be
+	interpreted as representing the official policies, either expressed or
+	implied, of any sponsoring institution, the U.S. government, or any other
+	entity.
 \end{center}
 \end{titlepage}
 
