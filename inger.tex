@@ -11,7 +11,7 @@ A half-read book is a half-finished love affair.
 In Chapter~\ref{chap:functions}, we introduced and motivated lightweight preemptible
 functions, a novel concurrency abstraction pairing synchronous invocation with
 preemption.  At that time, we covered the design principles underlying the API for
-managing preemptible functions; in this chapter, we will discuss the API itself in
+managing preemptible functions; in this chapter, we discuss the API itself in
 more detail and the design and implementation of \textit{libinger}, the library that
 provides preemptible functions.
 
@@ -71,7 +71,7 @@ impl Drop for Continuation { ... }
 
 
 \paragraph{Closure support.}
-We leverage Rust's first-class closures to enable the caller to pass
+We leverage Rust's first-class closures to enable the caller to pass to
 \texttt{launch()} a function that captures state from its environment.  We expect the
 caller to provide any inputs to the function in this manner.  Unlike with the C
 interface, there is no need to wrap the arguments in a struct when there are
@@ -535,7 +535,8 @@ frequently the signal handler should check whether the preemptible function has 
 out.  For simplicity, \textit{libinger} currently uses a single fixed scheduling
 quantum (timer signal interval) across all preemptible functions.
 
-Before choosing the quantum to use, we were curious how small was achievable with
+Before choosing the quantum to use, we were curious how short an interval was
+achievable with
 Linux signals on modern high-precision CPU timers.  We ran an experiment to determine
 the effect of a POSIX timer's period on its accuracy.  To measure accuracy, we wrote
 a small test program that installs a signal handler and configures a POSIX timer to
@@ -716,13 +717,14 @@ preemptible function as described in Section~\ref{sec:libinger:pausing}, effecti
 skipping to step \textcircled{9}.)  \textcircled{3}~Its setup work complete,
 \texttt{launch()} invokes the preemptible function.  \textcircled{4}~This preemptible
 function happens to call another function \texttt{callee()} located in a different
-module, so \textit{libgotcha} interrupts the call for selective relinking.  There are
+module, so \textit{libgotcha} intercepts the call for selective relinking.  There are
 two possibilities for what happens next:\@ either \texttt{callee()} is an ordinary
 function (in which case \textit{libgotcha} routes the call to the libset's local copy
 and we skip to step \textcircled{8} once it returns), or it is an uninterruptible
 function.  \textcircled{5}~In the latter case, before transferring control to
 \texttt{callee()}, \textit{libgotcha} automatically switches to the starting libset,
-deferring preemption.  \textcircled{6}~When \texttt{callee()} returns,
+deferring preemption (Section~\ref{sec:libgotcha:unint}).  \textcircled{6}~When
+\texttt{callee()} returns,
 \textit{libgotcha} invokes \textit{libinger}'s callback, which switches back to the
 preemptible function's libset and reenables the preemption signal.
 \textcircled{7}~The callback raises the preemption signal, and the handler checks
@@ -1001,7 +1003,14 @@ cancellation.
 
 \begin{sloppypar}
 \input[functions]{eval_cancel}
+The
+results for \texttt{fork()} represent a best-case scenario for that technique, as we
+did not implement a shared memory mechanism for sharing the buffer, and the cost of
+the system call will increase with the number pages mapped by the process (which was
+small in this case).
 \end{sloppypar}
+
+\input[functions]{eval_cancelled}
 
 We ran this experiment on an Intel Xeon E5-2683~v4 (Broadwell) server clocked at
 2.1~GHz and running Linux~4.12.6, rustc~1.36.0, and glibc~2.29.  As this kernel did
