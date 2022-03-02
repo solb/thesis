@@ -1,0 +1,13 @@
+Next, we tried a similarly-sized RGB decompression bomb from revision
+\texttt{b726584} of \url{https://bomb.codes} (Figure~\ref{fig:libpng:bomb}).  Without
+asynchronous cancelability, the pthreads approach was unable to interrupt the thread.
+Here, \texttt{launch()} exceeded the deadline by just 100
+$\mu$s, a figure that includes deviation due to the 100-$\mu$s preemption interval in
+addition to \textit{libinger}'s own overhead.  It again had the lowest variance.
+
+Applying preemptible functions proved easy:\@ the
+\texttt{launch()}/\texttt{cancel()} approach took just 20 lines of Rust, including
+the implementation of a reaper thread to move libset reinitialization off the
+critical path.  In comparison, the \texttt{fork()}/\texttt{sigtimedwait()} approach
+required 25 lines of Rust.  Note that both benchmarks include unsafe Rust
+(e.g., to use the \textit{libpng} C library and zero-copy buffers).

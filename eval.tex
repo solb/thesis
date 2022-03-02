@@ -26,3 +26,10 @@ requests.
 The Web benchmark showed preemptive scheduling at scale, but did not exercise
 preemptible function cancellation.
 \input{eval_cancel}
+The
+results for \texttt{fork()} represent a best-case scenario for that technique, as we
+did not implement a shared memory mechanism for sharing the buffer, and the cost of
+the system call will increase with the number pages mapped by the process (which was
+small in this case).
+
+\input{eval_cancelled}
