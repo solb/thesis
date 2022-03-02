@@ -1003,9 +1003,11 @@ cancellation.
 
 \begin{sloppypar}
 \input[functions]{eval_cancel}
+\hspace{-1.5em}
 The
 results for \texttt{fork()} represent a best-case scenario for that technique, as we
-did not implement a shared memory mechanism for sharing the buffer, and the cost of
+discarded the result buffer rather than implementing a shared memory mechanism to
+transfer its ownership to the rest of the application, and as the cost of
 the system call will increase with the number pages mapped by the process (which was
 small in this case).
 \end{sloppypar}
