@@ -1160,7 +1160,8 @@ details such as TCB switching and \texttt{\_\_tls\_get\_addr()}'s interface
 (Section~\ref{sec:libgotcha:tls}).  As such, porting to a different dynamic linker
 and C library would surely require a fair amount of systems hacking and debugging.
 
-Indeed, our level of dependence on glibc means that even upgrades can require some
+Indeed, \textit{libgotcha}'s degree of dependence on glibc means that even upgrades
+can require some
 work.  We originally developed \textit{libgotcha} atop glibc 2.29, and we found that
 both the 2.30 and 2.31 releases introduced breaking changes.\footnote{The 2.30
 release stopped accepting position-independent executables as arguments to the
@@ -1243,7 +1244,7 @@ Selective relinking supports all but one of the cross-module dynamic relocation
 types.  All forms of \texttt{GLOB\_DAT} relocations work:\@ global variables,
 eagerly-resolved function calls, and indirect function calls.  Lazily-resolved
 function calls via \texttt{JUMP\_SLOT} relocations work as usual (including
-memoization), except that we have to eagerly resolve some of them to determine
+memoization), except that we must eagerly resolve some of them to determine
 whether they represent cross-module calls.
 
 All TLS access modes are supported by swapping out the TCB, although the semantics of
@@ -1395,11 +1396,11 @@ Figure~\ref{fig:libgotcha:dyno}.
 
 We also measured the time to reinitialize a libset, as required after the
 cancellation of an isolated task.  In Deno, this takes 167~\textmu{}s, whereas in
-Dyno it takes 8039.  Note that neither of the two applications is ideal for actually
-making use of libsets:  Deno statically links third-party libraries in the
+Dyno it takes 8039.  Note that neither of the two configurations is ideal for
+actually making use of libsets:  Deno statically links third-party libraries in the
 executable, meaning that their internal state will not be isolated.  Dyno splits the
-build into much more granular linkage units than necessary, to a manifest performance
-detriment even without selective relinking.  The most useful arrangement for
+build into much more granular linkage units than necessary, incurring noticeable
+latencies even without selective relinking.  The most useful arrangement for
 selective relinking would be a balanced configuration, building only the executable's
 top-level dependencies---and any dependencies shared between those---as shared
 libraries.  Such a system would experience \textit{libgotcha} overheads somewhere

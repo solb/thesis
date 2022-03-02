@@ -103,10 +103,11 @@ both in terms of scope (all other handlers) and enforcement mechanism (signal ma
 The exact requirement is that no two handlers that both use unsafe functions can be
 allowed to interleave their execution.}
 
-To avoid affecting the initialization of the C runtime, we perform our own setup as
+To avoid affecting the initialization of the C runtime, \textit{libas-safe} performs
+its own setup as
 late as possible by replacing libc's \texttt{\_\_libc\_start\_main()} function,
 responsible for calling the program's \texttt{main()} function.  Because
-\textit{libas-safe} is an internal control library
+it is an internal control library
 (Section~\ref{sec:libgotcha:control}), doing so is as simple as defining a
 non-static function with that name, which automatically becomes
 a forced interposition (Section~\ref{sec:libgotcha:interpose}).  Our replacement
