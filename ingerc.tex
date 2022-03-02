@@ -93,7 +93,8 @@ significant advantage to building on top of exceptions rather than implementing
 separate resource tracking is that exception handling is already designed to add no
 overhead to the non-exceptional execution path.  With the exception of adding one
 function call to each function that owns objects with destructors, we believe it is
-possible to provide automatic cleanup with no runtime overhead.
+possible to provide automatic cleanup without imposing runtime overhead on tasks that
+are never cancelled.
 
 
 \section{A brief tour of exception handling}
@@ -253,7 +254,7 @@ interface, which only accepts a list of all the passes to run.
 
 We recognize that disabling the inlining pass is likely to reduce the efficiency of
 compiled code, but we leave it to future work to investigate why this pass is
-removing exception information from even functions otherwise unaffected by inlining.
+removing exception information from functions otherwise unaffected by inlining.
 
 
 \subsection{Adding exception-handling support to functions' LLVM IR}
@@ -526,7 +527,7 @@ preceding basic block.
 While we have not integrated resource cleanup support into \textit{libinger}, our
 work on asynchronous exception handling suggests a design.  We have prototyped the
 approach in isolation using a set of scripts that use GDB to interrupt execution
-after any arbitrary number of instructions have retired and inject an exception at
+after an arbitrary number of instructions have retired and inject an exception at
 that point.  In this section, we give the algorithm and how it would integrate with
 the existing \textit{libinger} codebase.  We conclude by reasoning about its
 correctness based on where the preemptible function is in its execution at the time
