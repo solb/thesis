@@ -154,7 +154,6 @@ namespace's
 NetBricks
 nginx
 NODELETE
-nonpreemptible
 nonreentrancy
 nonreentrant
 nop
