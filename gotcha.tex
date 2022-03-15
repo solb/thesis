@@ -730,9 +730,10 @@ libset_t libset_of_caller(void);
 \end{lstlisting}
 \end{figure}
 
-While a control library can tell whether it is safe to preempt the thread by checking
-whether its next libset is not equal to the starting libset, many control libraries
-will benefit from active notification.  For this purpose, \textit{libgotcha} provides
+While a control library can identify an uninterruptible task by observing that the
+thread's next libset is equal to the starting one, many control libraries will
+benefit from active notification of interruptibility.  For this purpose,
+\textit{libgotcha} provides
 a callback interface that allows the control library to register functions that
 should be invoked whenever an uninterruptible function is called or returns.  These
 can be used to disable and reenable preemption mechanisms or establish a critical
