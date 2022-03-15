@@ -593,7 +593,11 @@ In addition to controlling \textit{libgotcha}'s treatment of calls to uninterrup
 functions, the next libset also communicates valuable information to the control
 library.  The starting libset must always be valid, and because we maintain the
 invariant that the next libset is always equal to the starting libset when the
-current libset is, it is safe to preempt execution if and only if the next libset
+current libset is and third-party code is executing,\footnote{By third-party code, we
+mean code that does not interact with the selective relinking primitive or any
+abstraction built on top of it.  Any code that makes use of selective relinking is
+responsible for doing so safely (i.e., ensuring that it does not corrupt its own
+state).} it is safe to preempt execution if and only if the next libset
 is not equal to the starting one.  It is crucial that the control library check this
 before deciding to preempt, and as we saw in Listing~\ref{lst:gotchaapi}, it can do
 so using the \texttt{libset\_thread\_get\_next()} function.
@@ -627,7 +631,8 @@ be loaded into every namespace, it refuses to load additional copies of itself a
 instead includes special logic that proxies calls to it from other namespaces back to
 the main one.  If such calls were considered interruptible, the proxying would
 change the current libset out from under \textit{libgotcha}, violating the invariant
-that the next libset must equal the starting libset when the current one does.  To
+that the next libset must equal the starting libset when the current one does and
+potentially corrupting the dynamic linker.  To
 avoid this, we add all of the dynamic linker's functions to the allowlist.
 
 The dynamic linker introduces other complications as well.  While itself dependency
