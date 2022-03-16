@@ -630,7 +630,7 @@ normal application, each of these operations has a negligible cost of just a few
 cycles.  However, we also found that \textit{libgotcha} slows down accesses to
 dynamically-linked global variables considerably.
 Fortunately, the names of the symbols we introduce are well known, so
-when integrating the new runtime components, we could introduce quirks to prevent
-\textit{libgotcha} from intercepting their uses.  This would make the symbols
+when integrating the new runtime components, we could introduce special cases to
+prevent \textit{libgotcha} from intercepting their uses.  This would make the symbols
 local to each libset and thereby obviate the need to pay the expensive reference
 costs.
