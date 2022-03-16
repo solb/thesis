@@ -21,6 +21,7 @@ thesis.pdf: figs/tables-crop.pdf
 thesis.pdf: functions/figs/architecture.pdf
 thesis.pdf: functions/figs/progsupport.pdf
 thesis.pdf: microservices/figs/fancy_system-crop.pdf
+thesis.pdf: abstract.tex
 thesis.pdf: acknowledgments.tex
 thesis.pdf: concl.tex
 thesis.pdf: functions.tex

@@ -17,24 +17,14 @@ and distill a few lessons for future systems builders
 \section{Contributions}
 \label{sec:thatsawrap:contributions}
 
-To summarize this \thesis...
+The abstract expands on the thesis statement:
 
-We introduced novel programming abstractions for isolation of both time and memory.
-Both operate at finer granularity than traditional primitives, supporting preemption
-at sub-millisecond timescales and tasks defined at the level of a function call.
-This resolution enables new functionality for application programmers, including
-users of unmanaged systems programming languages, all without requiring changes to
-the existing systems stack.  Despite being concurrency abstractions, they employ
-synchronous invocation to allow application programmers to make their own scheduling
-decisions.  However, we found that they compose naturally with existing concurrency
-abstractions centered around asynchronous background work, such as threads and
-futures.  We demonstrated how such composition can enable asynchronous cancellation
-of
-threads and the implementation of preemptive thread libraries in userland, both
-regarded for decades as challenging problems.
+\begin{quote}
+\input{abstract}
+\end{quote}
 
-This summary makes specific references to key contributions; we now explain each and
-give pointers back to the relevant chapters and sections.
+It makes specific references to key contributions; we now further expand on each of
+these and give pointers back to the relevant chapters and sections.
 
 \paragraph{Novel programming abstractions for isolation of both time and memory}
 These abstractions are lightweight preemptible functions and selective relinking.
