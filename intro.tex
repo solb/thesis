@@ -10,8 +10,13 @@ result is not yet available.
 
 Key to the popularity of this concurrency abstraction is the ease and seamlessness of
 parallelizing it.  Underlying most futures runtimes is some form of green threading
-library, typically consisting of a scheduler that distributes work to a pool of
-OS-managed worker threads.  Without uncommon kernel
+library\ifdefined\dga
+, typically consisting of a scheduler that distributes work to a pool of
+OS-managed worker threads\xspace
+\else
+\xspace that maps user threads corresponding to futures onto kernel threads serving
+as workers (i.e., an M:N thread pool)\xspace
+\fi.  Without uncommon kernel
 support (e.g., scheduler activations~\cite{anderson:sosp1991}), however, this logical
 threading model renders the operating system unaware of individual tasks, meaning
 context switches are purely cooperative.  This limitation is common among userland
