@@ -1,6 +1,12 @@
 \paragraph{Host process.}
+\ifdefined\mk
 Our current implementation does not provide isolation between the dispatcher
-and worker processes.  We plan to apply standard OS techniques to reduce
+and worker processes.  We plan to apply
+\else
+Our benchmarks do not account for isolation between the dispatcher and worker
+processes.  A real deployment would want to employ
+\fi
+standard OS techniques to reduce
 the chance of interference by a misbehaving worker.  Examples
 include auditing interactions with the shared memory region to ensure invalid
 or inconsistent data originating from a worker cannot create an unrecoverable

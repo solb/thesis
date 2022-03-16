@@ -6,7 +6,13 @@ latencies available from the latest datacenter networks, we propose a novel desi
 for serverless platforms that runs user-submitted microservices within shared
 processes.  This structure is possible because of language-based
 \textit{compile-time memory safety guarantees} and \textit{microsecond-scale
-preemption}.  Our implementation and experiments demonstrate that these goals of
+preemption}.  Our
+\ifdefined\mk
+implementation and experiments demonstrate
+\else
+benchmark demonstrates
+\fi
+that these goals of
 high throughput, low invocation latency, and rapid preemption are achievable
 on today's commodity systems, while potentially supporting hundreds of thousands of
 concurrently available microservices on each compute node.  We believe that these

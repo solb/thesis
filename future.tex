@@ -2,6 +2,11 @@
 \label{sec:future}
 
 As noted above, our exploration is preliminary; this section outlines several
-open questions.  These questions fall into two categories: shortcomings in our
-current implementation and defense-in-depth safeguards against unexpected
+open questions.  These questions fall into two categories:\@
+\ifdefined\mk
+shortcomings in our current implementation
+\else
+simplifications we made for benchmarking
+\fi
+and defense-in-depth safeguards against unexpected
 failures (e.g., compiler bug or the operator allowing use of a buggy or malicious library).
