@@ -1039,12 +1039,14 @@ current libset remains the same, which would make \texttt{thread\_local} variabl
 fail assertions analogous to (2) and (3) from Listing~\ref{lst:exmplstate}.
 
 Rather than being opinionated and choosing the wrong stance, \textit{libgotcha}
-defaults to the system behavior, where thread-local variables are
-associated with the thread and unaffected by the next libset (though of course they
+leaves the scope of thread-local variables up to the control library.  The
+default is the system behavior, where thread-local variables are associated with the
+kernel thread and unaffected by the next libset (though of course they
 do depend on the current libset, since the TLS contains a separate copy of each
-thread local for each copy of its defining module).  However, it anticipates that the
-control library might want to maintain multiple sets of ``thread''-local variables by
-allocating custom TCBs and swapping their pointers into the segment register.  One
+thread local for each copy of its defining module).  However, if the
+control library instead wants to tie the scope of ``thread''-local variables to that
+of a custom task abstraction, it may allocate custom TCBs and swap their pointers
+into the segment register when switching tasks.  One
 hazard for this approach is that \texttt{pthread\_self()} simply retrieves the TCB
 pointer from the thread segment register, so changing it alters the thread's view of
 its own identifier.  The most significant consequence of this is that if the thread
