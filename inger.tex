@@ -781,15 +781,15 @@ next libset = starting libset).}
 \subsection{Starting libset exit analysis}
 \label{sec:libinger:exitanalysis}
 
-\solb{Dave's introduction to precede this:  We found an optimization that does xyz.
-A library used by the starting libset that is unable to call \texttt{launch()} can
-never cause a switch out of the starting libset, and therefore we do not need to
-intercept its function calls or global variable accesses.}
+The preemptible function abstraction permits an optimization that reduces the runtime
+overhead of selective relinking.  If we can prove that a library can never call
+\texttt{launch()}, we also know that it can never cause a switch out of the starting
+libset, so \textit{libgotcha} does not need to intercept any function calls or global
+variable accesses made by the copy of it in the starting libset.
 
 In contrast to the control libraries featured in Chapter~\ref{chap:safety},
 \textit{libinger} implements a new abstraction rather than reusing a well-known API
-surface.  This allows it to leverage a special \textit{libgotcha} optimization that
-is unavailable to the other libraries.  Recall from Section~\ref{sec:libsets} that a
+surface.  Recall from Section~\ref{sec:libsets} that a
 preemptible function, like any isolated task, always runs with its own private next
 libset.  Furthermore, the fact that the only way to create a new preemptible function
 is by calling the \texttt{launch()} wrapper function means that there is also only
@@ -802,7 +802,9 @@ regions that can cause an automatic switch \textit{out of} the starting libset (
 they call an interruptible function in any other module).  We know that a preemptible
 function with this property can only exist in a module that contains a call to
 \texttt{launch()}, so we only have to update the real GOT entries of those starting
-libset modules that declare a dependency on \texttt{libinger.so}.  The performance
+libset modules that declare a dependency on \texttt{libinger.so}.
+
+The performance
 implications of this insight are significant.  By exempting most of the starting
 libset from the runtime overheads of selective relinking, it eliminates all of the
 global variable interceptions that would otherwise occur on the critical path of
@@ -810,9 +812,11 @@ global variable interceptions that would otherwise occur on the critical path of
 global variable interceptions that would occur during other uninterruptible function
 calls, reducing the risk of significantly exceeding a timeout.  And as we saw in
 Section~\ref{sec:gotcha:eval}, each global variable interception incurs several
-microseconds of latency.  We call this optimization starting libset exit analysis,
+microseconds of latency.
+
+We call the optimization starting libset exit analysis,
 and it should be equally applicable to other
-novel task abstractions; a general rule of thumb is that it applies to any control
+novel task abstractions.  A general rule of thumb is that it applies to any control
 library whose benefits would not be reaped merely by preloading it.
 
 
