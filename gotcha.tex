@@ -388,10 +388,11 @@ know whether a third module passed a pointer to the same function.  To support s
 comparisons, the compiler exclusively generates eagerly-resolved relocations for any
 function that a particular module obtains a pointer to.  This way, the \texttt{mov}
 to retrieve the pointer always finds the resolved address of the real definition in
-the GOT.  To avoid breaking pointer comparison, \textit{libgotcha} associates each
-PLOT entry with its function's definition, not its call site or calling module.  This
+the GOT.  To avoid breaking pointer comparison, \textit{libgotcha} allocates a single
+PLOT entry for each function definition, rather than using a separate one for each
+call site or dependent module.  This
 provides correct comparison semantics because all references to a particular function
-receive the same pointer to a particular PLOT entry, and although this pointer
+receive the same pointer to the shared PLOT entry, and although this pointer
 technically refers to the corresponding symbol's definitions in all libsets, at any
 one time all calls to it will only resolve to the definition in the next libset.
 Since at any given time there can only be one next libset, calls to pointers that
