@@ -299,7 +299,7 @@ into \texttt{launch()} (or \texttt{resume()}), which will populate the
 \subsection{Using POSIX contexts safely}
 \label{sec:libinger:boilerplate}
 
-Any nontrivial use of the POSIX contexts interface requires some surprisingly-subtle
+Any nontrivial use of the POSIX contexts interface requires some surprisingly subtle
 boilerplate code.  Like the \texttt{setjmp()} function, the
 \texttt{getcontext()} function can return multiple times:\@ it always returns once
 when the snapshot is initially captured, but each subsequent restoration of the
@@ -420,6 +420,24 @@ scope of the snapshot to that of a callback function (called in the same place a
 \begin{lstlisting}[morekeywords={fn,impl,FnOnce}]
   fn getcontext(callback: impl FnOnce(&ucontext_t) -> ())
 \end{lstlisting}
+
+Sometimes the safety of this interface is too restrictive for \textit{libinger}'s
+needs.  For instance, when a preemptible function times out, the continuation that
+\texttt{launch()} returns to its caller contains a POSIX context.  If the caller ever
+calls \texttt{resume()} on the continuation, we must graft a new return point onto
+the context before restoring it to remove its dependency on the stack frame of the
+\texttt{launch()} call that has since returned.  Restoring a context in this way is
+not safe in general:\@ as we will see in the next section, it requires careful
+management of multiple execution stacks.  Rather than try to catch this class of bugs
+at compile time, we compile extra runtime checks into debug builds of
+\textit{libinger} that validate the stacks and return point before restoring each
+context.
+
+Ensuring that our use of POSIX contexts is free of undefined behavior has been the
+most challenging part of implementing \textit{libinger}.  The static and dynamic
+checks described in this section provide a measure of confidence (but not a full
+proof) that the current implementation is sound, and have also served as an
+indispensible tool for debugging past errors.
 
 
 \section{Execution stacks}
