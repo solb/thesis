@@ -812,8 +812,7 @@ callback orders of magnitude slower.  Fortunately, we anticipate rarer need for 
 \section{Control libraries}
 \label{sec:libgotcha:control}
 
-All of \textit{libgotcha}'s setup work is wasted if the application never leaves the
-starting libset.  But selective relinking is a low-level abstraction useful in
+Selective relinking is a low-level abstraction useful in
 special situations that require fine-grained memory isolation (e.g., legalizing types
 of concurrency that would otherwise exhibit undefined behavior).
 As such, \textit{libgotcha} takes no stance on
