@@ -72,11 +72,19 @@ executing~\cite{Kalia:nsdi2019}.
 \paragraph{gRPC}
 In 2015, Google open sourced a new RPC system designed for use in modern datacenters.
 The gRPC documentation encourages clients to include a timeout, which it refers to as
-a deadline, with their requests.  This timeout is transmitted to the server along
-with the request, where it can be used to cancel the associated request.
+a deadline, with their requests~\cite{www-grpc}.  This timeout is transmitted to the
+server along with the request, where it can be used to cancel the associated request.
 Unfortunately, each server-side function is responsible for detecting such
-cancellations by periodically checking a flag and responding
-accordingly~\cite{www-grpc}.
+cancellations by periodically checking a flag and responding accordingly, as shown in
+Listing~\ref{lst:grpcflag}~\cite{www-grpc-deadlines}.
+
+\begin{figure}
+\begin{lstlisting}[label=lst:grpcflag,caption=Checking the cancellation flag in a gRPC server-side function]
+if(context->IsCancelled()) {
+	return Status(StatusCode::CANCELLED, "Deadline exceeded");
+}
+\end{lstlisting}
+\end{figure}
 
 \paragraph{ZIO gRPC}
 ZIO gRPC is an experimental RPC system based on gRPC.  It adds asynchronous
