@@ -12,8 +12,6 @@ used to create the serverless platform of the future.  We have not prototyped an
 its ideas on \textit{libinger}; rather, they formed the initial motivation for
 fine-grained preemption and the inspiration for the preemptible function abstraction.
 
-\solb{Probably need to mention newer JavaScript systems that only require a V8 isolate for each tenant}
-
 \begin{namespacereferences}{microservices:}
 \input[microservices]{abstract}
 
@@ -53,3 +51,14 @@ from affecting the state of other microservices or the rest of the worker proces
 
 \input[microservices]{concl}
 \end{namespacereferences}
+
+Since we published this benchmark, Cloudflare has built and deployed a production
+FaaS platform called Workers.  Like our proposed architecture, this system omits
+containers and virtual machines by running user code in
+process~\cite{www-cloudflare-workers}.  It accomplishes this by requiring users to
+submit JavaScript code (or WebAssembly) and running each task as a separate Isolate
+under the V8 JavaScript engine~\cite{www-javascript-v8}, thereby halving major
+competitors' cold-start latencies.  While running under a JavaScript engine confers
+some practical benefits such as not having to audit dependencies, we believe that a
+shift to native code will be necessary to further reduce cold-start latencies from
+the millisecond range to the tens or hundreds of microseconds.
