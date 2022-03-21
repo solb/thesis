@@ -29,3 +29,17 @@ paper~\cite{boucher:atc2020}, as opposed to the latencies of the more
 feature-complete version benchmarked in Section~\ref{sec:libinger:ueval}; however, we
 expect the latest version to exhibit the same behavior, albeit with the knee of the
 latency curve at a different x value.
+
+
+\section{Conclusion}
+
+In this chapter, we used preemptible functions to implement both preemptible futures
+and a first-in-class preemptive user thread library with no dependency on custom
+kernel support.  Making the thread library preemptive was transparent, with the
+resulting system exposing the same API surface as the (cooperative) upstream project.
+We demonstrated how such preemptive threading can mitigate denial-of-service attacks
+based on compute-bound requests.
+
+While both artifacts created for this chapter are useful in their own right, they
+also serve to demonstrate that the preemptible functions abstraction composes with
+both futures and threads.
