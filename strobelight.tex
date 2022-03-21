@@ -168,6 +168,9 @@ function identifier and argument set match those of one that has timed out.  The
 server also memoizes computed results, so that repeating a completed request does not
 result in duplicate work.
 
+
+\section{Future work}
+
 The \textit{strobelight} server is a proof-of-concept system implemented in 128 lines
 of Rust.  As such, it has several shortcomings that a production system would need to
 address.  For one thing, it currently memoizes all partial and completed requests,
