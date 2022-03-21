@@ -1384,8 +1384,10 @@ Because \textit{libgotcha} front loads the work of populating libsets
 (Section~\ref{sec:gotchainit}) and updating GOTs
 (Section~\ref{sec:libgotcha:relink}), it also inflates application startup time.  To
 measure the extent of this effect, we preloaded \textit{libgotcha} into version
-1.17.0 of the Deno JavaScript runtime, which ships as a single 81-MB executable that
-includes the V8 engine and all its other dependencies except for glibc and libgcc.
+1.17.0 of the Deno JavaScript runtime~\cite{www-javascript-deno}, which ships as a
+single 81-MB executable that
+includes the V8 engine~\cite{www-javascript-v8} and all its other dependencies except
+for glibc and libgcc.
 We measured the execution time of an empty JavaScript program, a good proxy for
 startup time because the script starts running mere milliseconds before the process
 terminates.  We found that with only one libset enabled, selective relinking raises
