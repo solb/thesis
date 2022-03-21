@@ -21,3 +21,11 @@ Who controls the present controls the past.
 \input[functions]{eval_turquoise}
 
 \input[functions]{eval_testbed}
+\hspace{-1em}
+We used an older version of \textit{libinger} without support for per-task
+thread-local storage (Section~\ref{sec:libgotcha:tls}).  This version exhibited the
+lower \texttt{launch()} and \texttt{resume()} latencies reported in our conference
+paper~\cite{boucher:atc2020}, as opposed to the latencies of the more
+feature-complete version benchmarked in Section~\ref{sec:libinger:ueval}; however, we
+expect the latest version to exhibit the same behavior, albeit with the knee of the
+latency curve at a different x value.
