@@ -194,3 +194,16 @@ does not presently allow installing additional functions into a running server, 
 this would be easy to support thanks to \textit{libgotcha}'s compatibility with the
 dynamic linker's \texttt{dlopen()} interface for runtime loading
 (Section~\ref{sec:libgotcha:interpose}).
+
+
+\section{Conclusion}
+
+This chapter introduced the \textit{strobelight} RPC system, which uses preemptible
+functions to make each server-side task time out automatically when the client's
+request does.  This saves implementers of server-side functions from having to
+punctuate their code with frequent deadline checks like that shown in
+Listing~\ref{lst:grpcflag}, and from relying on the authors of third-party libraries
+to do the same.  Furthermore, the server memoizes partial computations to avoid
+repeated work should the client retry a failed request.  The system showcases how
+preemptible functions empower even non-expert programmers to implement complex
+application functionality.
