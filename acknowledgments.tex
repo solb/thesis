@@ -1,3 +1,101 @@
 \chapter{Acknowledgments}
 
-\solb{}
+I wish to thank my adviser, Dave Andersen, for his unwavering support and for never
+giving up on me despite extended periods of little progress.  I especially appreciate
+his encouragement to take vacations and backing of my teaching, even when it meant
+taking time off from research.
+
+A doctorate can be an emotional roller coaster ride, and I owe many people thanks for
+keeping me from derailing on the tricky corners (and corner cases).  The good doctors
+Ben Blum and Dominic Chen, both of whom were students in the program when I started,
+inspired me with their intense systems projects.  Their perseverance in conducting
+challenging low-level research convinced me that operating systems research is far
+from ``dead,'' as some professors had tried to tell me when I was seeking an adviser.
+On more than one occasion, Dominic rescued me from debugging funks when I spent weeks
+unsuccessfully searching for horrible bugs; I am also forever indebted to him for
+introducing me to the rr reverse debugger.  Ben's earlier work on Rust was one of the
+factors that led me to learn the programming language.  Another colleague, Gabriele
+Farina, challenged me to become fluent in it and encouraged me to join him at Rust
+conferences and attend the Pittsburgh Rust coffee meetup.  At the latter, I met
+Holden Marcsisin, then a star local high school student who helped me reason about
+safe unstructured jumps in the context of Rust.  Dave's (now) former student Anuj
+Kalia was instrumental in my research pivot toward the more fulfilling area of novel
+programming primitives:\@ his suggestion during a meeting about our microservices
+work that we could leverage dynamic linking to address the nonreentrancy problems
+associated with asynchronous cancellation led directly to my work on selective
+relinking, which made everything else in this \thesis possible.  And I owe a great
+debt to my many friends in the program who kept things fun (and me sane) through the
+hard times with regular board games and other social events, bicycle rides and trips,
+and the occasional hike.
+
+This research was also made possible by the labor of countless people whom I do not
+know personally.  I would like to thank the contributors to Rust, glibc, GDB, rr,
+Valgrind, strace, Git, and the many other free and/or open-source software projects
+that make computers worth using.  I am constantly impressed by the quality of today's
+libre development tooling, which greatly simplifies the implementation and debugging
+of even low-level code.  While I have done little to contribute to the ecosystem of
+tools, you have my appreciation.  Your work leaves me in awe of my predecessors who
+conducted operating systems research before such tools were available.  I must also
+thank the anonymous reviewer who wrote the following kind words about our eponymous
+conference paper, words made especially inspiring by my own teaching aspirations:
+\begin{quote}
+It seems like a very old-school ATC style submission, which is great.  When I was
+teaching undergraduates about high-concurrency userspace services and the tradeoffs
+between coroutines and event-driven programming, this would have been a nice approach
+to present.
+\end{quote}
+
+I became a Ph.D. student in order to pursue a career in teaching, and thanks to the
+many people who placed their trust in me, I have been had numerous opportunities for
+practice throughout my graduate studies.  Charlie Garrod served as a sort of teaching
+mentor during the early half of my studies, something that every doctoral student who
+longs to teach needs to find.  Bill Scherlis enabled me to take a semester-long leave
+of absence to serve as a sabbatical replacement for one of the computer science
+teachers at a local private high school, where I had (among other responsibilities)
+the amazing experience of designing and teaching a seminar course on computer
+architecture to a small group of very motivated students.  Brian Railing twice
+invited me to serve as co-instructor of record for Carnegie Mellon's well-known
+15-213 Introduction to Computer Systems course.  Tom Cortina asked me to teach a very
+compressed six-week instance of the data structures course, 15-122 Principles of
+Imperative Computation, during my last summer in the program.  Fellow doctoral
+student Kyle Liang volunteered to co-instruct with me; both of us were new to the
+course, and I could not have done it without him, our incredibly devoted staff of
+nineteen undergraduate teaching assistants, or the regular guidance of Iliano
+Cervesato.  Later that year, when the public high school in neighboring Mt.\@ Lebanon
+temporarily lost its computer science teacher, Dave was willing to continue paying
+for me even as I substitute taught there three days per week, just four months before
+my defense and before most of this \thesis was written!  Special thanks go to Deb
+Cavlovich, the administrator of our program, for petitioning the department head for
+the exception to the rules that made this arrangement possible.  And my longtime
+friend Connor Brem has my endless gratitude for subsequently \textit{using his
+vacation time} to assume the role and teach the 150 high school students for the next
+two months while I wrote and defended this document.
+
+Numerous others have supported my growth as a teacher in other ways.  Michael Hilton
+taught a course on computer science pedagogy.  Along with Fran\c{c}eska Xhakaj and
+Brian, he went on to found a semiweekly discussion series that now brings together
+teaching types from across the School of Computer Science.  Dave, Guy Blelloch, and
+Tom funded my three successful---and one deeply unsuccessful, thanks to a global
+pandemic---trips to the SIGCSE computer science education conference.  Erica Weng
+organized a series of undergraduate research mixers that directly led to a different
+sort of teaching experience for me, when then-freshman Yosef Alsuhaibani implemented
+the \textit{strobelight} RPC system while serving as my summer research assistant.
+
+Thank you to my entire family for always supporting my education.  I attribute both
+my love of learning and my teaching aspirations to a tight-knit extended family that
+cherishes education and encourages everyone to follow their dreams rather than money.
+Thank you to my many aunts and uncles and older cousins for all the gatherings and
+outdoor adventures, and to my younger cousins for tolerating it when I force fed you
+computer science concepts from a young age.  I would not have pursued (or
+successfully completed) a doctorate without my parents' encouragement, and let the
+record show that my father was right to insist that Carnegie Mellon's offer of a
+guaranteed stipend was a Big Deal.  Dad, that very provision did rescue me from at
+least one funding shortfall, so you officially get to say, ``I told you so.''
+
+Last, but certainly not least, my thanks go out to my partner Yvonne Marcoux, who
+selflessly took over my executive function for the first two months of this year
+while I locked myself in the apartment and wrote the majority of this \thesis.
+Without you, it would have been a miserable existence indeed, and the quality of the
+end product would be that much worse.  Thanks for all the bicycling, camping, and
+road trips when I had time, and for putting up with and supporting me when I was busy
+and boring.  Here is to many more adventures together!
