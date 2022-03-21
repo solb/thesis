@@ -52,21 +52,12 @@ transport protocol.  The RFC notes that clients and servers must carefully handl
 case of retrying timed out or otherwise failed requests to avoid executing the task
 multiple times~\cite{www-onc-rpc-rfc}.
 
-\paragraph{ZooKeeper}
-The Apache Software Foundation maintains a more modern distributed RPC system called
-ZooKeeper, which grew out of the Hadoop project.  ZooKeeper runs RPCs on a cluster of
-servers known as an ensemble.  Although the authors make use of the term timeout,
-they mean something different by it than Sun:\@ in ZooKeeper, a timeout is a
-heartbeat used to diagnose connection or server problems, and is associated with the
-client session rather than any specific request.  Unrequited heartbeats cause the
-session to expire, at which point requests that had not yet started computing return
-an error code~\cite{Hunt:zookeeper:2010}.
-
 \paragraph{eRPC}
 The eRPC project achieves lower RPC latencies by providing low-level primitives
-tailored to userland networking drivers.  Like ZooKeeper, it uses heartbeats to
-detect broken connections.  In such a case, it immediately notifies the client of the
-failure, but the server continues waiting for the associated task(s) to finish
+tailored to userland networking drivers.  Instead of Sun-style timeouts, it uses
+heartbeats to detect broken connections.  Unrequited heartbeats cause the session to
+expire, in which case the server immediately notifies the client of the
+failure, but continues waiting for the associated task(s) to finish
 executing~\cite{Kalia:nsdi2019}.
 
 \paragraph{gRPC}
