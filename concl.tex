@@ -117,9 +117,11 @@ level (Section~\ref{sec:functions:motivation}) and at the language level
 discover that we can leverage the memory isolation provided by selective relinking to
 enable asynchronous cancellation of POSIX threads, a feature that is almost unusable
 as shipped in the Unix operating system and its clones
-(Chapter~\ref{sec:safety:acsafe}).  Although resource leaks remain a problem
-(Section~\ref{sec:safety:thread}), it may be possible to address them for languages
-conforming to RAII (Chapter~\ref{chap:ingerc}).
+(Chapter~\ref{sec:safety:acsafe}).  Although resource cleanup requires careful
+programmer attention
+(Section~\ref{sec:safety:thread}), we argue that this is possible to address
+automatically, even without garbage collection, for languages conforming to RAII
+(Chapter~\ref{chap:ingerc}).
 
 \paragraph{Preemptive thread libraries in userland}
 By modifying the thread pool from a Rust futures executor to transparently wrap
