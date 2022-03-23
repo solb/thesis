@@ -353,7 +353,8 @@ a heuristic-based tweak just before the \textit{libinger} cancellation code inje
 the exception call:\@ if the instruction pointer is equal to the 8-byte value offset
 --8 bytes from the stack pointer, the function return just completed and we should
 add one to the instruction pointer to counteract the described libunwind behavior for
-this stack frame only.
+this stack frame only.  We have prototyped this technique in a GDB script, allowing
+us to test it at any arbitrary instruction within a simulated preemptible function.
 
 
 \subsection{Unwinding from the first instruction of a function}
