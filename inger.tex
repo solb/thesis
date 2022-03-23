@@ -433,6 +433,18 @@ at compile time, we compile extra runtime checks into debug builds of
 \textit{libinger} that validate the stacks and return point before restoring each
 context.
 
+One final danger when using POSIX contexts from Rust is that the glibc implementation
+of the \texttt{ucontext\_t} structure contains a self-referential pointer to the
+floating-point context.  This can cause surprising undefined behavior with contexts
+allocated on the stack, because the Rust compiler assumes that it is safe to move
+objects in memory; however, this glibc implementation detail means that doing so
+invalidates the pointer.  To work around the issue, our \texttt{setcontext()} wrapper
+function fixes up the self-referential pointer just before restoring the passed
+context.  Since we implemented this part of \textit{libinger}, Rust has introduced a
+\texttt{Pin} wrapper type for statically expressing that certain operations are only
+safe on objects that are allocated at a stable address.  Instead of our approach, one
+could employ this feature to make such unsound calls impossible.
+
 Ensuring that our use of POSIX contexts is free of undefined behavior has been the
 most challenging part of implementing \textit{libinger}.  The static and dynamic
 checks described in this section provide a measure of confidence (but not a full
