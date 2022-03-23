@@ -208,7 +208,8 @@ relinking to an alternative dynamic linker such as drow
 (Section~\ref{sec:libgotcha:scalability}).  Our current implementation reduces
 runtime latency at the cost of startup time, which is fine for long-running processes
 or where workers can be spawned from template ``zygote'' processes, but could pose
-issues otherwise.  The performance and scalability improvements proposed thus far are
+issues otherwise (Section~\ref{sec:libgotcha:startup}).  The performance and
+scalability improvements proposed thus far are
 likely to make pool allocators unnecessary for TCBs and stacks, the largest resources
 we preallocate.  Our remaining startup overhead comes from preparing all libsets at
 load time, a tradeoff that one would already have to revisit in order to support a
