@@ -297,9 +297,9 @@ half of fat pointers.  We had to tweak our trampoline code to preserve this regi
 on return callbacks following uninterruptible code
 (Section~\ref{sec:libgotcha:callbacks}).  Once we started implementing preemptible
 functions, we quickly ran into double frees caused by the interaction between POSIX
-contexts and destructors (Section~\ref{sec:libinger:boilerplate}).  Another thing we
-discovered about POSIX contexts is that they contain a self-referential pointer in
-the glibc implementation.  This can lead to undefined behavior if they are not heap
+contexts and destructors.  We also stumbled upon a self-referential pointer in the
+definition of the POSIX context structure (Section~\ref{sec:libinger:boilerplate}).
+This can lead to undefined behavior if contexts are not heap
 allocated or when we need to copy one over another
 (Section~\ref{sec:libinger:pausing}).  In such cases, we manually update the
 troublesome pointer just before restoring the context.
