@@ -52,6 +52,7 @@ linking against a custom build of the library, or using more in-depth static ana
 % simple search when we compiled submitted code.
 
 \paragraph{Resource leaks.}
+\begin{sloppypar}
 Safe Rust code provides memory safety, but it cannot prevent memory
 leaks~\cite{www-rustlang-nu}.  For example, destructor invocation is not
 guaranteed using Rust's default reference counting-based reclamation; therefore,
@@ -63,6 +64,7 @@ deallocate when terminating a microservice.  The worker can also deallocate
 other resources, such as unclosed file descriptors.  If these checks end up
 being too expensive, the worker could execute its cleanup after a certain number
 of microservices have run or when the load is sufficiently low.
+\end{sloppypar}
 %, and/or the system could track which microservices were (likely)
 %responsible for resource leaks and impose warnings or bans.
 
