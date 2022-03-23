@@ -217,7 +217,7 @@ variable number of libsets.
 
 Applying our isolation mechanisms to multi-tenancy situations as proposed in
 Chapter~\ref{chap:microservices} would require defense in depth.  Both
-\textit{libgotcha} and \textit{libinger} would benefit from using forced
+\textit{libgotcha} and \textit{libinger} would benefit from using enforced
 interposition (Section~\ref{sec:libgotcha:interpose}) to replace library functions
 that could be used to circumvent selective relinking and preemption in isolated code
 regions (e.g., by interfering with signals).  One might also consider expanding the
@@ -321,7 +321,8 @@ logic to prevent any libset switches inside the callback from prompting recursiv
 callbacks.  Intercepting global variable accesses was challenging in a different way,
 requiring a difficult-to-debug segmentation fault handler, a dependency on a
 disassembler library, and custom heuristics based on patterns we observed in compiled
-code (Section~\ref{sec:libgotcha:globals}).  We wanted forced interposition functions
+code (Section~\ref{sec:libgotcha:globals}).  We wanted enforced interposition
+functions
 to be able to call the functions they wrapped without manually resolving the
 underlying symbol (Section~\ref{sec:libgotcha:interpose}).  Preventing GCC and Clang
 from assuming these calls were recursive required a combination of the

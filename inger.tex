@@ -536,7 +536,7 @@ Linux offers a nonstandard \texttt{SIGEV\_THREAD\_ID} configuration parameter fo
 directing timer signals at a specific kernel thread; this could be used to remove the
 limit (and the pool allocator) entirely~\cite{timercreate-manpage}.}  It currently
 assumes that the process will not use any of these signals for other purposes, but
-detecting other uses would be as simple as adding forced interposition wrapper
+detecting other uses would be as simple as adding enforced interposition wrapper
 functions for \texttt{signal()} and \texttt{sigaction()}
 (Section~\ref{sec:libgotcha:interpose}).
 
@@ -895,7 +895,7 @@ prioritized supporting within preemptible functions:\@ 7 use
 and other process creation functions, and 4 use functions from the \texttt{exec()}
 family.  We have not decided what behavior is desirable when a preemptible function
 invokes these functions, but the simplest option is to disallow their use by defining
-forced interposition replacement functions (Section~\ref{sec:libgotcha:interpose})
+enforced interposition replacement functions (Section~\ref{sec:libgotcha:interpose})
 that return a failure code when called from within a preemptible function.
 
 Three other recurring issues we encountered were conflicting uses of signals,
