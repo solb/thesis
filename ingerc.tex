@@ -112,7 +112,7 @@ maintain a frame pointer that made it easy to find the bounds of a function's st
 frame, but with the advent of x86-64, this is no longer standard; thus, the runtime
 needs some other way to find the next frame.  Debuggers have long faced this very
 problem on other architectures, and the common approach is to rely on extra debugging
-information stored in the executable or library on the disk.  On Unix operating
+information stored in the executable or library on disk.  On Unix operating
 systems, most debuggers use the CFI (Call Frame Information) facility of the standard
 DWARF debugging format~\cite{eager:spec2012}.
 
