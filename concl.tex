@@ -373,4 +373,11 @@ test and maintain support for running under debugging and diagnostic tools.
 (or they) will discover design shortcomings, interface paper cuts, or pivotal
 enhancements.  Even if not, you will come to better understand its workings and be
 able to clearly articulate its insights and their broader implications.
+
+\item Systems programming languages could save many programmers from handwriting
+assembly code by providing a portable way to specify that a function should preserve
+all of its caller's registers.  GCC and LLVM provide the
+\texttt{no\_caller\_saved\_registers} function attribute, but it is only implemented
+for the x86 family of architectures and its effect on non--general-purpose registers
+differs between these two code generators.
 \end{itemize}
