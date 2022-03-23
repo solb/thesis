@@ -280,7 +280,8 @@ invoke any destructors.  We describe how we identify which destructor(s) to invo
 \subsection{Adjusting LSDA entries}
 \label{sec:ingerc:codegen}
 
-The possibility that we inject an exception during the argument-passing instructions
+The possibility that cancellation injects an exception during the argument-passing
+instructions
 preceding a call violates a design assumption of LLVM's LSDA generation.  IR
 instructions such as \texttt{call} often expand to multiple machine instructions,
 most commonly to perform argument passing before the function dispatch.  However, the
