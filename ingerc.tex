@@ -326,7 +326,8 @@ instruction located at the return address.  Here is the offending libunwind code
   	--pc;
 \end{lstlisting}
 
-Since we inject the exception by forging a function call, libunwind always assumes
+Since we propose to inject the exception by forging a function call, libunwind always
+assumes
 the frame where we did this is a return address and performs the decrement.  The
 obvious workaround would be to remove this code from libunwind, at the cost of
 potentially breaking unwinding through C++ code that might be present in the program.
@@ -346,7 +347,8 @@ the caller's.
 For this reason, we need to override this libunwind behavior only at the instruction
 where we injected the exception, and only if that instruction immediately
 follows a call (so that libunwind would confuse the situation with one
-where the called function was still executing).  We can accomplish that by applying
+where the called function was still executing).  We propose to accomplish that by
+applying
 a heuristic-based tweak just before the \textit{libinger} cancellation code injects
 the exception call:\@ if the instruction pointer is equal to the 8-byte value offset
 --8 bytes from the stack pointer, the function return just completed and we should
