@@ -294,16 +294,19 @@ pass into \texttt{llc}, the LLVM static compiler.  The pass works at the x86-64
 machine instruction level to reposition LSDA-related labels and resize the code
 region
 on the normal execution path with which a cleanup landing pad is associated.  To
-prevent leaks, if the ending label falls before a destructor call, we move it downward
-to just before the machine \texttt{call} instruction; otherwise, we move it downward
+prevent leaks, if the ending label falls before a destructor call, the pass moves it
+downward
+to just before the machine \texttt{call} instruction; otherwise, the pass moves it
+downward
 to just before the function epilogue.  To prevent issuing destructor calls before
 construction, if the starting label falls before the function call that produces the
-object to be cleaned up, we move it downward to just after that call.
+object to be cleaned up, the pass moves it downward to just after that call.
 
-As part of this pass, we also identify functions with parameters annotated as
+The pass also identifies functions with parameters annotated as
 \texttt{sret} in the LLVM IR.  These correspond to functions where the script from
-Section~\ref{sec:ingerc:optimization} added synthetic landing pads.  We check to see
-whether the involved type(s) have destructors; if so, we add destructor calls to the
+Section~\ref{sec:ingerc:optimization} added synthetic landing pads.  The pass checks
+to see
+whether the involved type(s) have destructors; if so, it adds destructor calls to the
 landing pad.
 
 
