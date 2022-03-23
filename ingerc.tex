@@ -344,8 +344,8 @@ thing for the runtime to do is to invoke the called function's landing pad but n
 the caller's.
 
 For this reason, we need to override this libunwind behavior only at the instruction
-where we injected the exception, and only if that instruction happens to be the
-instruction following a call (so that libunwind would confuse the situation with one
+where we injected the exception, and only if that instruction immediately
+follows a call (so that libunwind would confuse the situation with one
 where the called function was still executing).  We can accomplish that by applying
 a heuristic-based tweak just before the \textit{libinger} cancellation code injects
 the exception call:\@ if the instruction pointer is equal to the 8-byte value offset
