@@ -55,6 +55,7 @@ preemption and memory isolation have operated exclusively at the granularity of 
 kernel thread.
 
 \paragraph{New functionality for application programmers}
+\begin{sloppypar}
 It is worth emphasizing that our abstractions are available in userland and
 accessible to any programmer experienced with concurrency.  They expose powerful APIs
 that we summarize in Listings~\ref{lst:ingerfullapi} and \ref{lst:ingerrustapi}
@@ -63,11 +64,12 @@ that we summarize in Listings~\ref{lst:ingerfullapi} and \ref{lst:ingerrustapi}
 even type safe and usable in contexts where the standard library does not allow
 thread spawns (Chapter~\ref{chap:libinger}).  Preemptible functions themselves serve
 as an example application for selective relinking, and
-Chapters~\ref{chap:strobelight} and
+Chapters~\ref{chap:libturquoise}, \ref{chap:strobelight}, and
 \ref{chap:microservices} present case studies in building systems atop preemptible
 functions.  Simpler applications include detection of pathological cases such as
 adversarially-constructed compressed images (Section~\ref{sec:libinger:bombs}) and
 graceful degradation by dropping video frames.
+\end{sloppypar}
 
 \paragraph{Unmanaged systems programming languages}
 Unlike prior art, our abstractions are restricted neither to purely functional code
