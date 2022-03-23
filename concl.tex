@@ -39,8 +39,8 @@ preemption quanta down to at least the tens of microseconds, with scaling limite
 increasing CPU time overheads.  We also demonstrated that the latency of invoking a
 preemptible function is in the same order of magnitude
 (Section~\ref{sec:libinger:ueval}).  This is one order of magnitude faster than
-forking a new process and two orders of magnitude than the typical operating system
-preemption quantum.
+forking a new process and two orders of magnitude finer than the typical operating
+system preemption quantum.
 
 \paragraph{Tasks defined at the level of a function call}
 Both lightweight preemptible functions and selective relinking explicitly treat
@@ -122,7 +122,7 @@ as shipped in the Unix operating system and its clones
 conforming to RAII (Chapter~\ref{chap:ingerc}).
 
 \paragraph{Preemptive thread libraries in userland}
-By modifying the thread pool from a Rust futures executor to use transparently wrap
+By modifying the thread pool from a Rust futures executor to transparently wrap
 tasks in preemptible futures, we have created arguably the first general-purpose
 preemptive thread library implemented entirely in userland.  Details are in
 Chapter~\ref{chap:libturquoise}.
@@ -172,7 +172,7 @@ potential for building scalable systems with better resistance to denial of serv
 attacks.  We implemented these concepts before we had proper support for thread-local
 storage and at a time when the Rust ecosystem was in flux because the language was
 just stabilizing futures and async/await.  As such, the majority of the preemptible
-future code is compatibility calls to convert between different future interfaces,
+future code is compatibility calls to convert between different futures interfaces,
 and the thread pool works only with a very old version of the Tokio futures executor.
 Porting to a modern futures executor and adding proper support for thread locals
 would permit experiments on the latest high-performance systems.
@@ -278,7 +278,7 @@ upstream change to affect us (Section~\ref{sec:libgotcha:portability}).  When we
 added support for thread-local storage, we found that in order to allocate our own
 TCBs without creating POSIX threads, we needed to manually initialize some critical
 fields (Section~\ref{sec:libinger:tcbs}).  This led to another issue that briefly
-broke threads' abilities to signal themselves (Section~\ref{sec:libgotcha:tls}).
+broke threads' ability to signal themselves (Section~\ref{sec:libgotcha:tls}).
 Finally, when writing \textit{libas-safe}, we had to grok libc's initialization code
 in order to inject a libset switch late enough in startup that it did not leave the
 starting libset's C runtime broken (Section~\ref{sec:safety:assafe}).
