@@ -176,8 +176,8 @@ storage and at a time when the Rust ecosystem was in flux because the language w
 just stabilizing futures and async/await.  As such, the majority of the preemptible
 future code is compatibility calls to convert between different futures interfaces,
 and the thread pool works only with a very old version of the Tokio futures executor.
-Porting to a modern futures executor and adding proper support for thread locals
-would permit experiments on the latest high-performance systems.
+Porting to a modern futures executor and leveraging \textit{libinger}'s support for
+thread locals would permit experiments on the latest high-performance systems.
 
 The performance of our implementation could be improved in several ways.  As
 Section~\ref{sec:libinger:quantum} noted, one current limitation is our use of a
