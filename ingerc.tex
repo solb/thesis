@@ -412,7 +412,7 @@ pointer.  Changing the \texttt{<} to a \texttt{<=} fixes the problem.
 Section 6.4.3 of the DWARF specification~\cite{www-dwarf-spec} seems to agree with
 this sign change.  We hypothesize that libunwind inherited this off-by-one error from
 libgcc in its effort to replicate the older library's behavior.  The libunwind test
-suite continues to pass after making the change, suggesting that a noncomprehensive
+suite continues to pass after making the change, suggesting that an incomprehensive
 test suite has
 allowed the mistake to avoid detection.  Furthermore, Clang's lack of support for
 asynchronous unwind tables has probably prevented the community from encountering the
